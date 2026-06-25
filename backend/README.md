@@ -2,7 +2,7 @@
 
 This folder contains the Google Apps Script backend for Affiliate Success CRM.
 
-Sprint 2A exposes a read-only API connected to the finalized Google Sheets CRM tabs. No write actions, authentication, schema changes, or secrets are included.
+The backend exposes read APIs connected to the finalized Google Sheets CRM tabs. Sprint 3B adds write actions for `Followup_Queue` only. Authentication, schema changes, and secrets are not included.
 
 ## Files
 
@@ -12,7 +12,8 @@ Sprint 2A exposes a read-only API connected to the finalized Google Sheets CRM t
 - `response.gs`: consistent JSON response envelope.
 - `sheets.gs`: spreadsheet access, sheet validation, and row mapping.
 - `dashboard.gs`: dashboard summary read model.
-- `affiliates.gs`, `staff.gs`, `brands.gs`, `followups.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
+- `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
+- `followups.gs`: read and write actions for `Followup_Queue`.
 
 ## Apps Script Setup
 
@@ -58,6 +59,22 @@ The API also supports:
 ?action=issues
 ?action=interactions
 ?action=performance
+?action=getFollowups
+?action=createFollowup
+?action=updateFollowup
+?action=completeFollowup
 ```
 
 All responses use the standard `success`, `message`, `data`, `error`, and `meta` envelope.
+
+Follow-up write actions require `POST` and only use these finalized `Followup_Queue` headers:
+
+```text
+Queue_ID
+Affiliate_ID
+Assigned_Staff
+Followup_Date
+Priority
+Status
+Generated_From
+```

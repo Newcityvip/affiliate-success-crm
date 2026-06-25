@@ -1,6 +1,6 @@
 # API
 
-The backend is a Google Apps Script web app. Sprint 2A exposes a read-only API for the finalized Google Sheets CRM tabs. No write actions are implemented.
+The backend is a Google Apps Script web app. It exposes read APIs for finalized Google Sheets CRM tabs and Sprint 3B write actions for `Followup_Queue` only.
 
 ## Response Format
 
@@ -108,6 +108,10 @@ Reads rows from `Brand_List`.
 
 Reads rows from `Followup_Queue`.
 
+### `?action=getFollowups`
+
+Reads rows from `Followup_Queue` and includes affiliate name and brand when matching affiliate data is available.
+
 ### `?action=tasks`
 
 Reads rows from `Task_Log`.
@@ -135,10 +139,63 @@ List endpoints return:
 
 Rows are mapped by the sheet header names. Empty rows are ignored.
 
+## Follow-up Queue Write Endpoints
+
+Follow-up write endpoints require `POST` and only write to `Followup_Queue`.
+
+### `?action=createFollowup`
+
+Creates a new follow-up row.
+
+Request body:
+
+```json
+{
+  "Affiliate_ID": "AFF0001",
+  "Assigned_Staff": "Robiul",
+  "Followup_Date": "2026-06-30",
+  "Priority": "High",
+  "Status": "Open",
+  "Generated_From": "Manual"
+}
+```
+
+### `?action=updateFollowup`
+
+Updates an existing follow-up row by `Queue_ID`.
+
+Request body:
+
+```json
+{
+  "Queue_ID": "FU_123",
+  "Affiliate_ID": "AFF0001",
+  "Assigned_Staff": "Robiul",
+  "Followup_Date": "2026-07-01",
+  "Priority": "Medium",
+  "Status": "Open",
+  "Generated_From": "Manual"
+}
+```
+
+### `?action=completeFollowup`
+
+Marks a follow-up as completed.
+
+Request body:
+
+```json
+{
+  "Queue_ID": "FU_123"
+}
+```
+
+Completion sets `Status` to `Completed`. Dashboard follow-up counts update after the frontend refreshes data.
+
 ## Errors
 
 - `UNKNOWN_ACTION`: the requested action is not supported.
-- `METHOD_NOT_ALLOWED`: a non-GET method was used for a read-only endpoint.
+- `METHOD_NOT_ALLOWED`: the request method is not valid for the endpoint.
 - `MISSING_SPREADSHEET_ID`: the spreadsheet ID placeholder has not been replaced in Apps Script.
 - `MISSING_SHEET`: one of the finalized Google Sheet tabs is missing.
 - `REQUEST_FAILED`: another read error occurred.

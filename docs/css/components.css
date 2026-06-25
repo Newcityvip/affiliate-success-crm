@@ -108,6 +108,12 @@
   opacity: 0.65;
 }
 
+.button-small {
+  min-height: 2.2rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+}
+
 .button-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #061018;
@@ -321,6 +327,10 @@
   font-size: 0.9rem;
 }
 
+.followup-table {
+  min-width: 78rem;
+}
+
 .data-table th,
 .data-table td {
   padding: 0.72rem 0.85rem;
@@ -363,6 +373,53 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.followup-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.followup-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.group-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-heading h3 {
+  font-size: 1rem;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 6, 12, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.modal-card {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 34rem);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem;
 }
 
 .profile-drawer {

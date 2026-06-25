@@ -60,6 +60,69 @@ function readSheetObjects(sheetName) {
     });
 }
 
+function getSheetHeaders(sheetName) {
+  const sheet = getSheetByName(sheetName);
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastColumn < 1) {
+    return [];
+  }
+
+  return sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (header) {
+    return safeString(header);
+  });
+}
+
+function appendSheetObject(sheetName, data) {
+  const sheet = getSheetByName(sheetName);
+  const headers = getSheetHeaders(sheetName);
+
+  if (!headers.length) {
+    throw new Error('Missing headers for sheet: ' + sheetName);
+  }
+
+  const row = headers.map(function (header) {
+    return data[header] !== undefined ? data[header] : '';
+  });
+
+  sheet.appendRow(row);
+  return data;
+}
+
+function updateSheetObjectByKey(sheetName, keyName, keyValue, data) {
+  const sheet = getSheetByName(sheetName);
+  const values = sheet.getDataRange().getValues();
+
+  if (!values || values.length < 2) {
+    throw new Error('No rows available in sheet: ' + sheetName);
+  }
+
+  const headers = values[0].map(function (header) {
+    return safeString(header);
+  });
+  const keyIndex = headers.indexOf(keyName);
+
+  if (keyIndex === -1) {
+    throw new Error('Missing key header: ' + keyName);
+  }
+
+  for (var rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+    if (safeString(values[rowIndex][keyIndex]) === safeString(keyValue)) {
+      headers.forEach(function (header, columnIndex) {
+        if (header && data[header] !== undefined) {
+          sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(data[header]);
+        }
+      });
+
+      return readSheetObjects(sheetName).filter(function (row) {
+        return safeString(row[keyName]) === safeString(keyValue);
+      })[0] || {};
+    }
+  }
+
+  throw new Error('Row not found for ' + keyName + ': ' + keyValue);
+}
+
 function validateRequiredSheets() {
   const spreadsheet = getSpreadsheet();
   const missing = [];

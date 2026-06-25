@@ -62,6 +62,16 @@
     }
   }
 
+  function post(action, data) {
+    return request(action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(data || {})
+    });
+  }
+
   window.AffiliateSuccessApi = Object.freeze({
     request: request,
     health: function () {
@@ -75,6 +85,18 @@
     },
     affiliates: function () {
       return request('affiliates');
+    },
+    followups: function () {
+      return request('getFollowups');
+    },
+    createFollowup: function (data) {
+      return post('createFollowup', data);
+    },
+    updateFollowup: function (data) {
+      return post('updateFollowup', data);
+    },
+    completeFollowup: function (data) {
+      return post('completeFollowup', data);
     }
   });
 })(window);

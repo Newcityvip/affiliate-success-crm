@@ -38,11 +38,33 @@
   var affiliateSearchFields = ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Assigned_Staff'];
   var affiliateBadgeFields = ['Health_Status', 'Status', 'Priority', 'Active'];
   var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Assigned_Staff', 'Health_Status', 'Status'];
+  var followupColumns = [
+    'Queue_ID',
+    'Affiliate_ID',
+    'Affiliate_Name',
+    'Brand',
+    'Assigned_Staff',
+    'Followup_Date',
+    'Priority',
+    'Status',
+    'Generated_From',
+    'Actions'
+  ];
+  var followupFilterFields = ['Assigned_Staff', 'Priority', 'Status'];
+  var followupSearchFields = ['Affiliate_ID', 'Affiliate_Name', 'Brand'];
+  var followupBadgeFields = ['Priority', 'Status'];
   var affiliateState = {
     loaded: false,
     loading: false,
     all: [],
     filtered: []
+  };
+  var followupState = {
+    loaded: false,
+    loading: false,
+    all: [],
+    filtered: [],
+    mode: 'create'
   };
 
   function setSidebar(open) {
@@ -79,6 +101,10 @@
 
     if (route.key === 'affiliates') {
       loadAffiliates();
+    }
+
+    if (route.key === 'followups') {
+      loadFollowups();
     }
   }
 
@@ -285,7 +311,7 @@
   function appendFieldValue(parent, row, key) {
     var value = displayValue(row, key);
 
-    if (affiliateBadgeFields.indexOf(key) !== -1) {
+    if (affiliateBadgeFields.indexOf(key) !== -1 || followupBadgeFields.indexOf(key) !== -1) {
       parent.appendChild(createBadge(key, value));
       return;
     }
@@ -507,6 +533,361 @@
     filterAffiliates();
   }
 
+  function setFollowupsVisibility(state) {
+    var states = {
+      loading: utils.qs('[data-followups-loading]'),
+      error: utils.qs('[data-followups-error]'),
+      empty: utils.qs('[data-followups-empty]'),
+      groups: utils.qs('[data-followups-groups]')
+    };
+
+    Object.keys(states).forEach(function (key) {
+      if (states[key]) {
+        states[key].hidden = key !== state;
+      }
+    });
+  }
+
+  function setFollowupsCount(showing, total) {
+    utils.setText(utils.qs('[data-followups-count]'), 'Showing ' + showing + ' of ' + total + ' follow-ups');
+  }
+
+  function setFollowupsError(message) {
+    setFollowupsVisibility('error');
+    utils.setText(utils.qs('[data-followups-error-message]'), message || 'Unable to load follow-ups.');
+    setFollowupsCount(0, followupState.all.length);
+  }
+
+  function populateFollowupFilters(items) {
+    followupFilterFields.forEach(function (field) {
+      var select = utils.qs('[data-followup-filter="' + field + '"]');
+      if (!select) {
+        return;
+      }
+
+      var current = select.value;
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      var values = [];
+      items.forEach(function (item) {
+        var value = valueFor(item, field);
+        if (value && values.indexOf(value) === -1) {
+          values.push(value);
+        }
+      });
+
+      values.sort().forEach(function (value) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+
+      select.value = values.indexOf(current) !== -1 ? current : '';
+    });
+  }
+
+  function followupMatchesSearch(row, query) {
+    if (!query) {
+      return true;
+    }
+
+    return followupSearchFields.some(function (field) {
+      return valueFor(row, field).toLowerCase().indexOf(query) !== -1;
+    });
+  }
+
+  function followupMatchesFilters(row) {
+    var start = utils.qs('[data-followup-date-start]');
+    var end = utils.qs('[data-followup-date-end]');
+    var date = getDateOnly(valueFor(row, 'Followup_Date'));
+
+    if (start && start.value && (!date || date < start.value)) {
+      return false;
+    }
+
+    if (end && end.value && (!date || date > end.value)) {
+      return false;
+    }
+
+    return followupFilterFields.every(function (field) {
+      var select = utils.qs('[data-followup-filter="' + field + '"]');
+      return !select || !select.value || valueFor(row, field) === select.value;
+    });
+  }
+
+  function filterFollowups() {
+    var search = utils.qs('[data-followup-search]');
+    var query = search ? search.value.trim().toLowerCase() : '';
+
+    followupState.filtered = followupState.all.filter(function (row) {
+      return followupMatchesSearch(row, query) && followupMatchesFilters(row);
+    });
+
+    renderFollowups();
+  }
+
+  function renderFollowupHeaders() {
+    document.querySelectorAll('[data-followup-head]').forEach(function (head) {
+      if (head.dataset.ready === 'true') {
+        return;
+      }
+
+      var tr = document.createElement('tr');
+      followupColumns.forEach(function (column) {
+        var th = document.createElement('th');
+        th.textContent = column;
+        tr.appendChild(th);
+      });
+      head.appendChild(tr);
+      head.dataset.ready = 'true';
+    });
+  }
+
+  function renderFollowups() {
+    renderFollowupHeaders();
+
+    var groups = {
+      today: [],
+      overdue: [],
+      upcoming: [],
+      completed: []
+    };
+
+    followupState.filtered.forEach(function (row) {
+      groups[getFollowupGroup(row)].push(row);
+    });
+
+    Object.keys(groups).forEach(function (group) {
+      renderFollowupGroup(group, groups[group]);
+      utils.setText(utils.qs('[data-followup-group-count="' + group + '"]'), groups[group].length);
+    });
+
+    setFollowupsCount(followupState.filtered.length, followupState.all.length);
+    setFollowupsVisibility(followupState.filtered.length ? 'groups' : 'empty');
+  }
+
+  function renderFollowupGroup(group, rows) {
+    var body = utils.qs('[data-followup-body="' + group + '"]');
+    if (!body) {
+      return;
+    }
+
+    body.innerHTML = '';
+
+    if (!rows.length) {
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.colSpan = followupColumns.length;
+      emptyCell.textContent = 'No follow-ups in this section.';
+      emptyRow.appendChild(emptyCell);
+      body.appendChild(emptyRow);
+      return;
+    }
+
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+
+      followupColumns.forEach(function (column) {
+        var td = document.createElement('td');
+
+        if (column === 'Actions') {
+          appendFollowupActions(td, row);
+        } else {
+          appendFieldValue(td, row, column);
+        }
+
+        tr.appendChild(td);
+      });
+
+      body.appendChild(tr);
+    });
+  }
+
+  function appendFollowupActions(parent, row) {
+    var actions = document.createElement('div');
+    actions.className = 'table-actions';
+
+    var complete = document.createElement('button');
+    complete.className = 'button button-secondary button-small';
+    complete.type = 'button';
+    complete.textContent = 'Mark Complete';
+    complete.disabled = isCompletedFollowup(row);
+    complete.addEventListener('click', function () {
+      markFollowupComplete(row);
+    });
+
+    var reschedule = document.createElement('button');
+    reschedule.className = 'button button-secondary button-small';
+    reschedule.type = 'button';
+    reschedule.textContent = 'Reschedule';
+    reschedule.addEventListener('click', function () {
+      openFollowupModal('reschedule', row);
+    });
+
+    actions.appendChild(complete);
+    actions.appendChild(reschedule);
+    parent.appendChild(actions);
+  }
+
+  function getFollowupGroup(row) {
+    if (isCompletedFollowup(row)) {
+      return 'completed';
+    }
+
+    var date = getDateOnly(valueFor(row, 'Followup_Date'));
+    var today = getDateOnly(new Date().toISOString());
+
+    if (!date || date === today) {
+      return 'today';
+    }
+
+    if (date < today) {
+      return 'overdue';
+    }
+
+    return 'upcoming';
+  }
+
+  function isCompletedFollowup(row) {
+    return valueFor(row, 'Status').toLowerCase() === 'completed';
+  }
+
+  function getDateOnly(value) {
+    if (!value) {
+      return '';
+    }
+
+    var date = new Date(value);
+    if (isNaN(date.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
+  async function loadFollowups(force) {
+    if (!force && (followupState.loaded || followupState.loading)) {
+      return;
+    }
+
+    followupState.loading = true;
+    setFollowupsVisibility('loading');
+    utils.setText(utils.qs('[data-followups-count]'), 'Loading follow-ups...');
+
+    var result = await api.followups();
+    followupState.loading = false;
+
+    if (!result || !result.success) {
+      setFollowupsError(result && result.message ? result.message : 'Unable to load follow-ups.');
+      return;
+    }
+
+    followupState.all = result.data && Array.isArray(result.data.items) ? result.data.items : [];
+    followupState.loaded = true;
+    populateFollowupFilters(followupState.all);
+    filterFollowups();
+  }
+
+  function openFollowupModal(mode, row) {
+    var modal = utils.qs('[data-followup-modal]');
+    var form = utils.qs('[data-followup-form]');
+    if (!modal || !form) {
+      return;
+    }
+
+    followupState.mode = mode || 'create';
+    form.reset();
+    utils.setText(utils.qs('[data-followup-form-message]'), '');
+    utils.setText(utils.qs('[data-followup-modal-title]'), followupState.mode === 'reschedule' ? 'Reschedule Follow-up' : 'Add New Follow-up');
+
+    if (row) {
+      form.Queue_ID.value = valueFor(row, 'Queue_ID');
+      form.Affiliate_ID.value = valueFor(row, 'Affiliate_ID');
+      form.Assigned_Staff.value = valueFor(row, 'Assigned_Staff');
+      form.Followup_Date.value = getDateOnly(valueFor(row, 'Followup_Date'));
+      form.Priority.value = valueFor(row, 'Priority') || 'Medium';
+      form.Status.value = valueFor(row, 'Status') || 'Open';
+      form.Generated_From.value = valueFor(row, 'Generated_From');
+    } else {
+      form.Priority.value = 'Medium';
+      form.Status.value = 'Open';
+      form.Generated_From.value = 'Manual';
+    }
+
+    modal.hidden = false;
+  }
+
+  function closeFollowupModal() {
+    var modal = utils.qs('[data-followup-modal]');
+    if (modal) {
+      modal.hidden = true;
+    }
+  }
+
+  function followupFormData() {
+    var form = utils.qs('[data-followup-form]');
+    return {
+      Queue_ID: form.Queue_ID.value,
+      Affiliate_ID: form.Affiliate_ID.value,
+      Assigned_Staff: form.Assigned_Staff.value,
+      Followup_Date: form.Followup_Date.value,
+      Priority: form.Priority.value,
+      Status: form.Status.value,
+      Generated_From: form.Generated_From.value
+    };
+  }
+
+  async function submitFollowupForm(event) {
+    event.preventDefault();
+    var button = utils.qs('[data-followup-submit]');
+    var message = utils.qs('[data-followup-form-message]');
+    var payload = followupFormData();
+    var result;
+
+    if (button) {
+      button.disabled = true;
+    }
+    utils.setText(message, 'Saving follow-up...');
+
+    if (followupState.mode === 'reschedule') {
+      result = await api.updateFollowup(payload);
+    } else {
+      result = await api.createFollowup(payload);
+    }
+
+    if (button) {
+      button.disabled = false;
+    }
+
+    if (!result || !result.success) {
+      utils.setText(message, result && result.message ? result.message : 'Unable to save follow-up.');
+      return;
+    }
+
+    closeFollowupModal();
+    followupState.loaded = false;
+    await loadFollowups(true);
+    loadDashboard();
+  }
+
+  async function markFollowupComplete(row) {
+    var result = await api.completeFollowup({
+      Queue_ID: valueFor(row, 'Queue_ID')
+    });
+
+    if (!result || !result.success) {
+      setFollowupsError(result && result.message ? result.message : 'Unable to complete follow-up.');
+      return;
+    }
+
+    followupState.loaded = false;
+    await loadFollowups(true);
+    loadDashboard();
+  }
+
   function bindAffiliateControls() {
     var search = utils.qs('[data-affiliate-search]');
     if (search) {
@@ -564,10 +945,63 @@
     }
   }
 
+  function bindFollowupControls() {
+    var search = utils.qs('[data-followup-search]');
+    if (search) {
+      search.addEventListener('input', filterFollowups);
+    }
+
+    document.querySelectorAll('[data-followup-filter]').forEach(function (filter) {
+      filter.addEventListener('change', filterFollowups);
+    });
+
+    var start = utils.qs('[data-followup-date-start]');
+    var end = utils.qs('[data-followup-date-end]');
+    if (start) {
+      start.addEventListener('change', filterFollowups);
+    }
+    if (end) {
+      end.addEventListener('change', filterFollowups);
+    }
+
+    var add = utils.qs('[data-followup-add]');
+    if (add) {
+      add.addEventListener('click', function () {
+        openFollowupModal('create');
+      });
+    }
+
+    var close = utils.qs('[data-followup-modal-close]');
+    if (close) {
+      close.addEventListener('click', closeFollowupModal);
+    }
+
+    var modal = utils.qs('[data-followup-modal]');
+    if (modal) {
+      modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+          closeFollowupModal();
+        }
+      });
+    }
+
+    var form = utils.qs('[data-followup-form]');
+    if (form) {
+      form.addEventListener('submit', submitFollowupForm);
+    }
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeFollowupModal();
+      }
+    });
+  }
+
   function initAppShell() {
     bindSidebar();
     bindNavigation();
     bindAffiliateControls();
+    bindFollowupControls();
     updatePage(router.routeFromHash());
     loadDashboard();
   }

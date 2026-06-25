@@ -1,5 +1,5 @@
 /**
- * Read-only API router.
+ * API router.
  */
 
 function handleRequest(e, method) {
@@ -17,7 +17,11 @@ function handleRequest(e, method) {
     'tasks',
     'issues',
     'interactions',
-    'performance'
+    'performance',
+    'getfollowups',
+    'createfollowup',
+    'updatefollowup',
+    'completefollowup'
   ];
 
   try {
@@ -40,8 +44,14 @@ function handleRequest(e, method) {
       }, 'Application metadata loaded.');
     }
 
-    if (method !== 'GET') {
-      return errorResponse('Only GET requests are supported for this read-only API.', 'METHOD_NOT_ALLOWED', {
+    if (['createfollowup', 'updatefollowup', 'completefollowup'].indexOf(action) !== -1 && method !== 'POST') {
+      return errorResponse('This follow-up action requires POST.', 'METHOD_NOT_ALLOWED', {
+        method: method
+      });
+    }
+
+    if (['createfollowup', 'updatefollowup', 'completefollowup'].indexOf(action) === -1 && method !== 'GET') {
+      return errorResponse('Only GET requests are supported for this endpoint.', 'METHOD_NOT_ALLOWED', {
         method: method
       });
     }
@@ -66,8 +76,20 @@ function handleRequest(e, method) {
       return successResponse(getBrands(), 'Brands loaded.');
     }
 
-    if (action === 'followups') {
+    if (action === 'followups' || action === 'getfollowups') {
       return successResponse(getFollowups(), 'Follow-ups loaded.');
+    }
+
+    if (action === 'createfollowup') {
+      return successResponse(createFollowup(getRequestPayload(e)), 'Follow-up created.');
+    }
+
+    if (action === 'updatefollowup') {
+      return successResponse(updateFollowup(getRequestPayload(e)), 'Follow-up updated.');
+    }
+
+    if (action === 'completefollowup') {
+      return successResponse(completeFollowup(getRequestPayload(e)), 'Follow-up completed.');
     }
 
     if (action === 'tasks') {
@@ -109,4 +131,19 @@ function getRequestErrorCode(error) {
   }
 
   return 'REQUEST_FAILED';
+}
+
+function getRequestPayload(e) {
+  const params = (e && e.parameter) || {};
+  const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
+
+  if (contents) {
+    try {
+      return JSON.parse(contents);
+    } catch (error) {
+      throw new Error('Invalid JSON request body.');
+    }
+  }
+
+  return params;
 }

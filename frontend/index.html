@@ -259,13 +259,125 @@
           </section>
 
           <section class="page-section" data-section="followups" aria-labelledby="followups-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
-              <div>
-                <h2 id="followups-title">Follow-ups</h2>
-                <p class="muted">Follow-up queues, due dates, and contact planning will live here. Coming in next sprint.</p>
+            <div class="data-panel glass-panel">
+              <div class="data-toolbar">
+                <div>
+                  <h2 id="followups-title">Follow-ups</h2>
+                  <p class="muted" data-followups-count>Loading follow-ups...</p>
+                </div>
+                <button class="button button-primary" type="button" data-followup-add>Add New Follow-up</button>
               </div>
-            </article>
+
+              <div class="data-toolbar">
+                <label class="search-field">
+                  <span>Search follow-ups</span>
+                  <input type="search" placeholder="Search by affiliate ID, name, or brand" data-followup-search>
+                </label>
+                <div class="filter-grid" aria-label="Follow-up filters">
+                  <label class="field">
+                    <span>Assigned Staff</span>
+                    <select data-followup-filter="Assigned_Staff">
+                      <option value="">All staff</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Priority</span>
+                    <select data-followup-filter="Priority">
+                      <option value="">All priorities</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Status</span>
+                    <select data-followup-filter="Status">
+                      <option value="">All statuses</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>From</span>
+                    <input type="date" data-followup-date-start>
+                  </label>
+                  <label class="field">
+                    <span>To</span>
+                    <input type="date" data-followup-date-end>
+                  </label>
+                </div>
+              </div>
+
+              <div class="table-state" data-followups-loading>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <p class="muted">Loading live follow-ups...</p>
+              </div>
+
+              <div class="table-state" data-followups-error hidden>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <div>
+                  <h2>Unable to load follow-ups</h2>
+                  <p class="muted" data-followups-error-message>API request failed.</p>
+                </div>
+              </div>
+
+              <div class="table-state" data-followups-empty hidden>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <div>
+                  <h2>No follow-ups found</h2>
+                  <p class="muted">Adjust search or filters to see matching follow-ups.</p>
+                </div>
+              </div>
+
+              <div class="followup-groups" data-followups-groups hidden>
+                <section class="followup-group">
+                  <div class="group-heading">
+                    <h3>Today's follow-ups</h3>
+                    <span class="status-badge is-blue" data-followup-group-count="today">0</span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="data-table followup-table">
+                      <thead data-followup-head></thead>
+                      <tbody data-followup-body="today"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="followup-group">
+                  <div class="group-heading">
+                    <h3>Overdue follow-ups</h3>
+                    <span class="status-badge is-red" data-followup-group-count="overdue">0</span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="data-table followup-table">
+                      <thead data-followup-head></thead>
+                      <tbody data-followup-body="overdue"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="followup-group">
+                  <div class="group-heading">
+                    <h3>Upcoming follow-ups</h3>
+                    <span class="status-badge is-amber" data-followup-group-count="upcoming">0</span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="data-table followup-table">
+                      <thead data-followup-head></thead>
+                      <tbody data-followup-body="upcoming"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="followup-group">
+                  <div class="group-heading">
+                    <h3>Completed follow-ups</h3>
+                    <span class="status-badge is-green" data-followup-group-count="completed">0</span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="data-table followup-table">
+                      <thead data-followup-head></thead>
+                      <tbody data-followup-body="completed"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </div>
           </section>
 
           <section class="page-section" data-section="interactions" aria-labelledby="interactions-title">
@@ -359,6 +471,58 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <div class="modal-backdrop" data-followup-modal hidden>
+      <section class="modal-card glass-panel" aria-labelledby="followup-modal-title">
+        <div class="drawer-header">
+          <div>
+            <p class="eyebrow">Follow-up Queue</p>
+            <h2 id="followup-modal-title" data-followup-modal-title>Add New Follow-up</h2>
+          </div>
+          <button class="icon-button" type="button" data-followup-modal-close aria-label="Close follow-up modal">
+            <span aria-hidden="true">x</span>
+          </button>
+        </div>
+
+        <form class="form-stack" data-followup-form>
+          <input type="hidden" name="Queue_ID" data-followup-queue-id>
+          <label class="field">
+            <span>Affiliate_ID</span>
+            <input type="text" name="Affiliate_ID" required>
+          </label>
+          <label class="field">
+            <span>Assigned_Staff</span>
+            <input type="text" name="Assigned_Staff" required>
+          </label>
+          <label class="field">
+            <span>Followup_Date</span>
+            <input type="date" name="Followup_Date" required>
+          </label>
+          <label class="field">
+            <span>Priority</span>
+            <select name="Priority" required>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select name="Status" required>
+              <option value="Open">Open</option>
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Generated_From</span>
+            <input type="text" name="Generated_From" required>
+          </label>
+          <p class="form-note" data-followup-form-message></p>
+          <button class="button button-primary" type="submit" data-followup-submit>Save Follow-up</button>
+        </form>
+      </section>
     </div>
 
     <script src="js/config.js"></script>
