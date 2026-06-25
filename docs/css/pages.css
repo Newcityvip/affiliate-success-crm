@@ -1,0 +1,47 @@
+body[data-page="app"] .dashboard-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+body[data-page="app"] .dashboard-hero::before {
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, transparent, rgba(93, 228, 199, 0.1)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 5rem);
+  content: "";
+  pointer-events: none;
+}
+
+body[data-page="app"] .dashboard-hero > * {
+  position: relative;
+}
+
+body[data-page="login"] {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(93, 228, 199, 0.18), transparent 26rem),
+    linear-gradient(160deg, #07090f 0%, #101522 58%, #080b12 100%);
+}
+
+body[data-page="login"] .login-card {
+  overflow: hidden;
+}
+
+@media (max-width: 460px) {
+  .brand-mark strong {
+    font-size: 0.9rem;
+  }
+
+  .topbar h1 {
+    font-size: 1.75rem;
+  }
+
+  .profile-chip span:last-child {
+    display: none;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}

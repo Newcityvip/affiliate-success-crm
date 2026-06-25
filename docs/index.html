@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Affiliate Success CRM</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+  </head>
+  <body data-page="app">
+    <div class="mobile-backdrop" data-sidebar-backdrop hidden></div>
+
+    <div class="app-shell">
+      <aside class="sidebar glass-panel" id="app-sidebar" data-sidebar aria-label="Primary navigation">
+        <div class="sidebar-header">
+          <a class="brand-mark" href="#dashboard" data-route="dashboard" aria-label="Affiliate Success CRM dashboard">
+            <span class="brand-orb" aria-hidden="true">AS</span>
+            <span>
+              <strong>Affiliate Success</strong>
+              <small>CRM workspace</small>
+            </span>
+          </a>
+          <button class="icon-button mobile-only" type="button" data-sidebar-close aria-label="Close menu">
+            <span aria-hidden="true">x</span>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Workspace">
+          <a class="nav-item is-active" href="#dashboard" data-route="dashboard">Dashboard</a>
+          <a class="nav-item" href="#affiliates" data-route="affiliates">Affiliates</a>
+          <a class="nav-item" href="#followups" data-route="followups">Follow-ups</a>
+          <a class="nav-item" href="#interactions" data-route="interactions">Interactions</a>
+          <a class="nav-item" href="#tasks" data-route="tasks">Tasks</a>
+          <a class="nav-item" href="#issues" data-route="issues">Issues</a>
+          <a class="nav-item" href="#performance" data-route="performance">Performance</a>
+          <a class="nav-item" href="#leaderboard" data-route="leaderboard">Leaderboard</a>
+          <a class="nav-item" href="#reports" data-route="reports">Reports</a>
+          <a class="nav-item" href="#staff" data-route="staff">Staff</a>
+          <a class="nav-item" href="#brands" data-route="brands">Brands</a>
+          <a class="nav-item" href="#settings" data-route="settings">Settings</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p class="eyebrow">Sprint 1</p>
+          <p class="muted">UI shell only. No authentication, Sheets connection, or CRM workflows are active.</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar glass-panel">
+          <button class="icon-button mobile-only" type="button" data-sidebar-open aria-controls="app-sidebar" aria-expanded="false" aria-label="Open menu">
+            <span aria-hidden="true">=</span>
+          </button>
+
+          <div class="topbar-title">
+            <p class="eyebrow">Affiliate Success CRM</p>
+            <h1 data-page-title>Dashboard</h1>
+          </div>
+
+          <div class="topbar-actions" aria-label="Workspace actions">
+            <button class="icon-button" type="button" aria-label="Notifications placeholder">
+              <span aria-hidden="true">!</span>
+            </button>
+            <div class="profile-chip" aria-label="User profile placeholder">
+              <span class="avatar" aria-hidden="true">ST</span>
+              <span>
+                <strong>Staff User</strong>
+                <small>Profile placeholder</small>
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <section class="page-intro glass-panel">
+          <div>
+            <p class="eyebrow" data-page-kicker>Sprint 1 UI Shell</p>
+            <h2 data-page-heading>Command center foundation</h2>
+          </div>
+          <p class="muted" data-page-description>Demo UI data is shown only to validate layout and visual hierarchy. Live CRM data will connect in a later sprint.</p>
+        </section>
+
+        <section class="content-stage">
+          <section class="page-section is-active" data-section="dashboard" aria-labelledby="dashboard-title">
+            <div class="dashboard-hero glass-panel">
+              <div>
+                <p class="eyebrow">Demo UI Data</p>
+                <h2 id="dashboard-title">CRM dashboard preview</h2>
+                <p class="muted">These placeholder numbers are for interface design only and are not connected to Google Sheets.</p>
+              </div>
+              <span class="demo-badge">Demo UI data</span>
+            </div>
+
+            <div class="metric-grid" aria-label="Dashboard placeholder metrics">
+              <article class="metric-card glass-panel">
+                <span>Total Affiliates</span>
+                <strong>128</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Healthy</span>
+                <strong>94</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Today's Follow-ups</span>
+                <strong>18</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Overdue</span>
+                <strong>7</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Open Issues</span>
+                <strong>11</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Open Tasks</span>
+                <strong>24</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Monthly Growth</span>
+                <strong>12%</strong>
+                <small>Demo UI data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Reply Rate</span>
+                <strong>76%</strong>
+                <small>Demo UI data</small>
+              </article>
+            </div>
+
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2>Dashboard modules are coming next.</h2>
+                <p class="muted">Coming in next sprint: connected widgets, filters, and real CRM status once authentication and data access are ready.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="affiliates" aria-labelledby="affiliates-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="affiliates-title">Affiliates</h2>
+                <p class="muted">Affiliate profiles, lifecycle status, and ownership tools will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="followups" aria-labelledby="followups-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="followups-title">Follow-ups</h2>
+                <p class="muted">Follow-up queues, due dates, and contact planning will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="interactions" aria-labelledby="interactions-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="interactions-title">Interactions</h2>
+                <p class="muted">Interaction history and relationship notes will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="tasks" aria-labelledby="tasks-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="tasks-title">Tasks</h2>
+                <p class="muted">Task ownership, priorities, and completion flow will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="issues" aria-labelledby="issues-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="issues-title">Issues</h2>
+                <p class="muted">Issue tracking, escalation status, and resolution notes will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="performance" aria-labelledby="performance-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="performance-title">Performance</h2>
+                <p class="muted">Monthly performance views and growth indicators will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="leaderboard" aria-labelledby="leaderboard-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="leaderboard-title">Leaderboard</h2>
+                <p class="muted">Team and affiliate ranking previews will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="reports" aria-labelledby="reports-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="reports-title">Reports</h2>
+                <p class="muted">Export-ready summaries and management reporting will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="staff" aria-labelledby="staff-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="staff-title">Staff</h2>
+                <p class="muted">Staff directory, roles, and assignment views will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="brands" aria-labelledby="brands-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="brands-title">Brands</h2>
+                <p class="muted">Brand references and affiliate-brand mapping tools will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="page-section" data-section="settings" aria-labelledby="settings-title">
+            <article class="empty-state glass-panel">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <div>
+                <h2 id="settings-title">Settings</h2>
+                <p class="muted">Workspace preferences and future configuration controls will live here. Coming in next sprint.</p>
+              </div>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

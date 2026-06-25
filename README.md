@@ -17,7 +17,7 @@ This repository currently contains the Sprint 0 foundation and Sprint 1 frontend
 /
 +-- frontend/          Static GitHub Pages-ready frontend shell
 +-- backend/           Google Apps Script backend scaffold
-+-- docs/              Project, API, database, and development documentation
++-- docs/              GitHub Pages publish folder plus project documentation
 +-- scripts/           Future local helper scripts
 +-- config/            Future non-secret configuration examples
 +-- README.md
@@ -43,10 +43,13 @@ This repository currently contains the Sprint 0 foundation and Sprint 1 frontend
 
 1. Deploy the Apps Script backend as a web app.
 2. Store the deployed Apps Script URL in `frontend/js/config.js` as `API_BASE_URL`.
-3. Enable GitHub Pages for this repository and set the published source to the frontend deployment strategy selected later.
-4. Keep all sensitive values, spreadsheet IDs, bot tokens, and passwords outside the repository.
+3. Copy the current static frontend into `docs/` for GitHub Pages publishing.
+4. In GitHub, open repository settings and enable Pages.
+5. Set the Pages source to `main` branch and `/docs` folder.
+6. Keep `frontend/` as the modular source for UI work and keep `docs/` as the deployable Pages copy.
+7. Keep all sensitive values, spreadsheet IDs, bot tokens, and passwords outside the repository.
 
-GitHub Pages is prepared but not deployed manually in Sprint 0.
+GitHub Pages should serve `docs/index.html`. The copied frontend uses relative paths such as `css/base.css` and `js/app.js`, so assets resolve correctly from the `/docs` publish root.
 
 ## Current Backend Endpoints
 
