@@ -1,15 +1,47 @@
 .app-shell {
   display: grid;
-  gap: 1rem;
   min-height: 100vh;
-  padding: 1rem;
 }
 
 .sidebar {
+  position: fixed;
+  z-index: 30;
+  inset: 0 auto 0 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  width: min(20rem, calc(100vw - 2rem));
   padding: 1rem;
+  transform: translateX(-105%);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+body.is-sidebar-open .sidebar {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.35rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .workspace {
@@ -17,38 +49,63 @@
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
+  padding: 1rem;
 }
 
 .topbar {
-  display: flex;
-  flex-direction: column;
+  position: sticky;
+  z-index: 10;
+  top: 1rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+}
+
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
   justify-content: space-between;
+}
+
+.page-intro {
+  display: grid;
+  gap: 1rem;
   padding: 1.25rem;
 }
 
-.dashboard-grid {
+.content-stage {
+  min-width: 0;
+}
+
+.page-section {
+  display: none;
+}
+
+.page-section.is-active {
   display: grid;
   gap: 1rem;
 }
 
-.hero-panel {
+.dashboard-hero {
   display: grid;
   gap: 1rem;
-  min-height: 18rem;
-  align-content: end;
+  align-items: end;
+  min-height: 12rem;
   padding: 1.25rem;
 }
 
-.status-card,
-.empty-state {
-  padding: 1.25rem;
-}
-
-.status-card {
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-start;
+.metric-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .login-page {
@@ -70,29 +127,52 @@
   gap: 0.65rem;
 }
 
-@media (min-width: 780px) {
-  .app-shell {
-    grid-template-columns: 17rem minmax(0, 1fr);
-    padding: 1.25rem;
+@media (min-width: 720px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .topbar {
-    flex-direction: row;
-    align-items: center;
+  .topbar-actions {
+    grid-column: auto;
+    justify-content: end;
+  }
+
+  .page-intro {
+    grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 0.6fr);
+    align-items: end;
     padding: 1.5rem;
   }
 
-  .dashboard-grid {
-    grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.8fr);
+  .dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 1.5rem;
   }
 
-  .hero-panel {
-    grid-row: span 2;
-    min-height: calc(100vh - 10rem);
-    padding: 2rem;
+  .metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .login-card {
     padding: 2rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .app-shell {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 1rem;
+    inset: auto;
+    width: auto;
+    height: calc(100vh - 2rem);
+    margin: 1rem 0 1rem 1rem;
+    transform: none;
+  }
+
+  .workspace {
+    padding: 1rem;
   }
 }

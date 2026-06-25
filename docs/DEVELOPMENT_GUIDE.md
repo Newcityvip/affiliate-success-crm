@@ -30,6 +30,16 @@ Use clear, conventional commit messages:
 - Keep backend calls isolated in `frontend/js/api.js`.
 - Keep authentication behavior isolated in `frontend/js/auth.js`.
 - Do not add external CSS frameworks unless a future sprint explicitly approves them.
+- Sprint 1 navigation is client-side only and must not call the backend.
+- Demo UI numbers are allowed only when clearly marked as demo interface data.
+- Placeholder pages should communicate upcoming functionality without inventing CRM records.
+- Keep page behavior in `frontend/js/app.js` and route metadata in `frontend/js/router.js`.
+
+## Sprint 1 UI Shell
+
+- The app shell includes a responsive sidebar, sticky topbar, page title area, user profile placeholder, notification placeholder, and mobile menu controls.
+- The sidebar sections are Dashboard, Affiliates, Follow-ups, Interactions, Tasks, Issues, Performance, Leaderboard, Reports, Staff, Brands, and Settings.
+- Authentication, Google Sheets reads/writes, API URLs, and CRM business logic remain out of scope.
 
 ## GitHub Pages Deployment Later
 

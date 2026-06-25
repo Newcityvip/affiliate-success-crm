@@ -2,23 +2,90 @@
   'use strict';
 
   var utils = window.AffiliateSuccessUtils;
-  var api = window.AffiliateSuccessApi;
   var router = window.AffiliateSuccessRouter;
 
-  function updateHealthCard(result) {
-    var card = utils.qs('[data-health-status]');
-    if (!card) {
-      return;
+  function setSidebar(open) {
+    var body = document.body;
+    var openButton = utils.qs('[data-sidebar-open]');
+    var backdrop = utils.qs('[data-sidebar-backdrop]');
+
+    body.classList.toggle('is-sidebar-open', open);
+
+    if (openButton) {
+      openButton.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
 
-    var message = result && result.message ? result.message : 'Foundation shell initialized.';
-    var text = card.querySelector('.muted');
-    utils.setText(text, message);
+    if (backdrop) {
+      backdrop.hidden = !open;
+    }
   }
 
-  async function initDashboard() {
-    var result = await api.health();
-    updateHealthCard(result);
+  function updatePage(routeKey) {
+    var route = router.getRoute(routeKey);
+
+    utils.setText(utils.qs('[data-page-title]'), route.meta.title);
+    utils.setText(utils.qs('[data-page-kicker]'), route.meta.kicker);
+    utils.setText(utils.qs('[data-page-heading]'), route.meta.heading);
+    utils.setText(utils.qs('[data-page-description]'), route.meta.description);
+
+    document.querySelectorAll('[data-route]').forEach(function (item) {
+      item.classList.toggle('is-active', item.dataset.route === route.key);
+    });
+
+    document.querySelectorAll('[data-section]').forEach(function (section) {
+      section.classList.toggle('is-active', section.dataset.section === route.key);
+    });
+  }
+
+  function bindNavigation() {
+    document.querySelectorAll('[data-route]').forEach(function (item) {
+      item.addEventListener('click', function (event) {
+        var route = item.dataset.route;
+
+        if (!route) {
+          return;
+        }
+
+        event.preventDefault();
+        window.location.hash = route;
+        updatePage(route);
+        setSidebar(false);
+      });
+    });
+
+    window.addEventListener('hashchange', function () {
+      updatePage(router.routeFromHash());
+    });
+  }
+
+  function bindSidebar() {
+    var openButton = utils.qs('[data-sidebar-open]');
+    var closeButton = utils.qs('[data-sidebar-close]');
+    var backdrop = utils.qs('[data-sidebar-backdrop]');
+
+    if (openButton) {
+      openButton.addEventListener('click', function () {
+        setSidebar(true);
+      });
+    }
+
+    if (closeButton) {
+      closeButton.addEventListener('click', function () {
+        setSidebar(false);
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', function () {
+        setSidebar(false);
+      });
+    }
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        setSidebar(false);
+      }
+    });
   }
 
   function preventDisabledLoginSubmit() {
@@ -32,14 +99,22 @@
     });
   }
 
-  async function init() {
-    var route = router.init();
+  function initAppShell() {
+    bindSidebar();
+    bindNavigation();
+    updatePage(router.routeFromHash());
+  }
 
-    if (route.page === 'dashboard') {
-      await initDashboard();
+  function init() {
+    if (!document.body) {
+      return;
     }
 
-    if (route.page === 'login') {
+    if (document.body.dataset.page === 'app') {
+      initAppShell();
+    }
+
+    if (document.body.dataset.page === 'login') {
       preventDisabledLoginSubmit();
     }
   }

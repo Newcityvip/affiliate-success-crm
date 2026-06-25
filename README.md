@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0A and Sprint 0B foundation only. It intentionally does not include CRM business features, fake CRM data, production credentials, or destructive sheet operations.
+This repository currently contains the Sprint 0 foundation and Sprint 1 frontend UI shell. It intentionally does not include CRM business features, production credentials, or destructive sheet operations.
 
 ## Tech Stack
 
@@ -27,10 +27,17 @@ This repository currently contains the Sprint 0A and Sprint 0B foundation only. 
 
 - Sprint 0A: Repository structure, documentation, and non-secret configuration placeholders.
 - Sprint 0B: Premium frontend shell and Apps Script foundation routes.
-- Sprint 1: Authentication wiring, session handling, and staff access flow.
-- Sprint 2: Read-only CRM views connected to the finalized Google Sheet tabs.
-- Sprint 3: Controlled CRM actions, task/follow-up workflows, and audit logging.
-- Sprint 4: KPI dashboard, reporting views, and deployment hardening.
+- Sprint 1: Polished SaaS-style UI shell, responsive navigation, placeholder CRM sections, and demo-labeled dashboard cards.
+- Sprint 2: Authentication wiring, session handling, and staff access flow.
+- Sprint 3: Read-only CRM views connected to the finalized Google Sheet tabs.
+- Sprint 4: Controlled CRM actions, task/follow-up workflows, KPI dashboard, reporting views, and deployment hardening.
+
+## Sprint 1 Notes
+
+- The frontend app shell supports sidebar navigation without page reloads.
+- Dashboard metric cards use clearly labeled demo UI data only.
+- Placeholder sections exist for Dashboard, Affiliates, Follow-ups, Interactions, Tasks, Issues, Performance, Leaderboard, Reports, Staff, Brands, and Settings.
+- No authentication, Google Sheets integration, backend changes, or CRM business logic are included in Sprint 1.
 
 ## Deployment Plan
 
