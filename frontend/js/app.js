@@ -2,7 +2,19 @@
   'use strict';
 
   var utils = window.AffiliateSuccessUtils;
+  var api = window.AffiliateSuccessApi;
   var router = window.AffiliateSuccessRouter;
+
+  var dashboardMetricLabels = {
+    totalAffiliates: 'Live API data',
+    healthyAffiliates: 'Live API data',
+    todayFollowups: 'Live API data',
+    overdueFollowups: 'Live API data',
+    openIssues: 'Live API data',
+    openTasks: 'Live API data',
+    monthlyGrowth: 'Not provided by API',
+    replyRate: 'Not provided by API'
+  };
 
   function setSidebar(open) {
     var body = document.body;
@@ -99,10 +111,73 @@
     });
   }
 
+  function setDashboardLoading() {
+    utils.setText(utils.qs('[data-dashboard-status]'), 'Loading dashboard statistics from the live Apps Script API.');
+    utils.setText(utils.qs('[data-dashboard-badge]'), 'Loading');
+
+    document.querySelectorAll('[data-metric]').forEach(function (metric) {
+      utils.setText(metric, '...');
+    });
+
+    document.querySelectorAll('[data-metric-status]').forEach(function (status) {
+      utils.setText(status, 'Loading live data');
+    });
+  }
+
+  function setDashboardError(message) {
+    utils.setText(utils.qs('[data-dashboard-status]'), message || 'Unable to load dashboard statistics.');
+    utils.setText(utils.qs('[data-dashboard-badge]'), 'API error');
+
+    document.querySelectorAll('[data-metric]').forEach(function (metric) {
+      utils.setText(metric, '--');
+    });
+
+    document.querySelectorAll('[data-metric-status]').forEach(function (status) {
+      utils.setText(status, 'API error');
+    });
+  }
+
+  function metricValue(data, key) {
+    if (data && data[key] !== null && data[key] !== undefined && data[key] !== '') {
+      return data[key];
+    }
+
+    return 'N/A';
+  }
+
+  function renderDashboard(data) {
+    document.querySelectorAll('[data-metric]').forEach(function (metric) {
+      var key = metric.dataset.metric;
+      utils.setText(metric, metricValue(data, key));
+    });
+
+    document.querySelectorAll('[data-metric-status]').forEach(function (status) {
+      var metric = status.parentElement ? status.parentElement.querySelector('[data-metric]') : null;
+      var key = metric ? metric.dataset.metric : '';
+      utils.setText(status, dashboardMetricLabels[key] || 'Live API data');
+    });
+
+    utils.setText(utils.qs('[data-dashboard-status]'), 'Dashboard statistics loaded from the live Apps Script API.');
+    utils.setText(utils.qs('[data-dashboard-badge]'), 'Live API data');
+  }
+
+  async function loadDashboard() {
+    setDashboardLoading();
+
+    var result = await api.dashboard();
+    if (!result || !result.success) {
+      setDashboardError(result && result.message ? result.message : 'Unable to load dashboard statistics.');
+      return;
+    }
+
+    renderDashboard(result.data || {});
+  }
+
   function initAppShell() {
     bindSidebar();
     bindNavigation();
     updatePage(router.routeFromHash());
+    loadDashboard();
   }
 
   function init() {

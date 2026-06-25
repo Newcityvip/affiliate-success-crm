@@ -6,7 +6,7 @@
       title: 'Dashboard',
       kicker: 'Sprint 1 UI Shell',
       heading: 'Command center foundation',
-      description: 'Demo UI data is shown only to validate layout and visual hierarchy. Live CRM data will connect in a later sprint.'
+      description: 'Dashboard statistics load from the live Apps Script API while the CRM interface stays in the existing shell.'
     },
     affiliates: {
       title: 'Affiliates',

@@ -28,8 +28,38 @@
       };
     }
 
-    var response = await fetch(url, options || {});
-    return response.json();
+    try {
+      var response = await fetch(url, options || {});
+      var payload = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: payload && payload.message ? payload.message : 'API request failed.',
+          data: {},
+          error: {
+            code: 'HTTP_ERROR',
+            details: {
+              status: response.status
+            }
+          }
+        };
+      }
+
+      return payload;
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Unable to reach the API.',
+        data: {},
+        error: {
+          code: 'NETWORK_ERROR',
+          details: {
+            message: error && error.message ? error.message : String(error)
+          }
+        }
+      };
+    }
   }
 
   window.AffiliateSuccessApi = Object.freeze({
@@ -39,6 +69,9 @@
     },
     meta: function () {
       return request('meta');
+    },
+    dashboard: function () {
+      return request('dashboard');
     }
   });
 })(window);
