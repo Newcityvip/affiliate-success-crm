@@ -36,6 +36,8 @@
   ];
   var affiliateFilterFields = ['Brand', 'Assigned_Staff', 'Health_Status', 'Status', 'Priority', 'Active'];
   var affiliateSearchFields = ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Assigned_Staff'];
+  var affiliateBadgeFields = ['Health_Status', 'Status', 'Priority', 'Active'];
+  var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Assigned_Staff', 'Health_Status', 'Status'];
   var affiliateState = {
     loaded: false,
     loading: false,
@@ -225,6 +227,74 @@
     return value;
   }
 
+  function badgeTone(key, value) {
+    var normalized = String(value || '').toLowerCase();
+
+    if (key === 'Health_Status') {
+      if (normalized.indexOf('healthy') !== -1) {
+        return 'green';
+      }
+      if (normalized.indexOf('critical') !== -1 || normalized.indexOf('risk') !== -1) {
+        return 'red';
+      }
+      if (normalized.indexOf('attention') !== -1 || normalized.indexOf('warning') !== -1) {
+        return 'amber';
+      }
+    }
+
+    if (key === 'Status') {
+      if (normalized.indexOf('active') !== -1 || normalized.indexOf('open') !== -1) {
+        return 'green';
+      }
+      if (normalized.indexOf('inactive') !== -1 || normalized.indexOf('closed') !== -1) {
+        return 'gray';
+      }
+    }
+
+    if (key === 'Priority') {
+      if (normalized.indexOf('high') !== -1) {
+        return 'red';
+      }
+      if (normalized.indexOf('medium') !== -1) {
+        return 'blue';
+      }
+      if (normalized.indexOf('low') !== -1) {
+        return 'gray';
+      }
+    }
+
+    if (key === 'Active') {
+      if (normalized === 'yes' || normalized === 'true' || normalized === 'active') {
+        return 'green';
+      }
+      if (normalized === 'no' || normalized === 'false' || normalized === 'inactive') {
+        return 'gray';
+      }
+    }
+
+    return 'amber';
+  }
+
+  function createBadge(key, value) {
+    var badge = document.createElement('span');
+    badge.className = 'status-badge is-' + badgeTone(key, value);
+    badge.textContent = value || 'N/A';
+    return badge;
+  }
+
+  function appendFieldValue(parent, row, key) {
+    var value = displayValue(row, key);
+
+    if (affiliateBadgeFields.indexOf(key) !== -1) {
+      parent.appendChild(createBadge(key, value));
+      return;
+    }
+
+    var strong = document.createElement('strong');
+    strong.textContent = value;
+    parent.appendChild(strong);
+  }
+
   function formatDate(value) {
     var date = new Date(value);
     if (isNaN(date.getTime())) {
@@ -339,7 +409,7 @@
 
       affiliateColumns.forEach(function (column) {
         var td = document.createElement('td');
-        td.textContent = displayValue(row, column);
+        appendFieldValue(td, row, column);
         tr.appendChild(td);
       });
 
@@ -367,20 +437,44 @@
     utils.setText(utils.qs('[data-affiliate-drawer-name]'), valueFor(row, 'Affiliate_Name') || valueFor(row, 'Affiliate_ID') || 'Affiliate profile');
     fields.innerHTML = '';
 
-    Object.keys(row).forEach(function (key) {
-      var item = document.createElement('div');
-      var label = document.createElement('span');
-      var value = document.createElement('strong');
+    var keyGrid = document.createElement('div');
+    keyGrid.className = 'drawer-key-grid';
+    affiliateKeyFields.forEach(function (key) {
+      if (row[key] === undefined) {
+        return;
+      }
 
-      item.className = 'drawer-field';
-      label.textContent = key;
-      value.textContent = displayValue(row, key);
-      item.appendChild(label);
-      item.appendChild(value);
-      fields.appendChild(item);
+      keyGrid.appendChild(createDrawerField(row, key, true));
+    });
+
+    fields.appendChild(keyGrid);
+
+    var remainingTitle = document.createElement('p');
+    remainingTitle.className = 'drawer-section-title';
+    remainingTitle.textContent = 'All affiliate fields';
+    fields.appendChild(remainingTitle);
+
+    Object.keys(row).forEach(function (key) {
+      if (affiliateKeyFields.indexOf(key) !== -1) {
+        return;
+      }
+
+      fields.appendChild(createDrawerField(row, key, false));
     });
 
     drawer.hidden = false;
+  }
+
+  function createDrawerField(row, key, isKey) {
+      var item = document.createElement('div');
+      var label = document.createElement('span');
+
+      item.className = isKey ? 'drawer-field is-key' : 'drawer-field';
+      label.textContent = key;
+      item.appendChild(label);
+      appendFieldValue(item, row, key);
+
+      return item;
   }
 
   function closeAffiliateDrawer() {

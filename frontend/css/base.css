@@ -45,6 +45,31 @@ body {
   line-height: 1.5;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(93, 228, 199, 0.34) rgba(255, 255, 255, 0.05);
+}
+
+*::-webkit-scrollbar {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(8, 12, 20, 0.9);
+  border-radius: 999px;
+  background: rgba(93, 228, 199, 0.34);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(93, 228, 199, 0.54);
+}
+
 body.is-sidebar-open {
   overflow: hidden;
 }
