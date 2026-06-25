@@ -239,26 +239,18 @@
   }
 
   function setAffiliatesVisibility(state) {
-    var loading = utils.qs('[data-affiliates-loading]');
-    var error = utils.qs('[data-affiliates-error]');
-    var empty = utils.qs('[data-affiliates-empty]');
-    var table = utils.qs('[data-affiliates-table-wrap]');
+    var states = {
+      loading: utils.qs('[data-affiliates-loading]'),
+      error: utils.qs('[data-affiliates-error]'),
+      empty: utils.qs('[data-affiliates-empty]'),
+      table: utils.qs('[data-affiliates-table-wrap]')
+    };
 
-    if (loading) {
-      loading.hidden = state !== 'loading';
-    }
-
-    if (error) {
-      error.hidden = state !== 'error';
-    }
-
-    if (empty) {
-      empty.hidden = state !== 'empty';
-    }
-
-    if (table) {
-      table.hidden = state !== 'table';
-    }
+    Object.keys(states).forEach(function (key) {
+      if (states[key]) {
+        states[key].hidden = key !== state;
+      }
+    });
   }
 
   function setAffiliatesCount(showing, total) {
@@ -433,13 +425,33 @@
 
     var closeButton = utils.qs('[data-affiliate-drawer-close]');
     if (closeButton) {
-      closeButton.addEventListener('click', closeAffiliateDrawer);
+      closeButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        closeAffiliateDrawer();
+      });
     }
 
     window.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') {
         closeAffiliateDrawer();
       }
+    });
+
+    document.addEventListener('click', function (event) {
+      var drawer = utils.qs('[data-affiliate-drawer]');
+      if (!drawer || drawer.hidden) {
+        return;
+      }
+
+      if (drawer.contains(event.target)) {
+        return;
+      }
+
+      if (event.target.closest('[data-affiliates-body] tr')) {
+        return;
+      }
+
+      closeAffiliateDrawer();
     });
 
     var body = utils.qs('[data-affiliates-body]');
