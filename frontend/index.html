@@ -145,13 +145,117 @@
           </section>
 
           <section class="page-section" data-section="affiliates" aria-labelledby="affiliates-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
-              <div>
-                <h2 id="affiliates-title">Affiliates</h2>
-                <p class="muted">Affiliate profiles, lifecycle status, and ownership tools will live here. Coming in next sprint.</p>
+            <div class="data-panel glass-panel">
+              <div class="data-toolbar">
+                <div>
+                  <h2 id="affiliates-title">Affiliates</h2>
+                  <p class="muted" data-affiliates-count>Loading affiliates...</p>
+                </div>
+                <label class="search-field">
+                  <span>Search affiliates</span>
+                  <input type="search" placeholder="Search by name, username, brand, country, staff" data-affiliate-search>
+                </label>
               </div>
-            </article>
+
+              <div class="filter-grid" aria-label="Affiliate filters">
+                <label class="field">
+                  <span>Brand</span>
+                  <select data-affiliate-filter="Brand">
+                    <option value="">All brands</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Assigned Staff</span>
+                  <select data-affiliate-filter="Assigned_Staff">
+                    <option value="">All staff</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Health Status</span>
+                  <select data-affiliate-filter="Health_Status">
+                    <option value="">All health</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Status</span>
+                  <select data-affiliate-filter="Status">
+                    <option value="">All statuses</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Priority</span>
+                  <select data-affiliate-filter="Priority">
+                    <option value="">All priorities</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Active</span>
+                  <select data-affiliate-filter="Active">
+                    <option value="">All active states</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="table-state" data-affiliates-loading>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <p class="muted">Loading live affiliates...</p>
+              </div>
+
+              <div class="table-state" data-affiliates-error hidden>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <div>
+                  <h2>Unable to load affiliates</h2>
+                  <p class="muted" data-affiliates-error-message>API request failed.</p>
+                </div>
+              </div>
+
+              <div class="table-state" data-affiliates-empty hidden>
+                <div class="empty-icon" aria-hidden="true"></div>
+                <div>
+                  <h2>No affiliates found</h2>
+                  <p class="muted">Adjust search or filters to see matching affiliates.</p>
+                </div>
+              </div>
+
+              <div class="table-wrap" data-affiliates-table-wrap hidden>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Affiliate_ID</th>
+                      <th>Brand</th>
+                      <th>Affiliate_Name</th>
+                      <th>Affiliate_Username</th>
+                      <th>Country</th>
+                      <th>Language</th>
+                      <th>Assigned_Staff</th>
+                      <th>Status</th>
+                      <th>Health_Status</th>
+                      <th>Priority</th>
+                      <th>Segment</th>
+                      <th>Affiliate_Type</th>
+                      <th>Market_Channel</th>
+                      <th>Last_Contact_Date</th>
+                      <th>Next_Followup_Date</th>
+                      <th>Active</th>
+                    </tr>
+                  </thead>
+                  <tbody data-affiliates-body></tbody>
+                </table>
+              </div>
+            </div>
+
+            <aside class="profile-drawer glass-panel" data-affiliate-drawer hidden aria-labelledby="affiliate-drawer-title">
+              <div class="drawer-header">
+                <div>
+                  <p class="eyebrow">Read-only profile</p>
+                  <h2 id="affiliate-drawer-title" data-affiliate-drawer-name>Affiliate profile</h2>
+                </div>
+                <button class="icon-button" type="button" data-affiliate-drawer-close aria-label="Close affiliate profile">
+                  <span aria-hidden="true">x</span>
+                </button>
+              </div>
+              <div class="drawer-grid" data-affiliate-drawer-fields></div>
+            </aside>
           </section>
 
           <section class="page-section" data-section="followups" aria-labelledby="followups-title">

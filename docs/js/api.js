@@ -72,6 +72,9 @@
     },
     dashboard: function () {
       return request('dashboard');
+    },
+    affiliates: function () {
+      return request('affiliates');
     }
   });
 })(window);

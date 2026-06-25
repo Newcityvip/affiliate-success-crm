@@ -34,12 +34,21 @@ Use clear, conventional commit messages:
 - Demo UI numbers are allowed only when clearly marked as demo interface data.
 - Placeholder pages should communicate upcoming functionality without inventing CRM records.
 - Keep page behavior in `frontend/js/app.js` and route metadata in `frontend/js/router.js`.
+- Sprint 3A adds the live read-only Affiliates page; do not add create, edit, delete, or sheet write behavior there until a write sprint is explicitly scoped.
 
 ## Sprint 1 UI Shell
 
 - The app shell includes a responsive sidebar, sticky topbar, page title area, user profile placeholder, notification placeholder, and mobile menu controls.
 - The sidebar sections are Dashboard, Affiliates, Follow-ups, Interactions, Tasks, Issues, Performance, Leaderboard, Reports, Staff, Brands, and Settings.
 - Authentication, Google Sheets reads/writes, API URLs, and CRM business logic remain out of scope.
+
+## Sprint 3A Affiliates Page
+
+- Affiliates data loads from the Apps Script `?action=affiliates` endpoint.
+- Keep the required display columns aligned to the finalized Google Sheet headers.
+- Search should cover name, username, brand, country, and assigned staff.
+- Filters should remain read-only client-side controls for Brand, Assigned_Staff, Health_Status, Status, Priority, and Active.
+- The profile drawer is read-only and should show existing fields from the API response.
 
 ## GitHub Pages Deployment Later
 

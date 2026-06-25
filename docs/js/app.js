@@ -16,6 +16,33 @@
     replyRate: 'Not provided by API'
   };
 
+  var affiliateColumns = [
+    'Affiliate_ID',
+    'Brand',
+    'Affiliate_Name',
+    'Affiliate_Username',
+    'Country',
+    'Language',
+    'Assigned_Staff',
+    'Status',
+    'Health_Status',
+    'Priority',
+    'Segment',
+    'Affiliate_Type',
+    'Market_Channel',
+    'Last_Contact_Date',
+    'Next_Followup_Date',
+    'Active'
+  ];
+  var affiliateFilterFields = ['Brand', 'Assigned_Staff', 'Health_Status', 'Status', 'Priority', 'Active'];
+  var affiliateSearchFields = ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Assigned_Staff'];
+  var affiliateState = {
+    loaded: false,
+    loading: false,
+    all: [],
+    filtered: []
+  };
+
   function setSidebar(open) {
     var body = document.body;
     var openButton = utils.qs('[data-sidebar-open]');
@@ -47,6 +74,10 @@
     document.querySelectorAll('[data-section]').forEach(function (section) {
       section.classList.toggle('is-active', section.dataset.section === route.key);
     });
+
+    if (route.key === 'affiliates') {
+      loadAffiliates();
+    }
   }
 
   function bindNavigation() {
@@ -173,9 +204,264 @@
     renderDashboard(result.data || {});
   }
 
+  function valueFor(row, key) {
+    if (!row || row[key] === null || row[key] === undefined || row[key] === '') {
+      return '';
+    }
+
+    return String(row[key]);
+  }
+
+  function displayValue(row, key) {
+    var value = valueFor(row, key);
+    if (!value) {
+      return 'N/A';
+    }
+
+    if (key.indexOf('Date') !== -1) {
+      return formatDate(value);
+    }
+
+    return value;
+  }
+
+  function formatDate(value) {
+    var date = new Date(value);
+    if (isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  function setAffiliatesVisibility(state) {
+    var loading = utils.qs('[data-affiliates-loading]');
+    var error = utils.qs('[data-affiliates-error]');
+    var empty = utils.qs('[data-affiliates-empty]');
+    var table = utils.qs('[data-affiliates-table-wrap]');
+
+    if (loading) {
+      loading.hidden = state !== 'loading';
+    }
+
+    if (error) {
+      error.hidden = state !== 'error';
+    }
+
+    if (empty) {
+      empty.hidden = state !== 'empty';
+    }
+
+    if (table) {
+      table.hidden = state !== 'table';
+    }
+  }
+
+  function setAffiliatesCount(showing, total) {
+    utils.setText(utils.qs('[data-affiliates-count]'), 'Showing ' + showing + ' of ' + total + ' affiliates');
+  }
+
+  function setAffiliatesError(message) {
+    setAffiliatesVisibility('error');
+    utils.setText(utils.qs('[data-affiliates-error-message]'), message || 'Unable to load affiliates.');
+    setAffiliatesCount(0, affiliateState.all.length);
+  }
+
+  function populateAffiliateFilters(items) {
+    affiliateFilterFields.forEach(function (field) {
+      var select = utils.qs('[data-affiliate-filter="' + field + '"]');
+      if (!select) {
+        return;
+      }
+
+      var current = select.value;
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      var values = [];
+      items.forEach(function (item) {
+        var value = valueFor(item, field);
+        if (value && values.indexOf(value) === -1) {
+          values.push(value);
+        }
+      });
+
+      values.sort().forEach(function (value) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+
+      select.value = values.indexOf(current) !== -1 ? current : '';
+    });
+  }
+
+  function affiliateMatchesSearch(row, query) {
+    if (!query) {
+      return true;
+    }
+
+    return affiliateSearchFields.some(function (field) {
+      return valueFor(row, field).toLowerCase().indexOf(query) !== -1;
+    });
+  }
+
+  function affiliateMatchesFilters(row) {
+    return affiliateFilterFields.every(function (field) {
+      var select = utils.qs('[data-affiliate-filter="' + field + '"]');
+      return !select || !select.value || valueFor(row, field) === select.value;
+    });
+  }
+
+  function filterAffiliates() {
+    var search = utils.qs('[data-affiliate-search]');
+    var query = search ? search.value.trim().toLowerCase() : '';
+
+    affiliateState.filtered = affiliateState.all.filter(function (row) {
+      return affiliateMatchesSearch(row, query) && affiliateMatchesFilters(row);
+    });
+
+    renderAffiliates();
+  }
+
+  function renderAffiliates() {
+    var body = utils.qs('[data-affiliates-body]');
+    if (!body) {
+      return;
+    }
+
+    body.innerHTML = '';
+
+    affiliateState.filtered.forEach(function (row, index) {
+      var tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      tr.dataset.affiliateIndex = String(index);
+      tr.setAttribute('role', 'button');
+      tr.setAttribute('aria-label', 'Open affiliate profile for ' + (valueFor(row, 'Affiliate_Name') || valueFor(row, 'Affiliate_ID') || 'affiliate'));
+
+      affiliateColumns.forEach(function (column) {
+        var td = document.createElement('td');
+        td.textContent = displayValue(row, column);
+        tr.appendChild(td);
+      });
+
+      tr.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openAffiliateDrawer(row);
+        }
+      });
+
+      body.appendChild(tr);
+    });
+
+    setAffiliatesCount(affiliateState.filtered.length, affiliateState.all.length);
+    setAffiliatesVisibility(affiliateState.filtered.length ? 'table' : 'empty');
+  }
+
+  function openAffiliateDrawer(row) {
+    var drawer = utils.qs('[data-affiliate-drawer]');
+    var fields = utils.qs('[data-affiliate-drawer-fields]');
+    if (!drawer || !fields) {
+      return;
+    }
+
+    utils.setText(utils.qs('[data-affiliate-drawer-name]'), valueFor(row, 'Affiliate_Name') || valueFor(row, 'Affiliate_ID') || 'Affiliate profile');
+    fields.innerHTML = '';
+
+    Object.keys(row).forEach(function (key) {
+      var item = document.createElement('div');
+      var label = document.createElement('span');
+      var value = document.createElement('strong');
+
+      item.className = 'drawer-field';
+      label.textContent = key;
+      value.textContent = displayValue(row, key);
+      item.appendChild(label);
+      item.appendChild(value);
+      fields.appendChild(item);
+    });
+
+    drawer.hidden = false;
+  }
+
+  function closeAffiliateDrawer() {
+    var drawer = utils.qs('[data-affiliate-drawer]');
+    if (drawer) {
+      drawer.hidden = true;
+    }
+  }
+
+  async function loadAffiliates() {
+    if (affiliateState.loaded || affiliateState.loading) {
+      return;
+    }
+
+    affiliateState.loading = true;
+    setAffiliatesVisibility('loading');
+    utils.setText(utils.qs('[data-affiliates-count]'), 'Loading affiliates...');
+
+    var result = await api.affiliates();
+    affiliateState.loading = false;
+
+    if (!result || !result.success) {
+      setAffiliatesError(result && result.message ? result.message : 'Unable to load affiliates.');
+      return;
+    }
+
+    affiliateState.all = result.data && Array.isArray(result.data.items) ? result.data.items : [];
+    affiliateState.loaded = true;
+    populateAffiliateFilters(affiliateState.all);
+    filterAffiliates();
+  }
+
+  function bindAffiliateControls() {
+    var search = utils.qs('[data-affiliate-search]');
+    if (search) {
+      search.addEventListener('input', filterAffiliates);
+    }
+
+    document.querySelectorAll('[data-affiliate-filter]').forEach(function (filter) {
+      filter.addEventListener('change', filterAffiliates);
+    });
+
+    var closeButton = utils.qs('[data-affiliate-drawer-close]');
+    if (closeButton) {
+      closeButton.addEventListener('click', closeAffiliateDrawer);
+    }
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeAffiliateDrawer();
+      }
+    });
+
+    var body = utils.qs('[data-affiliates-body]');
+    if (body) {
+      body.addEventListener('click', function (event) {
+        var row = event.target.closest('tr[data-affiliate-index]');
+        if (!row) {
+          return;
+        }
+
+        var index = Number(row.dataset.affiliateIndex);
+        if (!isNaN(index) && affiliateState.filtered[index]) {
+          openAffiliateDrawer(affiliateState.filtered[index]);
+        }
+      });
+    }
+  }
+
   function initAppShell() {
     bindSidebar();
     bindNavigation();
+    bindAffiliateControls();
     updatePage(router.routeFromHash());
     loadDashboard();
   }

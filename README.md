@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation and Sprint 1 frontend UI shell. It intentionally does not include CRM business features, production credentials, or destructive sheet operations.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, and Sprint 3A live read-only Affiliates page. It intentionally does not include write flows, production credentials, or destructive sheet operations.
 
 ## Tech Stack
 
@@ -29,7 +29,7 @@ This repository currently contains the Sprint 0 foundation and Sprint 1 frontend
 - Sprint 0B: Premium frontend shell and Apps Script foundation routes.
 - Sprint 1: Polished SaaS-style UI shell, responsive navigation, placeholder CRM sections, and demo-labeled dashboard cards.
 - Sprint 2: Authentication wiring, session handling, and staff access flow.
-- Sprint 3: Read-only CRM views connected to the finalized Google Sheet tabs.
+- Sprint 3: Read-only CRM views connected to the finalized Google Sheet tabs, starting with the live Affiliates page.
 - Sprint 4: Controlled CRM actions, task/follow-up workflows, KPI dashboard, reporting views, and deployment hardening.
 
 ## Sprint 1 Notes
@@ -38,6 +38,12 @@ This repository currently contains the Sprint 0 foundation and Sprint 1 frontend
 - Dashboard metric cards use clearly labeled demo UI data only.
 - Placeholder sections exist for Dashboard, Affiliates, Follow-ups, Interactions, Tasks, Issues, Performance, Leaderboard, Reports, Staff, Brands, and Settings.
 - No authentication, Google Sheets integration, backend changes, or CRM business logic are included in Sprint 1.
+
+## Sprint 3A Notes
+
+- The Affiliates menu item loads live read-only data from the Apps Script `?action=affiliates` endpoint.
+- The page includes search, filters, affiliate count, loading/error/empty states, and a read-only profile drawer.
+- Create, edit, delete, and write actions remain out of scope.
 
 ## Deployment Plan
 

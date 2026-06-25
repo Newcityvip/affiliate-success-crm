@@ -250,7 +250,138 @@
   color: rgba(247, 248, 251, 0.7);
 }
 
+.field select,
+.search-field input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 0.8rem 0.9rem;
+}
+
+.field select {
+  color: var(--text);
+}
+
+.search-field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .form-note {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.data-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.data-table {
+  width: 100%;
+  min-width: 92rem;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  background: rgba(8, 12, 20, 0.96);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.data-table tbody tr {
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.data-table tbody tr:hover,
+.data-table tbody tr:focus {
+  background: rgba(93, 228, 199, 0.08);
+  outline: none;
+}
+
+.table-state {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-drawer {
+  position: fixed;
+  z-index: 40;
+  inset: auto 1rem 1rem 1rem;
+  display: grid;
+  gap: 1rem;
+  max-height: min(44rem, calc(100vh - 2rem));
+  padding: 1.25rem;
+  overflow: auto;
+}
+
+.drawer-header {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.drawer-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.drawer-field {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.drawer-field span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.drawer-field strong {
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+@media (min-width: 720px) {
+  .profile-drawer {
+    inset: 1rem 1rem 1rem auto;
+    width: min(30rem, calc(100vw - 2rem));
+  }
 }
