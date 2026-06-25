@@ -22,7 +22,7 @@ const SHEET_NAMES = Object.freeze({
   FOLLOWUP_QUEUE: 'Followup_Queue'
 });
 
-const SPREADSHEET_ID = 'PASTE_SPREADSHEET_ID_IN_SECURE_DEPLOYMENT_CONFIG';
+const SPREADSHEET_ID = "PASTE_SPREADSHEET_ID_HERE";
 
 const SESSION_CONFIG = Object.freeze({
   cookieName: 'affiliate_success_session',
