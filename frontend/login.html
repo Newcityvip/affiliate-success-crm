@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Staff Login | Affiliate Success CRM</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+  </head>
+  <body data-page="login">
+    <main class="login-page">
+      <section class="login-card glass-panel" aria-labelledby="login-title">
+        <a class="brand-mark" href="index.html" aria-label="Affiliate Success CRM home">
+          <span class="brand-orb" aria-hidden="true">AS</span>
+          <span>
+            <strong>Affiliate Success CRM</strong>
+            <small>Staff workspace</small>
+          </span>
+        </a>
+
+        <div class="login-heading">
+          <p class="eyebrow">Secure Access</p>
+          <h1 id="login-title">Staff Login</h1>
+          <p class="muted">Authentication will be connected in Sprint 1.</p>
+        </div>
+
+        <form class="form-stack" data-login-form>
+          <label class="field">
+            <span>Staff ID</span>
+            <input type="text" name="staffId" autocomplete="username" placeholder="Enter Staff ID" disabled>
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input type="password" name="password" autocomplete="current-password" placeholder="Enter password" disabled>
+          </label>
+
+          <button class="button button-primary" type="submit" disabled>Login unavailable</button>
+          <p class="form-note">Authentication will be connected in Sprint 1. No credentials are stored or submitted yet.</p>
+        </form>
+      </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

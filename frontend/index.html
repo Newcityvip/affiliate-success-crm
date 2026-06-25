@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Affiliate Success CRM</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+  </head>
+  <body data-page="dashboard">
+    <div class="app-shell">
+      <aside class="sidebar glass-panel" aria-label="Primary navigation">
+        <a class="brand-mark" href="index.html" aria-label="Affiliate Success CRM home">
+          <span class="brand-orb" aria-hidden="true">AS</span>
+          <span>
+            <strong>Affiliate Success</strong>
+            <small>CRM Foundation</small>
+          </span>
+        </a>
+
+        <nav class="sidebar-nav" aria-label="Workspace">
+          <a class="nav-item is-active" href="index.html">Dashboard</a>
+          <a class="nav-item is-disabled" href="#" aria-disabled="true">Affiliates</a>
+          <a class="nav-item is-disabled" href="#" aria-disabled="true">Performance</a>
+          <a class="nav-item is-disabled" href="#" aria-disabled="true">Follow-ups</a>
+          <a class="nav-item is-disabled" href="#" aria-disabled="true">Settings</a>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar glass-panel">
+          <div>
+            <p class="eyebrow">Sprint 0 Foundation</p>
+            <h1>Affiliate Success CRM</h1>
+          </div>
+          <a class="button button-secondary" href="login.html">Staff Login</a>
+        </header>
+
+        <section class="dashboard-grid" aria-label="Dashboard placeholders">
+          <article class="hero-panel glass-panel">
+            <p class="eyebrow">System Status</p>
+            <h2>Foundation shell is ready for integration.</h2>
+            <p class="muted">CRM modules will connect in later sprints after authentication and backend reads are implemented.</p>
+          </article>
+
+          <article class="status-card glass-panel" data-health-status>
+            <span class="status-dot" aria-hidden="true"></span>
+            <div>
+              <h2>API Health</h2>
+              <p class="muted">Waiting for Apps Script deployment URL.</p>
+            </div>
+          </article>
+
+          <article class="empty-state glass-panel">
+            <div class="empty-icon" aria-hidden="true"></div>
+            <h2>No CRM data loaded</h2>
+            <p class="muted">This sprint intentionally avoids fake records and business workflows.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
