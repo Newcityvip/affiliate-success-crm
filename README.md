@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, and Sprint 3B Follow-up Queue module. It intentionally does not include authentication, production credentials, or destructive sheet operations.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, and Sprint 3C CRM polish pass. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
 
 ## Tech Stack
 
@@ -51,6 +51,13 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Follow-up queue write actions are limited to create, update/reschedule, and complete.
 - The only writable sheet for this sprint is `Followup_Queue`.
 - Authentication is still out of scope.
+
+## Sprint 3C Notes
+
+- The large page intro area is now a compact CRM command center with greeting, module context, live summary pills, and safe quick actions.
+- Dashboard, Affiliates, and Follow-ups keep their existing data logic while gaining tighter spacing, stronger table polish, queue summary cards, and sidebar count badges where live data is available.
+- Placeholder modules now use professional preview cards and non-destructive toast messages instead of empty-looking panels.
+- GitHub Pages continues to publish from `docs/`, which is synced from the modular `frontend/` source.
 
 ## Deployment Plan
 

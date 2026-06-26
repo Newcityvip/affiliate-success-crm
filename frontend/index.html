@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Affiliate Success CRM</title>
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/pages.css">
+    <link rel="stylesheet" href="css/base.css?v=3c">
+    <link rel="stylesheet" href="css/layout.css?v=3c">
+    <link rel="stylesheet" href="css/components.css?v=3c">
+    <link rel="stylesheet" href="css/pages.css?v=3c">
   </head>
   <body data-page="app">
     <div class="mobile-backdrop" data-sidebar-backdrop hidden></div>
@@ -30,10 +30,10 @@
         <nav class="sidebar-nav" aria-label="Workspace">
           <a class="nav-item is-active" href="#dashboard" data-route="dashboard">Dashboard</a>
           <a class="nav-item" href="#affiliates" data-route="affiliates">Affiliates</a>
-          <a class="nav-item" href="#followups" data-route="followups">Follow-ups</a>
+          <a class="nav-item" href="#followups" data-route="followups">Follow-ups <span class="nav-count" data-nav-count="followups" hidden></span></a>
           <a class="nav-item" href="#interactions" data-route="interactions">Interactions</a>
-          <a class="nav-item" href="#tasks" data-route="tasks">Tasks</a>
-          <a class="nav-item" href="#issues" data-route="issues">Issues</a>
+          <a class="nav-item" href="#tasks" data-route="tasks">Tasks <span class="nav-count" data-nav-count="tasks" hidden></span></a>
+          <a class="nav-item" href="#issues" data-route="issues">Issues <span class="nav-count" data-nav-count="issues" hidden></span></a>
           <a class="nav-item" href="#performance" data-route="performance">Performance</a>
           <a class="nav-item" href="#leaderboard" data-route="leaderboard">Leaderboard</a>
           <a class="nav-item" href="#reports" data-route="reports">Reports</a>
@@ -73,12 +73,22 @@
           </div>
         </header>
 
-        <section class="page-intro glass-panel">
-          <div>
-            <p class="eyebrow" data-page-kicker>Sprint 1 UI Shell</p>
-            <h2 data-page-heading>Command center foundation</h2>
+        <section class="command-center glass-panel">
+          <div class="command-main">
+            <p class="eyebrow" data-command-greeting>Good Afternoon, Staff User</p>
+            <span class="module-chip" data-page-kicker>Sprint 3C Command Center</span>
+            <h2 data-page-heading>Daily CRM workspace</h2>
+            <p class="muted" data-page-description>Live dashboard context, queues, and module previews stay close to the work.</p>
           </div>
-          <p class="muted" data-page-description>Dashboard statistics load from the live Apps Script API while the CRM interface stays in the existing shell.</p>
+          <div class="command-summary" data-command-summary aria-label="Current module summary">
+            <span class="summary-pill is-loading">Loading workspace context</span>
+          </div>
+          <div class="quick-actions" aria-label="Quick actions">
+            <button class="button button-primary" type="button" data-quick-action="followup">New Follow-up</button>
+            <button class="button button-secondary" type="button" data-quick-action="affiliate">New Affiliate</button>
+            <button class="button button-secondary" type="button" data-quick-action="task">New Task</button>
+            <button class="button button-secondary" type="button" data-quick-action="issue">New Issue</button>
+          </div>
         </section>
 
         <section class="content-stage">
@@ -135,11 +145,18 @@
               </article>
             </div>
 
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="workspace-today glass-panel" aria-labelledby="workspace-today-title">
               <div>
-                <h2>Dashboard modules are coming next.</h2>
-                <p class="muted">Coming in next sprint: connected widgets, filters, and real CRM status once authentication and data access are ready.</p>
+                <p class="eyebrow">Today's workspace</p>
+                <h2 id="workspace-today-title">Operational snapshot</h2>
+                <p class="muted">A compact view of the live counts that shape the day.</p>
+              </div>
+              <div class="workspace-list" aria-label="Today's workspace metrics">
+                <span>Total Affiliates <strong data-workspace-metric="totalAffiliates">...</strong></span>
+                <span>Today's Follow-ups <strong data-workspace-metric="todayFollowups">...</strong></span>
+                <span>Overdue <strong data-workspace-metric="overdueFollowups">...</strong></span>
+                <span>Open Tasks <strong data-workspace-metric="openTasks">...</strong></span>
+                <span>Open Issues <strong data-workspace-metric="openIssues">...</strong></span>
               </div>
             </article>
           </section>
@@ -268,7 +285,26 @@
                 <button class="button button-primary" type="button" data-followup-add>Add New Follow-up</button>
               </div>
 
-              <div class="data-toolbar">
+              <div class="followup-summary-grid" aria-label="Follow-up queue summary">
+                <article class="summary-card is-today">
+                  <span>Today</span>
+                  <strong data-followup-summary="today">0</strong>
+                </article>
+                <article class="summary-card is-overdue">
+                  <span>Overdue</span>
+                  <strong data-followup-summary="overdue">0</strong>
+                </article>
+                <article class="summary-card is-upcoming">
+                  <span>Upcoming</span>
+                  <strong data-followup-summary="upcoming">0</strong>
+                </article>
+                <article class="summary-card is-completed">
+                  <span>Completed</span>
+                  <strong data-followup-summary="completed">0</strong>
+                </article>
+              </div>
+
+              <div class="data-toolbar followup-toolbar">
                 <label class="search-field">
                   <span>Search follow-ups</span>
                   <input type="search" placeholder="Search by affiliate ID, name, or brand" data-followup-search>
@@ -325,9 +361,12 @@
               </div>
 
               <div class="followup-groups" data-followups-groups hidden>
-                <section class="followup-group">
+                <section class="followup-group is-today">
                   <div class="group-heading">
-                    <h3>Today's follow-ups</h3>
+                    <div>
+                      <p class="eyebrow">Due today</p>
+                      <h3>Today's follow-ups</h3>
+                    </div>
                     <span class="status-badge is-blue" data-followup-group-count="today">0</span>
                   </div>
                   <div class="table-wrap">
@@ -338,9 +377,12 @@
                   </div>
                 </section>
 
-                <section class="followup-group">
+                <section class="followup-group is-overdue">
                   <div class="group-heading">
-                    <h3>Overdue follow-ups</h3>
+                    <div>
+                      <p class="eyebrow">Needs attention</p>
+                      <h3>Overdue follow-ups</h3>
+                    </div>
                     <span class="status-badge is-red" data-followup-group-count="overdue">0</span>
                   </div>
                   <div class="table-wrap">
@@ -351,9 +393,12 @@
                   </div>
                 </section>
 
-                <section class="followup-group">
+                <section class="followup-group is-upcoming">
                   <div class="group-heading">
-                    <h3>Upcoming follow-ups</h3>
+                    <div>
+                      <p class="eyebrow">Planned queue</p>
+                      <h3>Upcoming follow-ups</h3>
+                    </div>
                     <span class="status-badge is-amber" data-followup-group-count="upcoming">0</span>
                   </div>
                   <div class="table-wrap">
@@ -364,9 +409,12 @@
                   </div>
                 </section>
 
-                <section class="followup-group">
+                <section class="followup-group is-completed">
                   <div class="group-heading">
-                    <h3>Completed follow-ups</h3>
+                    <div>
+                      <p class="eyebrow">Closed loop</p>
+                      <h3>Completed follow-ups</h3>
+                    </div>
                     <span class="status-badge is-green" data-followup-group-count="completed">0</span>
                   </div>
                   <div class="table-wrap">
@@ -381,97 +429,153 @@
           </section>
 
           <section class="page-section" data-section="interactions" aria-labelledby="interactions-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Relationship history</p>
                 <h2 id="interactions-title">Interactions</h2>
-                <p class="muted">Interaction history and relationship notes will live here. Coming in next sprint.</p>
+                <p class="muted">A future timeline for calls, emails, notes, and affiliate touchpoints.</p>
               </div>
+              <div class="preview-grid">
+                <span>Contact history</span>
+                <span>Staff notes</span>
+                <span>Activity timeline</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Interactions">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="tasks" aria-labelledby="tasks-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Team execution</p>
                 <h2 id="tasks-title">Tasks</h2>
-                <p class="muted">Task ownership, priorities, and completion flow will live here. Coming in next sprint.</p>
+                <p class="muted">A planned workspace for ownership, due dates, and completion follow-through.</p>
               </div>
+              <div class="preview-grid">
+                <span>Task ownership</span>
+                <span>Priority queue</span>
+                <span>Completion tracking</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Tasks">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="issues" aria-labelledby="issues-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Resolution tracking</p>
                 <h2 id="issues-title">Issues</h2>
-                <p class="muted">Issue tracking, escalation status, and resolution notes will live here. Coming in next sprint.</p>
+                <p class="muted">A future triage board for affiliate problems, escalations, and outcomes.</p>
               </div>
+              <div class="preview-grid">
+                <span>Open issue queue</span>
+                <span>Escalation status</span>
+                <span>Resolution notes</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Issues">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="performance" aria-labelledby="performance-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Monthly view</p>
                 <h2 id="performance-title">Performance</h2>
-                <p class="muted">Monthly performance views and growth indicators will live here. Coming in next sprint.</p>
+                <p class="muted">A planned read-only performance surface for growth, activity, and health trends.</p>
               </div>
+              <div class="preview-grid">
+                <span>Monthly trends</span>
+                <span>Brand performance</span>
+                <span>KPI context</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Performance">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="leaderboard" aria-labelledby="leaderboard-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Ranking view</p>
                 <h2 id="leaderboard-title">Leaderboard</h2>
-                <p class="muted">Team and affiliate ranking previews will live here. Coming in next sprint.</p>
+                <p class="muted">A future ranking view for affiliate momentum and team visibility.</p>
               </div>
+              <div class="preview-grid">
+                <span>Affiliate ranking</span>
+                <span>Staff performance</span>
+                <span>Segment leaders</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Leaderboard">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="reports" aria-labelledby="reports-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Management output</p>
                 <h2 id="reports-title">Reports</h2>
-                <p class="muted">Export-ready summaries and management reporting will live here. Coming in next sprint.</p>
+                <p class="muted">A planned reporting area for clean operational summaries and exports.</p>
               </div>
+              <div class="preview-grid">
+                <span>Weekly summaries</span>
+                <span>Export-ready views</span>
+                <span>Management snapshots</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Reports">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="staff" aria-labelledby="staff-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Team directory</p>
                 <h2 id="staff-title">Staff</h2>
-                <p class="muted">Staff directory, roles, and assignment views will live here. Coming in next sprint.</p>
+                <p class="muted">A future directory for staff assignments, roles, and queue ownership.</p>
               </div>
+              <div class="preview-grid">
+                <span>Staff roster</span>
+                <span>Assignment view</span>
+                <span>Role context</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Staff">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="brands" aria-labelledby="brands-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Brand reference</p>
                 <h2 id="brands-title">Brands</h2>
-                <p class="muted">Brand references and affiliate-brand mapping tools will live here. Coming in next sprint.</p>
+                <p class="muted">A planned reference surface for brand ownership and affiliate mapping.</p>
               </div>
+              <div class="preview-grid">
+                <span>Brand directory</span>
+                <span>Affiliate mapping</span>
+                <span>Market context</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Brands">Coming in later sprint</button>
             </article>
           </section>
 
           <section class="page-section" data-section="settings" aria-labelledby="settings-title">
-            <article class="empty-state glass-panel">
-              <div class="empty-icon" aria-hidden="true"></div>
+            <article class="module-preview glass-panel">
               <div>
+                <p class="eyebrow">Workspace setup</p>
                 <h2 id="settings-title">Settings</h2>
-                <p class="muted">Workspace preferences and future configuration controls will live here. Coming in next sprint.</p>
+                <p class="muted">A future configuration area for secure workspace preferences.</p>
               </div>
+              <div class="preview-grid">
+                <span>Workspace preferences</span>
+                <span>API configuration</span>
+                <span>Access controls</span>
+              </div>
+              <button class="button button-secondary" type="button" data-placeholder-action="Settings">Coming in later sprint</button>
             </article>
           </section>
         </section>
       </main>
     </div>
+
+    <div class="toast-region" data-toast-region aria-live="polite" aria-atomic="true"></div>
 
     <div class="modal-backdrop" data-followup-modal hidden>
       <section class="modal-card glass-panel" aria-labelledby="followup-modal-title">
@@ -505,6 +609,7 @@
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
               <option value="High">High</option>
+              <option value="Critical">Critical</option>
             </select>
           </label>
           <label class="field">
@@ -512,6 +617,8 @@
             <select name="Status" required>
               <option value="Open">Open</option>
               <option value="Pending">Pending</option>
+              <option value="Overdue">Overdue</option>
+              <option value="Rescheduled">Rescheduled</option>
               <option value="Completed">Completed</option>
             </select>
           </label>
@@ -525,11 +632,11 @@
       </section>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/router.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/config.js?v=3c"></script>
+    <script src="js/utils.js?v=3c"></script>
+    <script src="js/api.js?v=3c"></script>
+    <script src="js/auth.js?v=3c"></script>
+    <script src="js/router.js?v=3c"></script>
+    <script src="js/app.js?v=3c"></script>
   </body>
 </html>

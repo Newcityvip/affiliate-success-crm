@@ -35,6 +35,7 @@ Use clear, conventional commit messages:
 - Placeholder pages should communicate upcoming functionality without inventing CRM records.
 - Keep page behavior in `frontend/js/app.js` and route metadata in `frontend/js/router.js`.
 - Sprint 3A adds the live read-only Affiliates page; do not add create, edit, delete, or sheet write behavior there until a write sprint is explicitly scoped.
+- Sprint 3C keeps the CRM command center, toast messages, summary badges, and placeholder previews in vanilla frontend code. Keep `docs/` synced from `frontend/` before every GitHub Pages push.
 
 ## Sprint 1 UI Shell
 
@@ -55,5 +56,5 @@ Use clear, conventional commit messages:
 1. Confirm the frontend works locally from the `frontend/` folder.
 2. Add the deployed Apps Script web app URL to `frontend/js/config.js`.
 3. In GitHub, open repository settings and enable Pages.
-4. Select the branch and frontend publishing strategy chosen for the project.
+4. Select the `main` branch and `/docs` folder as the Pages source.
 5. Verify `index.html` and `login.html` load without exposing sensitive data.

@@ -59,12 +59,22 @@
     all: [],
     filtered: []
   };
+  var dashboardState = {
+    data: null,
+    loaded: false
+  };
   var followupState = {
     loaded: false,
     loading: false,
     all: [],
     filtered: [],
-    mode: 'create'
+    mode: 'create',
+    groups: {
+      today: [],
+      overdue: [],
+      upcoming: [],
+      completed: []
+    }
   };
 
   function setSidebar(open) {
@@ -90,6 +100,7 @@
     utils.setText(utils.qs('[data-page-kicker]'), route.meta.kicker);
     utils.setText(utils.qs('[data-page-heading]'), route.meta.heading);
     utils.setText(utils.qs('[data-page-description]'), route.meta.description);
+    updateCommandCenter(route.key);
 
     document.querySelectorAll('[data-route]').forEach(function (item) {
       item.classList.toggle('is-active', item.dataset.route === route.key);
@@ -106,6 +117,119 @@
     if (route.key === 'followups') {
       loadFollowups();
     }
+  }
+
+  function getCurrentRouteKey() {
+    return router.routeFromHash();
+  }
+
+  function setGreeting() {
+    var hour = new Date().getHours();
+    var part = 'Morning';
+    if (hour >= 12 && hour < 17) {
+      part = 'Afternoon';
+    } else if (hour >= 17) {
+      part = 'Evening';
+    }
+
+    utils.setText(utils.qs('[data-command-greeting]'), 'Good ' + part + ', Staff User');
+  }
+
+  function renderCommandSummary(items) {
+    var summary = utils.qs('[data-command-summary]');
+    if (!summary) {
+      return;
+    }
+
+    summary.innerHTML = '';
+    items.forEach(function (item) {
+      var pill = document.createElement('span');
+      var value = document.createElement('strong');
+
+      pill.className = 'summary-pill is-' + (item.tone || 'neutral');
+      value.textContent = displayPlainValue(item.value);
+      pill.appendChild(value);
+      pill.appendChild(document.createTextNode(' ' + item.label));
+      summary.appendChild(pill);
+    });
+  }
+
+  function updateCommandCenter(routeKey) {
+    setGreeting();
+
+    if (routeKey === 'dashboard') {
+      renderDashboardCommandSummary();
+      return;
+    }
+
+    if (routeKey === 'affiliates') {
+      if (!affiliateState.loaded) {
+        renderCommandSummary([
+          { label: 'affiliate directory', value: 'Loading', tone: 'neutral' },
+          { label: 'data changes', value: 'None', tone: 'green' }
+        ]);
+        return;
+      }
+
+      renderCommandSummary([
+        { label: 'loaded affiliates', value: affiliateState.all.length, tone: 'cyan' },
+        { label: 'showing now', value: affiliateState.filtered.length || 0, tone: 'blue' }
+      ]);
+      return;
+    }
+
+    if (routeKey === 'followups') {
+      renderFollowupCommandSummary();
+      return;
+    }
+
+    renderCommandSummary([
+      { label: 'module preview', value: 'Later sprint', tone: 'neutral' },
+      { label: 'data changes', value: 'None', tone: 'green' }
+    ]);
+  }
+
+  function renderDashboardCommandSummary() {
+    if (!dashboardState.loaded) {
+      renderCommandSummary([
+        { label: 'workspace context', value: 'Loading', tone: 'neutral' },
+        { label: 'data changes', value: 'None', tone: 'green' }
+      ]);
+      return;
+    }
+
+    var data = dashboardState.data || {};
+    renderCommandSummary([
+      { label: 'affiliates', value: metricValue(data, 'totalAffiliates'), tone: 'cyan' },
+      { label: 'due today', value: metricValue(data, 'todayFollowups'), tone: 'blue' },
+      { label: 'overdue', value: metricValue(data, 'overdueFollowups'), tone: 'red' },
+      { label: 'open issues', value: metricValue(data, 'openIssues'), tone: 'amber' }
+    ]);
+  }
+
+  function renderFollowupCommandSummary() {
+    if (!followupState.loaded && followupState.loading) {
+      renderCommandSummary([
+        { label: 'queue', value: 'Loading', tone: 'neutral' },
+        { label: 'data changes', value: 'None', tone: 'green' }
+      ]);
+      return;
+    }
+
+    renderCommandSummary([
+      { label: 'today', value: followupState.groups.today.length, tone: 'blue' },
+      { label: 'overdue', value: followupState.groups.overdue.length, tone: 'red' },
+      { label: 'upcoming', value: followupState.groups.upcoming.length, tone: 'amber' },
+      { label: 'completed', value: followupState.groups.completed.length, tone: 'green' }
+    ]);
+  }
+
+  function displayPlainValue(value) {
+    if (value === null || value === undefined || value === '') {
+      return 'N/A';
+    }
+
+    return String(value);
   }
 
   function bindNavigation() {
@@ -171,6 +295,8 @@
   }
 
   function setDashboardLoading() {
+    dashboardState.loaded = false;
+    dashboardState.data = null;
     utils.setText(utils.qs('[data-dashboard-status]'), 'Loading dashboard statistics from the live Apps Script API.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'Loading');
 
@@ -181,9 +307,17 @@
     document.querySelectorAll('[data-metric-status]').forEach(function (status) {
       utils.setText(status, 'Loading live data');
     });
+
+    document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
+      utils.setText(metric, '...');
+    });
+
+    updateCommandCenter(getCurrentRouteKey());
   }
 
   function setDashboardError(message) {
+    dashboardState.loaded = false;
+    dashboardState.data = null;
     utils.setText(utils.qs('[data-dashboard-status]'), message || 'Unable to load dashboard statistics.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'API error');
 
@@ -194,6 +328,14 @@
     document.querySelectorAll('[data-metric-status]').forEach(function (status) {
       utils.setText(status, 'API error');
     });
+
+    document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
+      utils.setText(metric, '--');
+    });
+
+    setNavCount('tasks', null);
+    setNavCount('issues', null);
+    updateCommandCenter(getCurrentRouteKey());
   }
 
   function metricValue(data, key) {
@@ -205,6 +347,9 @@
   }
 
   function renderDashboard(data) {
+    dashboardState.data = data || {};
+    dashboardState.loaded = true;
+
     document.querySelectorAll('[data-metric]').forEach(function (metric) {
       var key = metric.dataset.metric;
       utils.setText(metric, metricValue(data, key));
@@ -218,6 +363,20 @@
 
     utils.setText(utils.qs('[data-dashboard-status]'), 'Dashboard statistics loaded from the live Apps Script API.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'Live API data');
+    renderDashboardWorkspace(data || {});
+    updateDashboardNavCounts(data || {});
+    updateCommandCenter(getCurrentRouteKey());
+  }
+
+  function renderDashboardWorkspace(data) {
+    document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
+      utils.setText(metric, metricValue(data, metric.dataset.workspaceMetric));
+    });
+  }
+
+  function updateDashboardNavCounts(data) {
+    setNavCount('tasks', data.openTasks);
+    setNavCount('issues', data.openIssues);
   }
 
   async function loadDashboard() {
@@ -269,20 +428,29 @@
     }
 
     if (key === 'Status') {
-      if (normalized.indexOf('active') !== -1 || normalized.indexOf('open') !== -1) {
-        return 'green';
-      }
       if (normalized.indexOf('inactive') !== -1 || normalized.indexOf('closed') !== -1) {
         return 'gray';
+      }
+      if (normalized.indexOf('overdue') !== -1 || normalized.indexOf('critical') !== -1) {
+        return 'red';
+      }
+      if (normalized.indexOf('rescheduled') !== -1) {
+        return 'blue';
+      }
+      if (normalized.indexOf('pending') !== -1) {
+        return 'amber';
+      }
+      if (normalized.indexOf('completed') !== -1 || normalized.indexOf('active') !== -1 || normalized.indexOf('open') !== -1) {
+        return 'green';
       }
     }
 
     if (key === 'Priority') {
-      if (normalized.indexOf('high') !== -1) {
+      if (normalized.indexOf('critical') !== -1 || normalized.indexOf('high') !== -1) {
         return 'red';
       }
       if (normalized.indexOf('medium') !== -1) {
-        return 'blue';
+        return 'amber';
       }
       if (normalized.indexOf('low') !== -1) {
         return 'gray';
@@ -299,6 +467,23 @@
     }
 
     return 'amber';
+  }
+
+  function setNavCount(key, value) {
+    var badge = utils.qs('[data-nav-count="' + key + '"]');
+    var numeric = Number(value);
+    if (!badge) {
+      return;
+    }
+
+    if (value === null || value === undefined || value === '' || isNaN(numeric)) {
+      badge.hidden = true;
+      badge.textContent = '';
+      return;
+    }
+
+    badge.hidden = false;
+    badge.textContent = numeric > 99 ? '99+' : String(numeric);
   }
 
   function createBadge(key, value) {
@@ -451,6 +636,7 @@
 
     setAffiliatesCount(affiliateState.filtered.length, affiliateState.all.length);
     setAffiliatesVisibility(affiliateState.filtered.length ? 'table' : 'empty');
+    updateCommandCenter(getCurrentRouteKey());
   }
 
   function openAffiliateDrawer(row) {
@@ -556,6 +742,9 @@
     setFollowupsVisibility('error');
     utils.setText(utils.qs('[data-followups-error-message]'), message || 'Unable to load follow-ups.');
     setFollowupsCount(0, followupState.all.length);
+    setNavCount('followups', null);
+    updateFollowupSummaryCards();
+    updateCommandCenter(getCurrentRouteKey());
   }
 
   function populateFollowupFilters(items) {
@@ -660,13 +849,24 @@
       groups[getFollowupGroup(row)].push(row);
     });
 
+    followupState.groups = groups;
+
     Object.keys(groups).forEach(function (group) {
       renderFollowupGroup(group, groups[group]);
       utils.setText(utils.qs('[data-followup-group-count="' + group + '"]'), groups[group].length);
     });
 
     setFollowupsCount(followupState.filtered.length, followupState.all.length);
+    setNavCount('followups', followupState.all.length);
+    updateFollowupSummaryCards();
+    updateCommandCenter(getCurrentRouteKey());
     setFollowupsVisibility(followupState.filtered.length ? 'groups' : 'empty');
+  }
+
+  function updateFollowupSummaryCards() {
+    Object.keys(followupState.groups).forEach(function (group) {
+      utils.setText(utils.qs('[data-followup-summary="' + group + '"]'), followupState.groups[group].length);
+    });
   }
 
   function renderFollowupGroup(group, rows) {
@@ -774,8 +974,16 @@
     }
 
     followupState.loading = true;
+    followupState.groups = {
+      today: [],
+      overdue: [],
+      upcoming: [],
+      completed: []
+    };
     setFollowupsVisibility('loading');
     utils.setText(utils.qs('[data-followups-count]'), 'Loading follow-ups...');
+    updateFollowupSummaryCards();
+    updateCommandCenter(getCurrentRouteKey());
 
     var result = await api.followups();
     followupState.loading = false;
@@ -871,6 +1079,7 @@
     followupState.loaded = false;
     await loadFollowups(true);
     loadDashboard();
+    showToast(followupState.mode === 'reschedule' ? 'Follow-up rescheduled.' : 'Follow-up added to the queue.');
   }
 
   async function markFollowupComplete(row) {
@@ -886,6 +1095,49 @@
     followupState.loaded = false;
     await loadFollowups(true);
     loadDashboard();
+    showToast('Follow-up marked complete.');
+  }
+
+  function showToast(message) {
+    var region = utils.qs('[data-toast-region]');
+    if (!region) {
+      return;
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    region.appendChild(toast);
+
+    window.setTimeout(function () {
+      toast.classList.add('is-hiding');
+      window.setTimeout(function () {
+        if (toast.parentElement) {
+          toast.parentElement.removeChild(toast);
+        }
+      }, 180);
+    }, 3200);
+  }
+
+  function bindQuickActions() {
+    document.querySelectorAll('[data-quick-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var action = button.dataset.quickAction;
+
+        if (action === 'followup') {
+          openFollowupModal('create');
+          return;
+        }
+
+        showToast('New ' + action + ' will be available in a later sprint.');
+      });
+    });
+
+    document.querySelectorAll('[data-placeholder-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        showToast(button.dataset.placeholderAction + ' is planned for a later sprint.');
+      });
+    });
   }
 
   function bindAffiliateControls() {
@@ -1002,6 +1254,7 @@
     bindNavigation();
     bindAffiliateControls();
     bindFollowupControls();
+    bindQuickActions();
     updatePage(router.routeFromHash());
     loadDashboard();
   }

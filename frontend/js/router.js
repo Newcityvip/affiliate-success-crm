@@ -4,21 +4,21 @@
   var routes = {
     dashboard: {
       title: 'Dashboard',
-      kicker: 'Sprint 1 UI Shell',
-      heading: 'Command center foundation',
-      description: 'Dashboard statistics load from the live Apps Script API while the CRM interface stays in the existing shell.'
+      kicker: 'Command center',
+      heading: 'Daily CRM workspace',
+      description: 'Live dashboard context, queues, and daily operating signals in one compact view.'
     },
     affiliates: {
       title: 'Affiliates',
       kicker: 'Affiliate workspace',
-      heading: 'Relationship profiles placeholder',
-      description: 'Affiliate records and ownership views will be introduced after authentication and read-only data access are ready.'
+      heading: 'Read-only affiliate directory',
+      description: 'Search, filter, and inspect live affiliate profiles without changing sheet data.'
     },
     followups: {
       title: 'Follow-ups',
       kicker: 'Queue planning',
-      heading: 'Follow-up workflow placeholder',
-      description: 'Due dates, reminders, and staff queues will be connected in a later sprint.'
+      heading: 'Follow-up command queue',
+      description: 'Today, overdue, upcoming, and completed follow-ups organized from the live queue.'
     },
     interactions: {
       title: 'Interactions',
