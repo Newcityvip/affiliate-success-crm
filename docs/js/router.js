@@ -23,56 +23,56 @@
     interactions: {
       title: 'Interactions',
       kicker: 'Relationship history',
-      heading: 'Interaction log placeholder',
-      description: 'Contact notes and timeline views will appear once the CRM data layer is connected.'
+      heading: 'Interaction activity log',
+      description: 'Review live relationship touchpoints and contact notes from the CRM activity history.'
     },
     tasks: {
       title: 'Tasks',
       kicker: 'Team execution',
-      heading: 'Task board placeholder',
-      description: 'Task assignment and completion workflows are planned for a future sprint.'
+      heading: 'Task execution workspace',
+      description: 'Track live task records in read-only mode while create and completion workflows remain planned.'
     },
     issues: {
       title: 'Issues',
       kicker: 'Resolution tracking',
-      heading: 'Issue management placeholder',
-      description: 'Open issues, escalation status, and outcomes will be added after the foundation is connected.'
+      heading: 'Issue resolution workspace',
+      description: 'Monitor live issue records, ownership, priority, and status without changing source data.'
     },
     performance: {
       title: 'Performance',
       kicker: 'Monthly view',
-      heading: 'Performance analytics placeholder',
-      description: 'Monthly growth and partner performance views will connect to the finalized sheet tabs later.'
+      heading: 'Monthly performance view',
+      description: 'Scan live monthly performance rows and spot affiliate, brand, and growth signals.'
     },
     leaderboard: {
       title: 'Leaderboard',
       kicker: 'Ranking view',
-      heading: 'Leaderboard placeholder',
-      description: 'Affiliate and team rankings will be designed after KPI rules are implemented.'
+      heading: 'CRM leaderboard preview',
+      description: 'Rank staff, brand, and affiliate priority signals from current read-only CRM data.'
     },
     reports: {
       title: 'Reports',
       kicker: 'Management output',
-      heading: 'Reports placeholder',
-      description: 'Exportable summaries and management reports are reserved for later CRM workflows.'
+      heading: 'Management report center',
+      description: 'Preview operational report groups and live counts before export workflows are added.'
     },
     staff: {
       title: 'Staff',
       kicker: 'Team directory',
-      heading: 'Staff workspace placeholder',
-      description: 'Staff roles, ownership, and permissions will be handled after authentication is implemented.'
+      heading: 'Staff directory workspace',
+      description: 'Review live staff reference data while permissions and authentication remain out of scope.'
     },
     brands: {
       title: 'Brands',
       kicker: 'Brand reference',
-      heading: 'Brand workspace placeholder',
-      description: 'Brand reference views will use the finalized Brand_List tab once read-only access is connected.'
+      heading: 'Brand reference workspace',
+      description: 'Search and review live brand reference rows from the finalized Brand_List tab.'
     },
     settings: {
       title: 'Settings',
       kicker: 'Workspace setup',
-      heading: 'Settings placeholder',
-      description: 'Configuration controls will be introduced only after secure backend settings are defined.'
+      heading: 'Workspace settings summary',
+      description: 'Inspect safe configuration checks only; sensitive settings stay outside the frontend.'
     }
   };
 

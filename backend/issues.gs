@@ -1,5 +1,5 @@
 function getIssues() {
-  const items = readSheetObjects(SHEET_NAMES.ISSUE_LOG);
+  const items = safeReadSheetObjects(SHEET_NAMES.ISSUE_LOG);
   return {
     count: items.length,
     items: items

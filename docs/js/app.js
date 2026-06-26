@@ -78,6 +78,193 @@
       completed: []
     }
   };
+  var moduleRoutes = ['interactions', 'tasks', 'issues', 'performance', 'leaderboard', 'reports', 'staff', 'brands', 'settings'];
+  var moduleState = {};
+  var moduleConfigs = {
+    interactions: {
+      api: 'interactions',
+      itemName: 'interactions',
+      mode: 'timeline',
+      search: ['Affiliate_Name', 'Affiliate', 'Affiliate_ID', 'Brand', 'Assigned_Staff', 'Staff', 'Type', 'Interaction_Type', 'Notes', 'Summary', 'Status'],
+      filters: [
+        { label: 'Affiliate', key: 'Affiliate_Name', fallback: ['Affiliate', 'Affiliate_ID'] },
+        { label: 'Brand', key: 'Brand' },
+        { label: 'Staff', key: 'Assigned_Staff', fallback: ['Staff'] },
+        { label: 'Type', key: 'Interaction_Type', fallback: ['Type'] },
+        { label: 'Date', key: 'Date', type: 'date', fallback: ['Interaction_Date', 'Timestamp'] }
+      ],
+      stats: [
+        { label: 'Total interactions', type: 'total' },
+        { label: 'This week', type: 'thisWeek', dateKeys: ['Date', 'Interaction_Date', 'Timestamp'] },
+        { label: 'Staff touched', type: 'unique', keys: ['Assigned_Staff', 'Staff'] }
+      ],
+      columns: [
+        { label: 'Date', keys: ['Date', 'Interaction_Date', 'Timestamp'], format: 'date' },
+        { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate', 'Affiliate_ID'] },
+        { label: 'Brand', keys: ['Brand'] },
+        { label: 'Staff', keys: ['Assigned_Staff', 'Staff'] },
+        { label: 'Type', keys: ['Interaction_Type', 'Type'] },
+        { label: 'Notes', keys: ['Notes', 'Summary', 'Description'] }
+      ]
+    },
+    tasks: {
+      api: 'tasks',
+      itemName: 'tasks',
+      search: ['Task_ID', 'Title', 'Task', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Status', 'Priority'],
+      filters: [
+        { label: 'Status', key: 'Status', fallback: ['Task_Status'] },
+        { label: 'Priority', key: 'Priority' },
+        { label: 'Assigned Staff', key: 'Assigned_Staff', fallback: ['Assigned Staff', 'Staff'] },
+        { label: 'Due Date', key: 'Due_Date', type: 'date', fallback: ['Due Date', 'Date'] }
+      ],
+      stats: [
+        { label: 'Open', type: 'open' },
+        { label: 'Due today', type: 'today', dateKeys: ['Due_Date', 'Due Date', 'Date'] },
+        { label: 'Overdue', type: 'overdue', dateKeys: ['Due_Date', 'Due Date', 'Date'] },
+        { label: 'Completed', type: 'completed' }
+      ],
+      columns: [
+        { label: 'Task', keys: ['Title', 'Task', 'Task_Title', 'Task_ID'] },
+        { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
+        { label: 'Priority', keys: ['Priority'], badge: 'Priority' },
+        { label: 'Status', keys: ['Status', 'Task_Status'], badge: 'Status' },
+        { label: 'Assigned Staff', keys: ['Assigned_Staff', 'Assigned Staff', 'Staff'] },
+        { label: 'Due Date', keys: ['Due_Date', 'Due Date', 'Date'], format: 'date' }
+      ],
+      actionText: 'Complete action coming later'
+    },
+    issues: {
+      api: 'issues',
+      itemName: 'issues',
+      search: ['Issue_ID', 'Issue', 'Affiliate_Name', 'Affiliate_ID', 'Brand', 'Assigned_Staff', 'Status', 'Priority'],
+      filters: [
+        { label: 'Status', key: 'Status', fallback: ['Issue_Status'] },
+        { label: 'Priority', key: 'Priority' },
+        { label: 'Assigned Staff', key: 'Assigned_Staff', fallback: ['Assigned Staff', 'Staff'] },
+        { label: 'Brand', key: 'Brand' }
+      ],
+      stats: [
+        { label: 'Open', type: 'open' },
+        { label: 'Urgent', type: 'priority', values: ['high', 'critical'] },
+        { label: 'Overdue', type: 'overdue', dateKeys: ['Due_Date', 'Created_Date', 'Date'] },
+        { label: 'Resolved', type: 'completed' }
+      ],
+      columns: [
+        { label: 'Issue', keys: ['Issue_ID', 'Issue', 'Title'] },
+        { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
+        { label: 'Brand', keys: ['Brand'] },
+        { label: 'Priority', keys: ['Priority'], badge: 'Priority' },
+        { label: 'Status', keys: ['Status', 'Issue_Status'], badge: 'Status' },
+        { label: 'Assigned Staff', keys: ['Assigned_Staff', 'Assigned Staff', 'Staff'] },
+        { label: 'Created', keys: ['Created_Date', 'Date'], format: 'date' }
+      ],
+      actionText: 'Resolve action coming later'
+    },
+    performance: {
+      api: 'performance',
+      itemName: 'performance rows',
+      search: ['Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue', 'NGR', 'Commission'],
+      filters: [
+        { label: 'Month', key: 'Month', fallback: ['Performance_Month', 'Period'] },
+        { label: 'Brand', key: 'Brand' },
+        { label: 'Staff', key: 'Assigned_Staff', fallback: ['Staff'] }
+      ],
+      stats: [
+        { label: 'Rows', type: 'total' },
+        { label: 'Brands', type: 'unique', keys: ['Brand'] },
+        { label: 'Affiliates', type: 'unique', keys: ['Affiliate_Name', 'Affiliate_ID'] }
+      ],
+      columns: [
+        { label: 'Month', keys: ['Month', 'Performance_Month', 'Period'] },
+        { label: 'Brand', keys: ['Brand'] },
+        { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
+        { label: 'FTD', keys: ['FTD', 'FTDs'] },
+        { label: 'Revenue/NGR', keys: ['Revenue', 'NGR', 'Commission'] },
+        { label: 'Growth', keys: ['Growth', 'Growth_Rate'] }
+      ]
+    },
+    staff: {
+      api: 'staff',
+      itemName: 'staff members',
+      search: ['Staff_Name', 'Name', 'Staff_ID', 'Role', 'Team', 'Status'],
+      filters: [
+        { label: 'Role', key: 'Role' },
+        { label: 'Team', key: 'Team' },
+        { label: 'Status', key: 'Status' }
+      ],
+      stats: [
+        { label: 'Staff', type: 'total' },
+        { label: 'Active', type: 'status', values: ['active', 'yes', 'true'] },
+        { label: 'Teams', type: 'unique', keys: ['Team'] }
+      ],
+      columns: [
+        { label: 'Staff', keys: ['Staff_Name', 'Name', 'Staff_ID'] },
+        { label: 'Role', keys: ['Role'] },
+        { label: 'Team', keys: ['Team'] },
+        { label: 'Status', keys: ['Status'], badge: 'Status' },
+        { label: 'Email', keys: ['Email'] }
+      ]
+    },
+    brands: {
+      api: 'brands',
+      itemName: 'brands',
+      search: ['Brand', 'Brand_Name', 'Name', 'Market', 'Owner', 'Status'],
+      filters: [
+        { label: 'Market', key: 'Market' },
+        { label: 'Owner', key: 'Owner' },
+        { label: 'Status', key: 'Status' }
+      ],
+      stats: [
+        { label: 'Brands', type: 'total' },
+        { label: 'Active', type: 'status', values: ['active', 'yes', 'true'] }
+      ],
+      columns: [
+        { label: 'Brand', keys: ['Brand', 'Brand_Name', 'Name'] },
+        { label: 'Market', keys: ['Market'] },
+        { label: 'Owner', keys: ['Owner'] },
+        { label: 'Status', keys: ['Status'], badge: 'Status' },
+        { label: 'Notes', keys: ['Notes', 'Description'] }
+      ]
+    },
+    reports: {
+      api: 'reports',
+      itemName: 'report previews',
+      mode: 'cards',
+      stats: [{ label: 'Report previews', type: 'total' }],
+      columns: [
+        { label: 'Report', keys: ['title'] },
+        { label: 'Summary', keys: ['summary'] },
+        { label: 'Count', keys: ['count'] },
+        { label: 'Status', keys: ['status'] }
+      ]
+    },
+    leaderboard: {
+      api: 'leaderboard',
+      itemName: 'leaderboard rows',
+      mode: 'leaderboard',
+      stats: [{ label: 'Ranking groups', type: 'total' }]
+    },
+    settings: {
+      api: 'settings',
+      itemName: 'settings checks',
+      mode: 'cards',
+      stats: [{ label: 'Safe settings checks', type: 'total' }],
+      columns: [
+        { label: 'Setting', keys: ['label'] },
+        { label: 'Value', keys: ['value'] }
+      ]
+    }
+  };
+
+  moduleRoutes.forEach(function (route) {
+    moduleState[route] = {
+      loaded: false,
+      loading: false,
+      all: [],
+      filtered: [],
+      raw: {}
+    };
+  });
 
   function setSidebar(open) {
     var body = document.body;
@@ -119,6 +306,10 @@
     if (route.key === 'followups') {
       loadFollowups();
     }
+
+    if (moduleRoutes.indexOf(route.key) !== -1) {
+      loadModule(route.key);
+    }
   }
 
   function getCurrentRouteKey() {
@@ -135,6 +326,17 @@
     }
 
     utils.setText(utils.qs('[data-command-greeting]'), 'Good ' + part + ', Staff User');
+  }
+
+  function setGlobalStatus(label, tone) {
+    var status = utils.qs('[data-global-status]');
+    if (!status) {
+      return;
+    }
+
+    status.classList.toggle('is-live', tone === 'live');
+    status.classList.toggle('is-error', tone === 'error');
+    status.textContent = label;
   }
 
   function renderCommandSummary(items) {
@@ -185,6 +387,11 @@
       return;
     }
 
+    if (moduleRoutes.indexOf(routeKey) !== -1) {
+      renderModuleCommandSummary(routeKey);
+      return;
+    }
+
     renderCommandSummary([
       { label: 'module preview', value: 'Later sprint', tone: 'neutral' },
       { label: 'data changes', value: 'None', tone: 'green' }
@@ -223,6 +430,23 @@
       { label: 'overdue', value: followupState.groups.overdue.length, tone: 'red' },
       { label: 'upcoming', value: followupState.groups.upcoming.length, tone: 'amber' },
       { label: 'completed', value: followupState.groups.completed.length, tone: 'green' }
+    ]);
+  }
+
+  function renderModuleCommandSummary(routeKey) {
+    var state = moduleState[routeKey];
+    var config = moduleConfigs[routeKey] || {};
+    if (!state || !state.loaded) {
+      renderCommandSummary([
+        { label: config.itemName || 'records', value: state && state.loading ? 'Loading' : 'Ready', tone: 'neutral' },
+        { label: 'data changes', value: 'None', tone: 'green' }
+      ]);
+      return;
+    }
+
+    renderCommandSummary([
+      { label: config.itemName || 'records', value: state.all.length, tone: 'cyan' },
+      { label: 'showing now', value: state.filtered.length, tone: 'blue' }
     ]);
   }
 
@@ -313,6 +537,7 @@
   function setDashboardLoading() {
     dashboardState.loaded = false;
     dashboardState.data = null;
+    setGlobalStatus('API: Loading', 'loading');
     utils.setText(utils.qs('[data-dashboard-status]'), 'Loading dashboard statistics from the live Apps Script API.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'Loading');
 
@@ -336,6 +561,7 @@
   function setDashboardError(message) {
     dashboardState.loaded = false;
     dashboardState.data = null;
+    setGlobalStatus('API: Error', 'error');
     utils.setText(utils.qs('[data-dashboard-status]'), message || 'Unable to load dashboard statistics.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'API error');
 
@@ -368,6 +594,7 @@
   function renderDashboard(data) {
     dashboardState.data = data || {};
     dashboardState.loaded = true;
+    setGlobalStatus('API: Live', 'live');
 
     document.querySelectorAll('[data-metric]').forEach(function (metric) {
       var key = metric.dataset.metric;
@@ -806,6 +1033,464 @@
     }
 
     renderDashboard(result.data || {});
+  }
+
+  async function loadModule(routeKey, force) {
+    var config = moduleConfigs[routeKey];
+    var state = moduleState[routeKey];
+    var result;
+
+    if (!config || !state || (!force && (state.loaded || state.loading))) {
+      return;
+    }
+
+    state.loading = true;
+    setGlobalStatus('API: Loading', 'loading');
+    setModuleVisibility(routeKey, 'loading');
+    setModuleCount(routeKey, 'Loading ' + config.itemName + '...');
+    updateCommandCenter(routeKey);
+
+    result = await api[config.api]();
+    state.loading = false;
+
+    if (!result || !result.success) {
+      setGlobalStatus('API: Error', 'error');
+      setModuleError(routeKey, result && result.message ? result.message : 'Unable to load ' + config.itemName + '.');
+      return;
+    }
+
+    setGlobalStatus('API: Live', 'live');
+    state.raw = result.data || {};
+    state.all = normalizeModuleItems(routeKey, state.raw);
+    state.loaded = true;
+    buildModuleFilters(routeKey);
+    filterModule(routeKey);
+  }
+
+  function normalizeModuleItems(routeKey, data) {
+    var items = asArray(data.items);
+
+    if (routeKey === 'leaderboard') {
+      return buildLeaderboardItems(data);
+    }
+
+    return items;
+  }
+
+  function buildLeaderboardItems(data) {
+    var items = [];
+    asArray(data.staff).forEach(function (row) {
+      items.push({
+        group: 'Staff activity',
+        name: firstDefined(row.staff, 'Unassigned'),
+        score: Number(row.assignedFollowups || 0) + Number(row.openTasks || 0) + Number(row.openIssues || 0),
+        detail: 'Follow-ups ' + displayPlainValue(row.assignedFollowups) + ' | Tasks ' + displayPlainValue(row.openTasks) + ' | Issues ' + displayPlainValue(row.openIssues)
+      });
+    });
+    asArray(data.brands).forEach(function (row) {
+      items.push({
+        group: 'Brand activity',
+        name: firstDefined(row.brand, 'Unassigned'),
+        score: Number(row.totalAffiliates || 0) + Number(row.pendingFollowups || 0),
+        detail: 'Affiliates ' + displayPlainValue(row.totalAffiliates) + ' | Pending follow-ups ' + displayPlainValue(row.pendingFollowups)
+      });
+    });
+    asArray(data.affiliates).forEach(function (row) {
+      items.push({
+        group: 'Affiliate priority',
+        name: firstDefined(row.label, 'Priority'),
+        score: Number(row.count || 0),
+        detail: 'Priority records ' + displayPlainValue(row.count)
+      });
+    });
+    return items.sort(function (a, b) {
+      return Number(b.score || 0) - Number(a.score || 0);
+    });
+  }
+
+  function setModuleVisibility(routeKey, visibleState) {
+    var root = getModuleRoot(routeKey);
+    if (!root) {
+      return;
+    }
+
+    ['loading', 'error', 'empty', 'content'].forEach(function (state) {
+      var target = root.querySelector('[data-module-' + state + ']');
+      if (target) {
+        target.hidden = state !== visibleState;
+      }
+    });
+  }
+
+  function setModuleCount(routeKey, message) {
+    var root = getModuleRoot(routeKey);
+    if (root) {
+      utils.setText(root.querySelector('[data-module-count]'), message);
+    }
+  }
+
+  function setModuleError(routeKey, message) {
+    var root = getModuleRoot(routeKey);
+    setModuleVisibility(routeKey, 'error');
+    setModuleCount(routeKey, 'Unable to load records');
+    if (root) {
+      utils.setText(root.querySelector('[data-module-error-message]'), message);
+    }
+    updateCommandCenter(routeKey);
+  }
+
+  function getModuleRoot(routeKey) {
+    return utils.qs('[data-module-workspace="' + routeKey + '"]');
+  }
+
+  function buildModuleFilters(routeKey) {
+    var config = moduleConfigs[routeKey];
+    var state = moduleState[routeKey];
+    var root = getModuleRoot(routeKey);
+    var filters = root ? root.querySelector('[data-module-filters]') : null;
+
+    if (!filters || !config.filters) {
+      return;
+    }
+
+    filters.innerHTML = '';
+    config.filters.forEach(function (filter) {
+      var label = document.createElement('label');
+      var span = document.createElement('span');
+      var control = document.createElement(filter.type === 'date' ? 'input' : 'select');
+
+      label.className = 'field';
+      span.textContent = filter.label;
+      control.dataset.moduleFilter = filter.key;
+      if (filter.type === 'date') {
+        control.type = 'date';
+      } else {
+        var all = document.createElement('option');
+        all.value = '';
+        all.textContent = 'All ' + filter.label.toLowerCase();
+        control.appendChild(all);
+        uniqueModuleValues(state.all, filter).forEach(function (value) {
+          var option = document.createElement('option');
+          option.value = value;
+          option.textContent = value;
+          control.appendChild(option);
+        });
+      }
+      control.addEventListener('change', function () {
+        filterModule(routeKey);
+      });
+      label.appendChild(span);
+      label.appendChild(control);
+      filters.appendChild(label);
+    });
+  }
+
+  function uniqueModuleValues(items, filter) {
+    var values = [];
+    items.forEach(function (item) {
+      var value = getModuleValue(item, [filter.key].concat(filter.fallback || []));
+      if (value && values.indexOf(value) === -1) {
+        values.push(value);
+      }
+    });
+    return values.sort();
+  }
+
+  function filterModule(routeKey) {
+    var state = moduleState[routeKey];
+    var config = moduleConfigs[routeKey];
+    var root = getModuleRoot(routeKey);
+    var search = root ? root.querySelector('[data-module-search]') : null;
+    var query = search ? search.value.trim().toLowerCase() : '';
+
+    state.filtered = state.all.filter(function (item) {
+      return moduleMatchesSearch(item, config, query) && moduleMatchesFilters(item, config, root);
+    });
+
+    renderModule(routeKey);
+  }
+
+  function moduleMatchesSearch(item, config, query) {
+    if (!query) {
+      return true;
+    }
+
+    return (config.search || []).some(function (key) {
+      return safeLower(getModuleValue(item, [key])).indexOf(query) !== -1;
+    });
+  }
+
+  function moduleMatchesFilters(item, config, root) {
+    if (!root || !config.filters) {
+      return true;
+    }
+
+    return config.filters.every(function (filter) {
+      var control = root.querySelector('[data-module-filter="' + filter.key + '"]');
+      var value = getModuleValue(item, [filter.key].concat(filter.fallback || []));
+      if (!control || !control.value) {
+        return true;
+      }
+      if (filter.type === 'date') {
+        return getDateOnly(value) === control.value;
+      }
+      return value === control.value;
+    });
+  }
+
+  function renderModule(routeKey) {
+    var state = moduleState[routeKey];
+    var config = moduleConfigs[routeKey];
+    var root = getModuleRoot(routeKey);
+    var content = root ? root.querySelector('[data-module-content]') : null;
+    var stats = root ? root.querySelector('[data-module-stats]') : null;
+
+    if (!root || !content || !stats) {
+      return;
+    }
+
+    renderModuleStats(routeKey, stats);
+    setModuleCount(routeKey, 'Showing ' + state.filtered.length + ' of ' + state.all.length + ' ' + config.itemName);
+    content.innerHTML = '';
+
+    if (!state.filtered.length) {
+      setModuleVisibility(routeKey, 'empty');
+      updateCommandCenter(routeKey);
+      return;
+    }
+
+    if (config.mode === 'timeline') {
+      content.appendChild(renderModuleTimeline(config, state.filtered));
+    } else if (config.mode === 'cards' || config.mode === 'leaderboard') {
+      content.appendChild(renderModuleCards(config, state.filtered));
+    } else {
+      content.appendChild(renderModuleTable(config, state.filtered));
+    }
+
+    setModuleVisibility(routeKey, 'content');
+    if (routeKey === 'tasks') {
+      setNavCount('tasks', getModuleStatValue(state.all, { type: 'open' }));
+    }
+    if (routeKey === 'issues') {
+      setNavCount('issues', getModuleStatValue(state.all, { type: 'open' }));
+    }
+    updateCommandCenter(routeKey);
+  }
+
+  function renderModuleStats(routeKey, container) {
+    var state = moduleState[routeKey];
+    var config = moduleConfigs[routeKey];
+    container.innerHTML = '';
+    (config.stats || [{ label: 'Records', type: 'total' }]).forEach(function (stat) {
+      var card = document.createElement('article');
+      var label = document.createElement('span');
+      var value = document.createElement('strong');
+      card.className = 'module-stat';
+      label.textContent = stat.label;
+      value.textContent = getModuleStatValue(state.all, stat);
+      card.appendChild(label);
+      card.appendChild(value);
+      container.appendChild(card);
+    });
+  }
+
+  function getModuleStatValue(items, stat) {
+    if (stat.type === 'total') {
+      return items.length;
+    }
+    if (stat.type === 'open') {
+      return items.filter(isModuleOpen).length;
+    }
+    if (stat.type === 'completed') {
+      return items.filter(isModuleCompleted).length;
+    }
+    if (stat.type === 'today') {
+      return items.filter(function (item) {
+        return isTodayValue(getModuleValue(item, stat.dateKeys || ['Date']));
+      }).length;
+    }
+    if (stat.type === 'thisWeek') {
+      return items.filter(function (item) {
+        return isThisWeekValue(getModuleValue(item, stat.dateKeys || ['Date']));
+      }).length;
+    }
+    if (stat.type === 'overdue') {
+      return items.filter(function (item) {
+        return isModuleOpen(item) && isBeforeTodayValue(getModuleValue(item, stat.dateKeys || ['Date']));
+      }).length;
+    }
+    if (stat.type === 'priority') {
+      return items.filter(function (item) {
+        return (stat.values || []).indexOf(safeLower(getModuleValue(item, ['Priority']))) !== -1;
+      }).length;
+    }
+    if (stat.type === 'status') {
+      return items.filter(function (item) {
+        return (stat.values || []).indexOf(safeLower(getModuleValue(item, ['Status', 'Active']))) !== -1;
+      }).length;
+    }
+    if (stat.type === 'unique') {
+      return uniqueByKeys(items, stat.keys || []).length;
+    }
+    return 'N/A';
+  }
+
+  function renderModuleTable(config, items) {
+    var wrap = document.createElement('div');
+    var table = document.createElement('table');
+    var head = document.createElement('thead');
+    var body = document.createElement('tbody');
+    var tr = document.createElement('tr');
+    wrap.className = 'table-wrap module-table-wrap';
+    table.className = 'data-table module-table';
+    (config.columns || []).forEach(function (column) {
+      var th = document.createElement('th');
+      th.textContent = column.label;
+      tr.appendChild(th);
+    });
+    if (config.actionText) {
+      var actionHead = document.createElement('th');
+      actionHead.textContent = 'Actions';
+      tr.appendChild(actionHead);
+    }
+    head.appendChild(tr);
+    items.forEach(function (item) {
+      body.appendChild(renderModuleTableRow(config, item));
+    });
+    table.appendChild(head);
+    table.appendChild(body);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function renderModuleTableRow(config, item) {
+    var tr = document.createElement('tr');
+    (config.columns || []).forEach(function (column) {
+      var td = document.createElement('td');
+      appendModuleCell(td, item, column);
+      tr.appendChild(td);
+    });
+    if (config.actionText) {
+      var action = document.createElement('td');
+      var button = document.createElement('button');
+      button.className = 'button button-secondary button-small';
+      button.type = 'button';
+      button.disabled = true;
+      button.textContent = config.actionText;
+      action.appendChild(button);
+      tr.appendChild(action);
+    }
+    return tr;
+  }
+
+  function appendModuleCell(parent, item, column) {
+    var value = getModuleValue(item, column.keys || []);
+    if (column.badge) {
+      parent.appendChild(createBadge(column.badge, value || 'N/A'));
+      return;
+    }
+    parent.textContent = column.format === 'date' ? formatDate(value) : displayPlainValue(value);
+  }
+
+  function renderModuleCards(config, items) {
+    var grid = document.createElement('div');
+    grid.className = 'module-card-grid';
+    items.forEach(function (item) {
+      var card = document.createElement('article');
+      var title = document.createElement('h3');
+      var meta = document.createElement('p');
+      var cta = document.createElement('button');
+      card.className = 'module-card';
+      title.textContent = firstDefined(item.title, item.name, item.label, item.group, 'Record');
+      meta.textContent = firstDefined(item.summary, item.detail, item.value, item.status, 'Live record');
+      cta.className = 'button button-secondary button-small';
+      cta.type = 'button';
+      cta.textContent = firstDefined(item.status, 'Full export coming later');
+      cta.addEventListener('click', function () {
+        showToast('Full export coming later.');
+      });
+      card.appendChild(title);
+      card.appendChild(meta);
+      if (item.count !== undefined || item.score !== undefined) {
+        var score = document.createElement('strong');
+        score.textContent = displayPlainValue(firstDefined(item.count, item.score));
+        card.appendChild(score);
+      }
+      card.appendChild(cta);
+      grid.appendChild(card);
+    });
+    return grid;
+  }
+
+  function renderModuleTimeline(config, items) {
+    var list = document.createElement('div');
+    list.className = 'timeline-list';
+    items.forEach(function (item) {
+      var row = document.createElement('div');
+      var date = document.createElement('span');
+      var title = document.createElement('strong');
+      var details = document.createElement('small');
+      row.className = 'timeline-item';
+      date.textContent = formatDate(getModuleValue(item, ['Date', 'Interaction_Date', 'Timestamp']));
+      title.textContent = firstDefined(getModuleValue(item, ['Interaction_Type', 'Type']), 'Interaction') + ' - ' + firstDefined(getModuleValue(item, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID']), 'Affiliate');
+      details.textContent = firstDefined(getModuleValue(item, ['Notes', 'Summary', 'Description']), getModuleValue(item, ['Assigned_Staff', 'Staff']), 'No summary available');
+      row.appendChild(date);
+      row.appendChild(title);
+      row.appendChild(details);
+      list.appendChild(row);
+    });
+    return list;
+  }
+
+  function getModuleValue(item, keys) {
+    for (var index = 0; index < keys.length; index += 1) {
+      if (item && item[keys[index]] !== null && item[keys[index]] !== undefined && String(item[keys[index]]).trim() !== '') {
+        return String(item[keys[index]]).trim();
+      }
+    }
+    return '';
+  }
+
+  function safeLower(value) {
+    return String(value || '').toLowerCase();
+  }
+
+  function isModuleOpen(item) {
+    var status = safeLower(getModuleValue(item, ['Status', 'Task_Status', 'Issue_Status']));
+    return !status || ['done', 'complete', 'completed', 'closed', 'resolved', 'cancelled', 'canceled'].indexOf(status) === -1;
+  }
+
+  function isModuleCompleted(item) {
+    var status = safeLower(getModuleValue(item, ['Status', 'Task_Status', 'Issue_Status']));
+    return ['done', 'complete', 'completed', 'closed', 'resolved'].indexOf(status) !== -1;
+  }
+
+  function isTodayValue(value) {
+    return getDateOnly(value) === getDateOnly(new Date().toISOString());
+  }
+
+  function isThisWeekValue(value) {
+    var date = new Date(value);
+    var today = new Date();
+    var end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+    return !isNaN(date.getTime()) && date >= new Date(today.getFullYear(), today.getMonth(), today.getDate()) && date <= end;
+  }
+
+  function isBeforeTodayValue(value) {
+    var date = new Date(value);
+    var today = new Date();
+    return !isNaN(date.getTime()) && date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }
+
+  function uniqueByKeys(items, keys) {
+    var values = [];
+    items.forEach(function (item) {
+      var value = getModuleValue(item, keys);
+      if (value && values.indexOf(value) === -1) {
+        values.push(value);
+      }
+    });
+    return values;
   }
 
   function valueFor(row, key) {
@@ -1666,11 +2351,32 @@
     });
   }
 
+  function bindModuleControls() {
+    moduleRoutes.forEach(function (routeKey) {
+      var root = getModuleRoot(routeKey);
+      var search = root ? root.querySelector('[data-module-search]') : null;
+
+      if (search) {
+        search.addEventListener('input', function () {
+          filterModule(routeKey);
+        });
+      }
+    });
+
+    document.querySelectorAll('[data-module-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var action = button.dataset.moduleAction || 'action';
+        showToast('New ' + action + ' workflow is planned for a later sprint.');
+      });
+    });
+  }
+
   function initAppShell() {
     bindSidebar();
     bindNavigation();
     bindAffiliateControls();
     bindFollowupControls();
+    bindModuleControls();
     bindQuickActions();
     updatePage(router.routeFromHash());
     loadDashboard();

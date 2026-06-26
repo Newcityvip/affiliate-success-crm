@@ -18,6 +18,9 @@ function handleRequest(e, method) {
     'issues',
     'interactions',
     'performance',
+    'reports',
+    'leaderboard',
+    'settings',
     'getfollowups',
     'createfollowup',
     'updatefollowup',
@@ -106,6 +109,18 @@ function handleRequest(e, method) {
 
     if (action === 'performance') {
       return successResponse(getPerformance(), 'Performance loaded.');
+    }
+
+    if (action === 'reports') {
+      return successResponse(getReports(), 'Report previews loaded.');
+    }
+
+    if (action === 'leaderboard') {
+      return successResponse(getLeaderboard(), 'Leaderboard loaded.');
+    }
+
+    if (action === 'settings') {
+      return successResponse(getSettingsSummary(), 'Settings summary loaded.');
     }
 
     return errorResponse('Unknown action.', 'UNKNOWN_ACTION', {

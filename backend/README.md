@@ -13,6 +13,7 @@ The backend exposes read APIs connected to the finalized Google Sheets CRM tabs.
 - `sheets.gs`: spreadsheet access, sheet validation, and row mapping.
 - `dashboard.gs`: complete dashboard read model for KPI overview, follow-up queue, health, priority, brand, staff, activity, issues, tasks, and performance widgets.
 - `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
+- `workspace.gs`: read-only report preview, leaderboard, and safe settings summary endpoints.
 - `followups.gs`: read and write actions for `Followup_Queue`.
 
 ## Apps Script Setup
@@ -76,6 +77,9 @@ The API also supports:
 ?action=issues
 ?action=interactions
 ?action=performance
+?action=reports
+?action=leaderboard
+?action=settings
 ?action=getFollowups
 ?action=createFollowup
 ?action=updateFollowup

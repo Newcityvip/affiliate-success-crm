@@ -89,6 +89,33 @@
     followups: function () {
       return request('getFollowups');
     },
+    tasks: function () {
+      return request('tasks');
+    },
+    issues: function () {
+      return request('issues');
+    },
+    interactions: function () {
+      return request('interactions');
+    },
+    performance: function () {
+      return request('performance');
+    },
+    staff: function () {
+      return request('staff');
+    },
+    brands: function () {
+      return request('brands');
+    },
+    reports: function () {
+      return request('reports');
+    },
+    leaderboard: function () {
+      return request('leaderboard');
+    },
+    settings: function () {
+      return request('settings');
+    },
     createFollowup: function (data) {
       return post('createFollowup', data);
     },

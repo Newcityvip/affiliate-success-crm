@@ -18,6 +18,24 @@ body[data-page="app"] .dashboard-hero > * {
   position: relative;
 }
 
+body[data-page="app"] .topbar h1 {
+  font-size: clamp(1.22rem, 2vw, 1.65rem);
+  line-height: 1.05;
+}
+
+body[data-page="app"] .command-main h2 {
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+}
+
+body[data-page="app"] .dashboard-hero h2 {
+  font-size: clamp(1.02rem, 1.6vw, 1.28rem);
+}
+
+body[data-page="app"] .command-main .muted,
+body[data-page="app"] .dashboard-hero .muted {
+  font-size: 0.86rem;
+}
+
 body[data-page="login"] {
   background:
     radial-gradient(circle at 50% 12%, rgba(93, 228, 199, 0.18), transparent 26rem),
@@ -34,7 +52,7 @@ body[data-page="login"] .login-card {
   }
 
   .topbar h1 {
-    font-size: 1.75rem;
+    font-size: 1.3rem;
   }
 
   .profile-chip span:last-child {

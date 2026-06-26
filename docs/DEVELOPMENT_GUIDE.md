@@ -37,6 +37,8 @@ Use clear, conventional commit messages:
 - Sprint 3A adds the live read-only Affiliates page; do not add create, edit, delete, or sheet write behavior there until a write sprint is explicitly scoped.
 - Sprint 3C keeps the CRM command center, toast messages, summary badges, and placeholder previews in vanilla frontend code. Keep `docs/` synced from `frontend/` before every GitHub Pages push.
 - Sprint 3D expands the Dashboard through optional fields on `?action=dashboard`. Preserve the existing top-level dashboard fields and render empty states instead of inventing data.
+- Sprint 3E turns the remaining sidebar modules into live read-only workspace pages. Keep unsupported create/edit workflows as safe toast messages until a future sprint explicitly scopes writes.
+- The compact header should stay useful and dense: page context, API status, profile placeholder, notifications placeholder, and quick actions belong near the top without a large empty hero area.
 
 ## Sprint 1 UI Shell
 

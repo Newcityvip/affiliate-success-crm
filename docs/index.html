@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Affiliate Success CRM</title>
-    <link rel="stylesheet" href="css/base.css?v=3d">
-    <link rel="stylesheet" href="css/layout.css?v=3d">
-    <link rel="stylesheet" href="css/components.css?v=3d">
-    <link rel="stylesheet" href="css/pages.css?v=3d">
+    <link rel="stylesheet" href="css/base.css?v=3e">
+    <link rel="stylesheet" href="css/layout.css?v=3e">
+    <link rel="stylesheet" href="css/components.css?v=3e">
+    <link rel="stylesheet" href="css/pages.css?v=3e">
   </head>
   <body data-page="app">
     <div class="mobile-backdrop" data-sidebar-backdrop hidden></div>
@@ -43,8 +43,8 @@
         </nav>
 
         <div class="sidebar-footer">
-          <p class="eyebrow">Sprint 1</p>
-          <p class="muted">UI shell only. No authentication, Sheets connection, or CRM workflows are active.</p>
+          <p class="eyebrow">Sprint 3E</p>
+          <p class="muted">Live CRM workspace. Authentication and full edit workflows are planned for later sprints.</p>
         </div>
       </aside>
 
@@ -60,6 +60,13 @@
           </div>
 
           <div class="topbar-actions" aria-label="Workspace actions">
+            <span class="module-chip live-status" data-global-status>API: Loading</span>
+            <div class="quick-actions topbar-quick-actions" aria-label="Quick actions">
+              <button class="button button-primary" type="button" data-quick-action="followup">New Follow-up</button>
+              <button class="button button-secondary" type="button" data-quick-action="affiliate">New Affiliate</button>
+              <button class="button button-secondary" type="button" data-quick-action="task">New Task</button>
+              <button class="button button-secondary" type="button" data-quick-action="issue">New Issue</button>
+            </div>
             <button class="icon-button" type="button" aria-label="Notifications placeholder">
               <span aria-hidden="true">!</span>
             </button>
@@ -82,12 +89,6 @@
           </div>
           <div class="command-summary" data-command-summary aria-label="Current module summary">
             <span class="summary-pill is-loading">Loading workspace context</span>
-          </div>
-          <div class="quick-actions" aria-label="Quick actions">
-            <button class="button button-primary" type="button" data-quick-action="followup">New Follow-up</button>
-            <button class="button button-secondary" type="button" data-quick-action="affiliate">New Affiliate</button>
-            <button class="button button-secondary" type="button" data-quick-action="task">New Task</button>
-            <button class="button button-secondary" type="button" data-quick-action="issue">New Issue</button>
           </div>
         </section>
 
@@ -566,147 +567,142 @@
           </section>
 
           <section class="page-section" data-section="interactions" aria-labelledby="interactions-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Relationship history</p>
-                <h2 id="interactions-title">Interactions</h2>
-                <p class="muted">A future timeline for calls, emails, notes, and affiliate touchpoints.</p>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="interactions">
+              <div class="data-toolbar">
+                <div>
+                  <p class="eyebrow">Relationship history</p>
+                  <h2 id="interactions-title">Interactions</h2>
+                  <p class="muted" data-module-count>Loading interaction records...</p>
+                </div>
+                <button class="button button-secondary" type="button" data-module-action="interaction">Add Interaction</button>
               </div>
-              <div class="preview-grid">
-                <span>Contact history</span>
-                <span>Staff notes</span>
-                <span>Activity timeline</span>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar">
+                <label class="search-field">
+                  <span>Search interactions</span>
+                  <input type="search" placeholder="Search affiliate, brand, staff, type, notes" data-module-search>
+                </label>
+                <div class="filter-grid module-filter-grid" data-module-filters></div>
               </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Interactions">Coming in later sprint</button>
-            </article>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live interactions...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load interactions</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No interactions found</h2><p class="muted">No matching interaction records are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="tasks" aria-labelledby="tasks-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Team execution</p>
-                <h2 id="tasks-title">Tasks</h2>
-                <p class="muted">A planned workspace for ownership, due dates, and completion follow-through.</p>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="tasks">
+              <div class="data-toolbar">
+                <div>
+                  <p class="eyebrow">Team execution</p>
+                  <h2 id="tasks-title">Tasks</h2>
+                  <p class="muted" data-module-count>Loading task records...</p>
+                </div>
+                <button class="button button-secondary" type="button" data-module-action="task">Add Task</button>
               </div>
-              <div class="preview-grid">
-                <span>Task ownership</span>
-                <span>Priority queue</span>
-                <span>Completion tracking</span>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar">
+                <label class="search-field"><span>Search tasks</span><input type="search" placeholder="Search title, affiliate, staff, status" data-module-search></label>
+                <div class="filter-grid module-filter-grid" data-module-filters></div>
               </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Tasks">Coming in later sprint</button>
-            </article>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live tasks...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load tasks</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No tasks found</h2><p class="muted">No matching task records are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="issues" aria-labelledby="issues-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Resolution tracking</p>
-                <h2 id="issues-title">Issues</h2>
-                <p class="muted">A future triage board for affiliate problems, escalations, and outcomes.</p>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="issues">
+              <div class="data-toolbar">
+                <div><p class="eyebrow">Resolution tracking</p><h2 id="issues-title">Issues</h2><p class="muted" data-module-count>Loading issue records...</p></div>
+                <button class="button button-secondary" type="button" data-module-action="issue">Add Issue</button>
               </div>
-              <div class="preview-grid">
-                <span>Open issue queue</span>
-                <span>Escalation status</span>
-                <span>Resolution notes</span>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar">
+                <label class="search-field"><span>Search issues</span><input type="search" placeholder="Search issue, affiliate, brand, staff" data-module-search></label>
+                <div class="filter-grid module-filter-grid" data-module-filters></div>
               </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Issues">Coming in later sprint</button>
-            </article>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live issues...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load issues</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No issues found</h2><p class="muted">No matching issue records are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="performance" aria-labelledby="performance-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Monthly view</p>
-                <h2 id="performance-title">Performance</h2>
-                <p class="muted">A planned read-only performance surface for growth, activity, and health trends.</p>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="performance">
+              <div class="data-toolbar">
+                <div><p class="eyebrow">Monthly view</p><h2 id="performance-title">Performance</h2><p class="muted" data-module-count>Loading performance rows...</p></div>
               </div>
-              <div class="preview-grid">
-                <span>Monthly trends</span>
-                <span>Brand performance</span>
-                <span>KPI context</span>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar">
+                <label class="search-field"><span>Search performance</span><input type="search" placeholder="Search month, brand, affiliate, staff" data-module-search></label>
+                <div class="filter-grid module-filter-grid" data-module-filters></div>
               </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Performance">Coming in later sprint</button>
-            </article>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live performance...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load performance</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No performance rows found</h2><p class="muted">No matching monthly performance rows are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="leaderboard" aria-labelledby="leaderboard-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Ranking view</p>
-                <h2 id="leaderboard-title">Leaderboard</h2>
-                <p class="muted">A future ranking view for affiliate momentum and team visibility.</p>
-              </div>
-              <div class="preview-grid">
-                <span>Affiliate ranking</span>
-                <span>Staff performance</span>
-                <span>Segment leaders</span>
-              </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Leaderboard">Coming in later sprint</button>
-            </article>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="leaderboard">
+              <div class="data-toolbar"><div><p class="eyebrow">Ranking view</p><h2 id="leaderboard-title">Leaderboard</h2><p class="muted" data-module-count>Loading leaderboard...</p></div></div>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live leaderboard...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load leaderboard</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No leaderboard data found</h2><p class="muted">No activity counts are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="reports" aria-labelledby="reports-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Management output</p>
-                <h2 id="reports-title">Reports</h2>
-                <p class="muted">A planned reporting area for clean operational summaries and exports.</p>
-              </div>
-              <div class="preview-grid">
-                <span>Weekly summaries</span>
-                <span>Export-ready views</span>
-                <span>Management snapshots</span>
-              </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Reports">Coming in later sprint</button>
-            </article>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="reports">
+              <div class="data-toolbar"><div><p class="eyebrow">Management output</p><h2 id="reports-title">Reports</h2><p class="muted" data-module-count>Loading report previews...</p></div></div>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live report previews...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load reports</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No report data found</h2><p class="muted">No report previews are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="staff" aria-labelledby="staff-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Team directory</p>
-                <h2 id="staff-title">Staff</h2>
-                <p class="muted">A future directory for staff assignments, roles, and queue ownership.</p>
-              </div>
-              <div class="preview-grid">
-                <span>Staff roster</span>
-                <span>Assignment view</span>
-                <span>Role context</span>
-              </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Staff">Coming in later sprint</button>
-            </article>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="staff">
+              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div></div>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search staff</span><input type="search" placeholder="Search name, role, team, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live staff...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load staff</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No staff found</h2><p class="muted">No matching staff records are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="brands" aria-labelledby="brands-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Brand reference</p>
-                <h2 id="brands-title">Brands</h2>
-                <p class="muted">A planned reference surface for brand ownership and affiliate mapping.</p>
-              </div>
-              <div class="preview-grid">
-                <span>Brand directory</span>
-                <span>Affiliate mapping</span>
-                <span>Market context</span>
-              </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Brands">Coming in later sprint</button>
-            </article>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="brands">
+              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div></div>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search brands</span><input type="search" placeholder="Search brand, market, owner, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live brands...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load brands</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No brands found</h2><p class="muted">No matching brand records are available yet.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
 
           <section class="page-section" data-section="settings" aria-labelledby="settings-title">
-            <article class="module-preview glass-panel">
-              <div>
-                <p class="eyebrow">Workspace setup</p>
-                <h2 id="settings-title">Settings</h2>
-                <p class="muted">A future configuration area for secure workspace preferences.</p>
-              </div>
-              <div class="preview-grid">
-                <span>Workspace preferences</span>
-                <span>API configuration</span>
-                <span>Access controls</span>
-              </div>
-              <button class="button button-secondary" type="button" data-placeholder-action="Settings">Coming in later sprint</button>
-            </article>
+            <div class="data-panel glass-panel module-workspace" data-module-workspace="settings">
+              <div class="data-toolbar"><div><p class="eyebrow">Workspace setup</p><h2 id="settings-title">Settings</h2><p class="muted" data-module-count>Loading system status...</p></div></div>
+              <div class="module-stat-grid" data-module-stats></div>
+              <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading safe settings summary...</p></div>
+              <div class="table-state" data-module-error hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>Unable to load settings summary</h2><p class="muted" data-module-error-message>API request failed.</p></div></div>
+              <div class="table-state" data-module-empty hidden><div class="empty-icon" aria-hidden="true"></div><div><h2>No settings summary found</h2><p class="muted">Editable settings are coming after authentication.</p></div></div>
+              <div class="module-content" data-module-content hidden></div>
+            </div>
           </section>
         </section>
       </main>
@@ -769,11 +765,11 @@
       </section>
     </div>
 
-    <script src="js/config.js?v=3d"></script>
-    <script src="js/utils.js?v=3d"></script>
-    <script src="js/api.js?v=3d"></script>
-    <script src="js/auth.js?v=3d"></script>
-    <script src="js/router.js?v=3d"></script>
-    <script src="js/app.js?v=3d"></script>
+    <script src="js/config.js?v=3e"></script>
+    <script src="js/utils.js?v=3e"></script>
+    <script src="js/api.js?v=3e"></script>
+    <script src="js/auth.js?v=3e"></script>
+    <script src="js/router.js?v=3e"></script>
+    <script src="js/app.js?v=3e"></script>
   </body>
 </html>

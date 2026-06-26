@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, and Sprint 3D complete dashboard workspace. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, Sprint 3D complete dashboard workspace, and Sprint 3E full CRM workspace page completion. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
 
 ## Tech Stack
 
@@ -65,6 +65,14 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - The `?action=dashboard` API keeps all existing fields and adds optional nested dashboard sections with empty-safe fallbacks.
 - Backend reads remain modular and non-destructive. No Google Sheet headers or schema were changed.
 
+## Sprint 3E Notes
+
+- The app header is now a compact CRM command area with greeting, module context, API status, profile placeholder, notifications placeholder, and safe quick actions.
+- Interactions, Tasks, Issues, Performance, Leaderboard, Reports, Staff, Brands, and Settings now render professional live workspace pages instead of empty placeholders.
+- New backend read-only endpoints support the completed workspace pages: `reports`, `leaderboard`, and `settings`. Existing read-only module endpoints remain unchanged.
+- Unsupported create workflows outside Follow-ups use safe toast messages and do not write to Google Sheets.
+- GitHub Pages still publishes from `docs/`, synced from the modular `frontend/` source.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -84,5 +92,14 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 - `?action=dashboard`
 - `?action=affiliates`
 - `?action=getFollowups`
+- `?action=tasks`
+- `?action=issues`
+- `?action=interactions`
+- `?action=performance`
+- `?action=staff`
+- `?action=brands`
+- `?action=reports`
+- `?action=leaderboard`
+- `?action=settings`
 
 See [docs/API.md](docs/API.md) for the response shape and foundation endpoint details.

@@ -160,6 +160,18 @@ Reads rows from `Interaction_Log`.
 
 Reads rows from `Monthly_Performance`.
 
+### `?action=reports`
+
+Returns read-only report preview cards derived from existing dashboard data. No exports or generated CRM records are created.
+
+### `?action=leaderboard`
+
+Returns read-only ranking groups derived from staff workload, brand summary, and affiliate priority counts.
+
+### `?action=settings`
+
+Returns safe configuration and sheet-health summary data. It does not expose secrets, spreadsheet IDs, passwords, tokens, or editable settings.
+
 List endpoints return:
 
 ```json

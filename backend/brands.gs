@@ -1,5 +1,5 @@
 function getBrands() {
-  const items = readSheetObjects(SHEET_NAMES.BRAND_LIST);
+  const items = safeReadSheetObjects(SHEET_NAMES.BRAND_LIST);
   return {
     count: items.length,
     items: items
