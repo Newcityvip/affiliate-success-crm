@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, and Sprint 3C CRM polish pass. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, and Sprint 3D complete dashboard workspace. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
 
 ## Tech Stack
 
@@ -59,6 +59,12 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Placeholder modules now use professional preview cards and non-destructive toast messages instead of empty-looking panels.
 - GitHub Pages continues to publish from `docs/`, which is synced from the modular `frontend/` source.
 
+## Sprint 3D Notes
+
+- The Dashboard is now a real daily CRM operating workspace with KPI cards, today's workspace, follow-up snapshot, affiliate health, priority distribution, brand summary, staff workload, recent activity, open issues, open tasks, and monthly performance widgets.
+- The `?action=dashboard` API keeps all existing fields and adds optional nested dashboard sections with empty-safe fallbacks.
+- Backend reads remain modular and non-destructive. No Google Sheet headers or schema were changed.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -75,5 +81,8 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 
 - `?action=health`
 - `?action=meta`
+- `?action=dashboard`
+- `?action=affiliates`
+- `?action=getFollowups`
 
 See [docs/API.md](docs/API.md) for the response shape and foundation endpoint details.

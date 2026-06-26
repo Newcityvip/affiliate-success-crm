@@ -11,7 +11,7 @@ The backend exposes read APIs connected to the finalized Google Sheets CRM tabs.
 - `router.gs`: read-only action router.
 - `response.gs`: consistent JSON response envelope.
 - `sheets.gs`: spreadsheet access, sheet validation, and row mapping.
-- `dashboard.gs`: dashboard summary read model.
+- `dashboard.gs`: complete dashboard read model for KPI overview, follow-up queue, health, priority, brand, staff, activity, issues, tasks, and performance widgets.
 - `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
 - `followups.gs`: read and write actions for `Followup_Queue`.
 
@@ -46,6 +46,23 @@ After deployment, test these read-only endpoints:
 ?action=validateSheets
 ?action=dashboard
 ```
+
+The dashboard response keeps the original summary fields and adds optional Sprint 3D sections:
+
+```text
+todayWorkspace
+followupSnapshot
+affiliateHealth
+priorityDistribution
+brandSummary
+staffWorkload
+recentActivity
+openIssuesList
+openTasksList
+monthlyPerformance
+```
+
+These sections read from finalized tabs only and return empty arrays or zero counts when source rows or optional columns are unavailable.
 
 The API also supports:
 

@@ -197,6 +197,14 @@
   font-weight: 800;
 }
 
+.dashboard-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .module-chip,
 .summary-pill {
   display: inline-flex;
@@ -293,6 +301,32 @@
   padding: 1rem;
 }
 
+.dashboard-panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.panel-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.panel-heading h2 {
+  font-size: 1.1rem;
+}
+
+.warning-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-start;
+}
+
 .workspace-list {
   display: grid;
   gap: 0.65rem;
@@ -315,6 +349,205 @@
   color: var(--text);
   font-size: 1.45rem;
   line-height: 1;
+}
+
+.queue-snapshot {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.queue-card {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.queue-card.is-blue {
+  border-color: rgba(53, 192, 240, 0.22);
+}
+
+.queue-card.is-red {
+  border-color: rgba(255, 107, 122, 0.28);
+}
+
+.queue-card.is-amber {
+  border-color: rgba(248, 198, 109, 0.26);
+}
+
+.queue-card.is-green {
+  border-color: rgba(93, 228, 199, 0.22);
+}
+
+.queue-card-heading,
+.distribution-top {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.queue-card-heading h3 {
+  font-size: 0.92rem;
+}
+
+.mini-row,
+.record-item {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.mini-row:hover,
+.record-item:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.mini-row strong,
+.record-item strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+
+.mini-row small,
+.record-item small,
+.timeline-item small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.mini-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.distribution-list,
+.record-list,
+.timeline-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.distribution-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.distribution-top span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.distribution-track {
+  overflow: hidden;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.distribution-track span {
+  display: block;
+  height: 100%;
+  min-width: 0.2rem;
+  border-radius: inherit;
+  background: var(--accent-strong);
+}
+
+.distribution-track span.is-green {
+  background: var(--accent);
+}
+
+.distribution-track span.is-amber {
+  background: var(--warning);
+}
+
+.distribution-track span.is-red {
+  background: var(--danger);
+}
+
+.distribution-track span.is-gray {
+  background: var(--muted);
+}
+
+.compact-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.compact-table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 0.65rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.compact-table th {
+  background: rgba(8, 12, 20, 0.92);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.compact-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0 0 0.75rem 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.timeline-item::before {
+  position: absolute;
+  top: 0.2rem;
+  left: -0.32rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid rgba(93, 228, 199, 0.4);
+  border-radius: 999px;
+  background: var(--accent);
+  content: "";
+}
+
+.timeline-item span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.panel-empty {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .empty-state {

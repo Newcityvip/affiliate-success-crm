@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Affiliate Success CRM</title>
-    <link rel="stylesheet" href="css/base.css?v=3c">
-    <link rel="stylesheet" href="css/layout.css?v=3c">
-    <link rel="stylesheet" href="css/components.css?v=3c">
-    <link rel="stylesheet" href="css/pages.css?v=3c">
+    <link rel="stylesheet" href="css/base.css?v=3d">
+    <link rel="stylesheet" href="css/layout.css?v=3d">
+    <link rel="stylesheet" href="css/components.css?v=3d">
+    <link rel="stylesheet" href="css/pages.css?v=3d">
   </head>
   <body data-page="app">
     <div class="mobile-backdrop" data-sidebar-backdrop hidden></div>
@@ -95,11 +95,14 @@
           <section class="page-section is-active" data-section="dashboard" aria-labelledby="dashboard-title">
             <div class="dashboard-hero glass-panel">
               <div>
-                <p class="eyebrow">Live Dashboard</p>
-                <h2 id="dashboard-title">CRM dashboard preview</h2>
+                <p class="eyebrow">Live CRM Dashboard</p>
+                <h2 id="dashboard-title">Affiliate manager command center</h2>
                 <p class="muted" data-dashboard-status>Loading dashboard statistics from the live Apps Script API.</p>
               </div>
-              <span class="demo-badge" data-dashboard-badge>Loading</span>
+              <div class="dashboard-status-strip">
+                <span class="demo-badge" data-dashboard-badge>Loading</span>
+                <span class="module-chip" data-dashboard-date>Today</span>
+              </div>
             </div>
 
             <div class="metric-grid" aria-label="Dashboard metrics" data-dashboard-metrics>
@@ -109,7 +112,7 @@
                 <small data-metric-status>Loading live data</small>
               </article>
               <article class="metric-card glass-panel">
-                <span>Healthy</span>
+                <span>Healthy Affiliates</span>
                 <strong data-metric="healthyAffiliates">...</strong>
                 <small data-metric-status>Loading live data</small>
               </article>
@@ -119,13 +122,8 @@
                 <small data-metric-status>Loading live data</small>
               </article>
               <article class="metric-card glass-panel">
-                <span>Overdue</span>
+                <span>Overdue Follow-ups</span>
                 <strong data-metric="overdueFollowups">...</strong>
-                <small data-metric-status>Loading live data</small>
-              </article>
-              <article class="metric-card glass-panel">
-                <span>Open Issues</span>
-                <strong data-metric="openIssues">...</strong>
                 <small data-metric-status>Loading live data</small>
               </article>
               <article class="metric-card glass-panel">
@@ -134,31 +132,170 @@
                 <small data-metric-status>Loading live data</small>
               </article>
               <article class="metric-card glass-panel">
-                <span>Monthly Growth</span>
-                <strong data-metric="monthlyGrowth">...</strong>
+                <span>Open Issues</span>
+                <strong data-metric="openIssues">...</strong>
                 <small data-metric-status>Loading live data</small>
               </article>
               <article class="metric-card glass-panel">
-                <span>Reply Rate</span>
-                <strong data-metric="replyRate">...</strong>
+                <span>Completed Follow-ups</span>
+                <strong data-metric="completedFollowups">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Upcoming Follow-ups</span>
+                <strong data-metric="upcomingFollowups">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Active Brands</span>
+                <strong data-metric="activeBrands">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Staff Members</span>
+                <strong data-metric="staffMembers">...</strong>
                 <small data-metric-status>Loading live data</small>
               </article>
             </div>
 
-            <article class="workspace-today glass-panel" aria-labelledby="workspace-today-title">
-              <div>
-                <p class="eyebrow">Today's workspace</p>
-                <h2 id="workspace-today-title">Operational snapshot</h2>
-                <p class="muted">A compact view of the live counts that shape the day.</p>
-              </div>
-              <div class="workspace-list" aria-label="Today's workspace metrics">
-                <span>Total Affiliates <strong data-workspace-metric="totalAffiliates">...</strong></span>
-                <span>Today's Follow-ups <strong data-workspace-metric="todayFollowups">...</strong></span>
-                <span>Overdue <strong data-workspace-metric="overdueFollowups">...</strong></span>
-                <span>Open Tasks <strong data-workspace-metric="openTasks">...</strong></span>
-                <span>Open Issues <strong data-workspace-metric="openIssues">...</strong></span>
-              </div>
-            </article>
+            <div class="dashboard-grid">
+              <article class="workspace-today glass-panel dashboard-panel is-wide" aria-labelledby="workspace-today-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Today's workspace</p>
+                    <h2 id="workspace-today-title">Operational snapshot</h2>
+                    <p class="muted">Counts that shape the affiliate management day.</p>
+                  </div>
+                  <div class="warning-pills" data-dashboard-warnings></div>
+                </div>
+                <div class="workspace-list" aria-label="Today's workspace metrics">
+                  <span>Due today <strong data-workspace-metric="dueToday">...</strong></span>
+                  <span>Overdue <strong data-workspace-metric="overdue">...</strong></span>
+                  <span>Upcoming this week <strong data-workspace-metric="upcomingThisWeek">...</strong></span>
+                  <span>Completed today <strong data-workspace-metric="completedToday">...</strong></span>
+                  <span>Open tasks <strong data-workspace-metric="openTasks">...</strong></span>
+                  <span>Open issues <strong data-workspace-metric="openIssues">...</strong></span>
+                  <span>Recent interactions <strong data-workspace-metric="recentInteractions">...</strong></span>
+                </div>
+              </article>
+
+              <article class="dashboard-panel glass-panel is-wide" aria-labelledby="followup-snapshot-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Follow-up queue</p>
+                    <h2 id="followup-snapshot-title">Queue snapshot</h2>
+                  </div>
+                  <a class="button button-secondary button-small" href="#followups" data-route="followups">View all</a>
+                </div>
+                <div class="queue-snapshot" data-dashboard-followups></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="health-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Affiliate health</p>
+                    <h2 id="health-title">Health distribution</h2>
+                  </div>
+                </div>
+                <div class="distribution-list" data-dashboard-health></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="priority-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Priority</p>
+                    <h2 id="priority-title">Priority distribution</h2>
+                  </div>
+                </div>
+                <div class="distribution-list" data-dashboard-priority></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel is-wide" aria-labelledby="brand-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Brands</p>
+                    <h2 id="brand-title">Brand snapshot</h2>
+                  </div>
+                </div>
+                <div class="compact-table-wrap">
+                  <table class="compact-table">
+                    <thead>
+                      <tr>
+                        <th>Brand</th>
+                        <th>Total affiliates</th>
+                        <th>Healthy</th>
+                        <th>At risk</th>
+                        <th>Pending follow-ups</th>
+                      </tr>
+                    </thead>
+                    <tbody data-dashboard-brands></tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="dashboard-panel glass-panel is-wide" aria-labelledby="staff-workload-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Staff workload</p>
+                    <h2 id="staff-workload-title">Team queue load</h2>
+                  </div>
+                </div>
+                <div class="compact-table-wrap">
+                  <table class="compact-table">
+                    <thead>
+                      <tr>
+                        <th>Staff</th>
+                        <th>Follow-ups</th>
+                        <th>Open tasks</th>
+                        <th>Open issues</th>
+                        <th>Overdue</th>
+                      </tr>
+                    </thead>
+                    <tbody data-dashboard-staff></tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="activity-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Activity</p>
+                    <h2 id="activity-title">Recent activity</h2>
+                  </div>
+                </div>
+                <div class="timeline-list" data-dashboard-activity></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="issues-widget-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Issues</p>
+                    <h2 id="issues-widget-title">Open issues</h2>
+                  </div>
+                </div>
+                <div class="record-list" data-dashboard-issues></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="tasks-widget-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Tasks</p>
+                    <h2 id="tasks-widget-title">Open tasks</h2>
+                  </div>
+                </div>
+                <div class="record-list" data-dashboard-tasks></div>
+              </article>
+
+              <article class="dashboard-panel glass-panel" aria-labelledby="performance-widget-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Monthly performance</p>
+                    <h2 id="performance-widget-title">Performance snapshot</h2>
+                  </div>
+                </div>
+                <div class="record-list" data-dashboard-performance></div>
+              </article>
+            </div>
           </section>
 
           <section class="page-section" data-section="affiliates" aria-labelledby="affiliates-title">
@@ -632,11 +769,11 @@
       </section>
     </div>
 
-    <script src="js/config.js?v=3c"></script>
-    <script src="js/utils.js?v=3c"></script>
-    <script src="js/api.js?v=3c"></script>
-    <script src="js/auth.js?v=3c"></script>
-    <script src="js/router.js?v=3c"></script>
-    <script src="js/app.js?v=3c"></script>
+    <script src="js/config.js?v=3d"></script>
+    <script src="js/utils.js?v=3d"></script>
+    <script src="js/api.js?v=3d"></script>
+    <script src="js/auth.js?v=3d"></script>
+    <script src="js/router.js?v=3d"></script>
+    <script src="js/app.js?v=3d"></script>
   </body>
 </html>

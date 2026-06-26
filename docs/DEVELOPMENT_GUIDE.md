@@ -36,6 +36,7 @@ Use clear, conventional commit messages:
 - Keep page behavior in `frontend/js/app.js` and route metadata in `frontend/js/router.js`.
 - Sprint 3A adds the live read-only Affiliates page; do not add create, edit, delete, or sheet write behavior there until a write sprint is explicitly scoped.
 - Sprint 3C keeps the CRM command center, toast messages, summary badges, and placeholder previews in vanilla frontend code. Keep `docs/` synced from `frontend/` before every GitHub Pages push.
+- Sprint 3D expands the Dashboard through optional fields on `?action=dashboard`. Preserve the existing top-level dashboard fields and render empty states instead of inventing data.
 
 ## Sprint 1 UI Shell
 

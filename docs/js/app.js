@@ -10,10 +10,12 @@
     healthyAffiliates: 'Live API data',
     todayFollowups: 'Live API data',
     overdueFollowups: 'Live API data',
-    openIssues: 'Live API data',
     openTasks: 'Live API data',
-    monthlyGrowth: 'Not provided by API',
-    replyRate: 'Not provided by API'
+    openIssues: 'Live API data',
+    completedFollowups: 'Live API data',
+    upcomingFollowups: 'Live API data',
+    activeBrands: 'Live API data',
+    staffMembers: 'Live API data'
   };
 
   var affiliateColumns = [
@@ -232,6 +234,20 @@
     return String(value);
   }
 
+  function asArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function firstDefined() {
+    for (var index = 0; index < arguments.length; index += 1) {
+      if (arguments[index] !== null && arguments[index] !== undefined && arguments[index] !== '') {
+        return arguments[index];
+      }
+    }
+
+    return '';
+  }
+
   function bindNavigation() {
     document.querySelectorAll('[data-route]').forEach(function (item) {
       item.addEventListener('click', function (event) {
@@ -312,6 +328,8 @@
       utils.setText(metric, '...');
     });
 
+    setDashboardDate();
+    setDashboardWidgetsLoading();
     updateCommandCenter(getCurrentRouteKey());
   }
 
@@ -333,6 +351,7 @@
       utils.setText(metric, '--');
     });
 
+    setDashboardWidgetsError(message || 'Unable to load dashboard data.');
     setNavCount('tasks', null);
     setNavCount('issues', null);
     updateCommandCenter(getCurrentRouteKey());
@@ -364,19 +383,417 @@
     utils.setText(utils.qs('[data-dashboard-status]'), 'Dashboard statistics loaded from the live Apps Script API.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'Live API data');
     renderDashboardWorkspace(data || {});
+    renderDashboardWidgets(data || {});
     updateDashboardNavCounts(data || {});
     updateCommandCenter(getCurrentRouteKey());
   }
 
-  function renderDashboardWorkspace(data) {
-    document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
-      utils.setText(metric, metricValue(data, metric.dataset.workspaceMetric));
+  function setDashboardDate() {
+    var date = new Date().toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
     });
+    utils.setText(utils.qs('[data-dashboard-date]'), date);
+  }
+
+  function renderDashboardWorkspace(data) {
+    var workspace = data.todayWorkspace || {
+      dueToday: data.todayFollowups,
+      overdue: data.overdueFollowups,
+      upcomingThisWeek: data.upcomingFollowups,
+      completedToday: data.completedFollowups,
+      openTasks: data.openTasks,
+      openIssues: data.openIssues,
+      recentInteractions: data.recentInteractions,
+      warnings: []
+    };
+    document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
+      utils.setText(metric, metricValue(workspace, metric.dataset.workspaceMetric));
+    });
+    renderWarnings(asArray(workspace.warnings));
   }
 
   function updateDashboardNavCounts(data) {
     setNavCount('tasks', data.openTasks);
     setNavCount('issues', data.openIssues);
+  }
+
+  function setDashboardWidgetsLoading() {
+    renderWarnings([]);
+    setPanelLoading('[data-dashboard-followups]', 'Loading follow-up queue...');
+    setPanelLoading('[data-dashboard-health]', 'Loading health distribution...');
+    setPanelLoading('[data-dashboard-priority]', 'Loading priority distribution...');
+    setTableLoading('[data-dashboard-brands]', 5);
+    setTableLoading('[data-dashboard-staff]', 5);
+    setPanelLoading('[data-dashboard-activity]', 'Loading recent activity...');
+    setPanelLoading('[data-dashboard-issues]', 'Loading open issues...');
+    setPanelLoading('[data-dashboard-tasks]', 'Loading open tasks...');
+    setPanelLoading('[data-dashboard-performance]', 'Loading monthly performance...');
+  }
+
+  function setDashboardWidgetsError(message) {
+    renderWarnings([]);
+    setPanelEmpty('[data-dashboard-followups]', message);
+    setPanelEmpty('[data-dashboard-health]', message);
+    setPanelEmpty('[data-dashboard-priority]', message);
+    setTableEmpty('[data-dashboard-brands]', 5, message);
+    setTableEmpty('[data-dashboard-staff]', 5, message);
+    setPanelEmpty('[data-dashboard-activity]', message);
+    setPanelEmpty('[data-dashboard-issues]', message);
+    setPanelEmpty('[data-dashboard-tasks]', message);
+    setPanelEmpty('[data-dashboard-performance]', message);
+  }
+
+  function renderDashboardWidgets(data) {
+    renderFollowupSnapshot(data.followupSnapshot || {});
+    renderDistribution('[data-dashboard-health]', asArray(data.affiliateHealth), 'No affiliate health data yet.');
+    renderDistribution('[data-dashboard-priority]', asArray(data.priorityDistribution), 'No priority data yet.');
+    renderBrandSummary(asArray(data.brandSummary));
+    renderStaffWorkload(asArray(data.staffWorkload));
+    renderActivity(asArray(data.recentActivity));
+    renderIssues(asArray(data.openIssuesList));
+    renderTasks(asArray(data.openTasksList));
+    renderPerformance(asArray(data.monthlyPerformance));
+  }
+
+  function renderWarnings(warnings) {
+    var container = utils.qs('[data-dashboard-warnings]');
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+    if (!warnings.length) {
+      var ok = document.createElement('span');
+      ok.className = 'status-badge is-green';
+      ok.textContent = 'No urgent warnings';
+      container.appendChild(ok);
+      return;
+    }
+
+    warnings.forEach(function (warning) {
+      var badge = document.createElement('span');
+      badge.className = 'status-badge is-' + (warning.tone || 'amber');
+      badge.textContent = displayPlainValue(warning.count) + ' ' + displayPlainValue(warning.label);
+      container.appendChild(badge);
+    });
+  }
+
+  function renderFollowupSnapshot(snapshot) {
+    var container = utils.qs('[data-dashboard-followups]');
+    var groups = [
+      { key: 'today', label: "Today's follow-ups", tone: 'blue' },
+      { key: 'overdue', label: 'Overdue follow-ups', tone: 'red' },
+      { key: 'upcoming', label: 'Upcoming follow-ups', tone: 'amber' },
+      { key: 'completed', label: 'Completed follow-ups', tone: 'green' }
+    ];
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+    groups.forEach(function (group) {
+      var rows = asArray(snapshot[group.key]);
+      var section = document.createElement('section');
+      var heading = document.createElement('div');
+      var title = document.createElement('h3');
+      var count = document.createElement('span');
+
+      section.className = 'queue-card is-' + group.tone;
+      heading.className = 'queue-card-heading';
+      title.textContent = group.label;
+      count.className = 'status-badge is-' + group.tone;
+      count.textContent = rows.length;
+      heading.appendChild(title);
+      heading.appendChild(count);
+      section.appendChild(heading);
+
+      if (!rows.length) {
+        section.appendChild(createEmptyPanel('No records in this queue.'));
+      } else {
+        rows.forEach(function (row) {
+          section.appendChild(createFollowupMiniRow(row));
+        });
+      }
+
+      container.appendChild(section);
+    });
+  }
+
+  function createFollowupMiniRow(row) {
+    var item = document.createElement('div');
+    var meta = document.createElement('div');
+    var title = document.createElement('strong');
+    var details = document.createElement('small');
+    var badges = document.createElement('div');
+
+    item.className = 'mini-row';
+    title.textContent = firstDefined(row.Affiliate_Name, row.Affiliate_ID, 'Unassigned affiliate');
+    details.textContent = [
+      firstDefined(row.Brand, 'No brand'),
+      firstDefined(row.Assigned_Staff, 'Unassigned'),
+      formatDate(firstDefined(row.Followup_Date, ''))
+    ].join(' | ');
+    meta.appendChild(title);
+    meta.appendChild(details);
+    badges.className = 'mini-badges';
+    badges.appendChild(createBadge('Priority', firstDefined(row.Priority, 'N/A')));
+    badges.appendChild(createBadge('Status', firstDefined(row.Status, 'N/A')));
+    item.appendChild(meta);
+    item.appendChild(badges);
+    return item;
+  }
+
+  function renderDistribution(selector, items, emptyMessage) {
+    var container = utils.qs(selector);
+    var total = items.reduce(function (sum, item) {
+      return sum + Number(item.count || 0);
+    }, 0);
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+    if (!items.length || total === 0) {
+      container.appendChild(createEmptyPanel(emptyMessage));
+      return;
+    }
+
+    items.forEach(function (item) {
+      var row = document.createElement('div');
+      var top = document.createElement('div');
+      var label = document.createElement('span');
+      var count = document.createElement('strong');
+      var track = document.createElement('div');
+      var bar = document.createElement('span');
+      var percent = total ? Math.round((Number(item.count || 0) / total) * 100) : 0;
+
+      row.className = 'distribution-row';
+      top.className = 'distribution-top';
+      label.textContent = displayPlainValue(item.label);
+      count.textContent = displayPlainValue(item.count);
+      track.className = 'distribution-track';
+      bar.className = 'is-' + (item.tone || 'blue');
+      bar.style.width = percent + '%';
+      top.appendChild(label);
+      top.appendChild(count);
+      track.appendChild(bar);
+      row.appendChild(top);
+      row.appendChild(track);
+      container.appendChild(row);
+    });
+  }
+
+  function renderBrandSummary(items) {
+    var body = utils.qs('[data-dashboard-brands]');
+    if (!body) {
+      return;
+    }
+
+    body.innerHTML = '';
+    if (!items.length) {
+      setTableEmpty('[data-dashboard-brands]', 5, 'No brand data available.');
+      return;
+    }
+
+    items.forEach(function (item) {
+      appendCompactRow(body, [
+        item.brand,
+        item.totalAffiliates,
+        item.healthy,
+        item.atRisk,
+        item.pendingFollowups
+      ]);
+    });
+  }
+
+  function renderStaffWorkload(items) {
+    var body = utils.qs('[data-dashboard-staff]');
+    if (!body) {
+      return;
+    }
+
+    body.innerHTML = '';
+    if (!items.length) {
+      setTableEmpty('[data-dashboard-staff]', 5, 'No staff workload data available.');
+      return;
+    }
+
+    items.forEach(function (item) {
+      appendCompactRow(body, [
+        item.staff,
+        item.assignedFollowups,
+        item.openTasks,
+        item.openIssues,
+        item.overdueFollowups
+      ]);
+    });
+  }
+
+  function renderActivity(items) {
+    var container = utils.qs('[data-dashboard-activity]');
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+    if (!items.length) {
+      container.appendChild(createEmptyPanel('No recent activity yet.'));
+      return;
+    }
+
+    items.forEach(function (item) {
+      var row = document.createElement('div');
+      var date = document.createElement('span');
+      var title = document.createElement('strong');
+      var details = document.createElement('small');
+
+      row.className = 'timeline-item';
+      date.textContent = formatDate(firstDefined(item.date, ''));
+      title.textContent = firstDefined(item.type, 'Activity') + ' - ' + firstDefined(item.affiliate, 'Affiliate');
+      details.textContent = firstDefined(item.summary, item.staff, 'No summary available');
+      row.appendChild(date);
+      row.appendChild(title);
+      row.appendChild(details);
+      container.appendChild(row);
+    });
+  }
+
+  function renderIssues(items) {
+    renderRecordList('[data-dashboard-issues]', items, 'No open issues.', function (item) {
+      return {
+        title: firstDefined(item.issueId, item.affiliate, 'Issue'),
+        meta: [item.affiliate, item.brand, item.assignedStaff, formatDate(item.createdDate)].filter(Boolean).join(' | '),
+        badges: [
+          { key: 'Priority', value: item.priority },
+          { key: 'Status', value: item.status }
+        ]
+      };
+    });
+  }
+
+  function renderTasks(items) {
+    renderRecordList('[data-dashboard-tasks]', items, 'No open tasks.', function (item) {
+      return {
+        title: firstDefined(item.title, item.taskId, 'Task'),
+        meta: [item.affiliate, item.assignedStaff, formatDate(item.dueDate)].filter(Boolean).join(' | '),
+        badges: [
+          { key: 'Priority', value: item.priority },
+          { key: 'Status', value: item.status }
+        ]
+      };
+    });
+  }
+
+  function renderPerformance(items) {
+    renderRecordList('[data-dashboard-performance]', items, 'No monthly performance rows available.', function (item) {
+      var metrics = [];
+      if (item.ftd !== '') {
+        metrics.push('FTD ' + item.ftd);
+      }
+      if (item.revenue !== '') {
+        metrics.push('Revenue ' + item.revenue);
+      }
+      if (item.growth) {
+        metrics.push('Growth ' + item.growth);
+      }
+      return {
+        title: [item.month, item.brand].filter(Boolean).join(' | ') || 'Performance row',
+        meta: firstDefined(item.affiliate, 'No affiliate') + (metrics.length ? ' | ' + metrics.join(' | ') : ''),
+        badges: []
+      };
+    });
+  }
+
+  function renderRecordList(selector, items, emptyMessage, mapper) {
+    var container = utils.qs(selector);
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+    if (!items.length) {
+      container.appendChild(createEmptyPanel(emptyMessage));
+      return;
+    }
+
+    items.forEach(function (item) {
+      var config = mapper(item);
+      var row = document.createElement('div');
+      var meta = document.createElement('div');
+      var title = document.createElement('strong');
+      var details = document.createElement('small');
+      var badges = document.createElement('div');
+
+      row.className = 'record-item';
+      title.textContent = displayPlainValue(config.title);
+      details.textContent = displayPlainValue(config.meta);
+      badges.className = 'mini-badges';
+      asArray(config.badges).forEach(function (badge) {
+        badges.appendChild(createBadge(badge.key, firstDefined(badge.value, 'N/A')));
+      });
+      meta.appendChild(title);
+      meta.appendChild(details);
+      row.appendChild(meta);
+      row.appendChild(badges);
+      container.appendChild(row);
+    });
+  }
+
+  function appendCompactRow(body, values) {
+    var row = document.createElement('tr');
+    values.forEach(function (value) {
+      var cell = document.createElement('td');
+      cell.textContent = displayPlainValue(value);
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  }
+
+  function setPanelLoading(selector, message) {
+    var container = utils.qs(selector);
+    if (!container) {
+      return;
+    }
+    container.innerHTML = '';
+    container.appendChild(createEmptyPanel(message));
+  }
+
+  function setPanelEmpty(selector, message) {
+    var container = utils.qs(selector);
+    if (!container) {
+      return;
+    }
+    container.innerHTML = '';
+    container.appendChild(createEmptyPanel(message));
+  }
+
+  function setTableLoading(selector, colSpan) {
+    setTableEmpty(selector, colSpan, 'Loading live data...');
+  }
+
+  function setTableEmpty(selector, colSpan, message) {
+    var body = utils.qs(selector);
+    var row = document.createElement('tr');
+    var cell = document.createElement('td');
+    if (!body) {
+      return;
+    }
+    body.innerHTML = '';
+    cell.colSpan = colSpan;
+    cell.textContent = message;
+    row.appendChild(cell);
+    body.appendChild(row);
+  }
+
+  function createEmptyPanel(message) {
+    var empty = document.createElement('p');
+    empty.className = 'panel-empty';
+    empty.textContent = message;
+    return empty;
   }
 
   async function loadDashboard() {

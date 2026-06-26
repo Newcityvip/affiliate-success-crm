@@ -73,7 +73,7 @@ Example success data:
 
 ### `?action=dashboard`
 
-Returns a summary object:
+Returns a dashboard object. Existing summary fields remain stable, and Sprint 3D adds optional nested sections for the full dashboard workspace.
 
 ```json
 {
@@ -88,9 +88,41 @@ Returns a summary object:
   "openTasks": 0,
   "openIssues": 0,
   "totalBrands": 0,
-  "activeStaff": 0
+  "activeStaff": 0,
+  "completedFollowups": 0,
+  "upcomingFollowups": 0,
+  "activeBrands": 0,
+  "staffMembers": 0,
+  "recentInteractions": 0,
+  "todayWorkspace": {
+    "dueToday": 0,
+    "overdue": 0,
+    "upcomingThisWeek": 0,
+    "completedToday": 0,
+    "openTasks": 0,
+    "openIssues": 0,
+    "recentInteractions": 0,
+    "warnings": []
+  },
+  "followupSnapshot": {
+    "today": [],
+    "overdue": [],
+    "upcoming": [],
+    "completed": []
+  },
+  "affiliateHealth": [],
+  "priorityDistribution": [],
+  "brandSummary": [],
+  "staffWorkload": [],
+  "recentActivity": [],
+  "upcomingFollowupsList": [],
+  "openIssuesList": [],
+  "openTasksList": [],
+  "monthlyPerformance": []
 }
 ```
+
+Dashboard arrays are derived from existing sheets only. Empty or missing optional columns return empty strings, zero counts, or empty arrays instead of fake CRM data.
 
 ### `?action=affiliates`
 
