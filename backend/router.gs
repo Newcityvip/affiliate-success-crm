@@ -52,12 +52,6 @@ function handleRequest(e, method) {
     }
 
     if (action === 'login') {
-      if (method !== 'POST') {
-        return errorResponse('Login requires POST.', 'METHOD_NOT_ALLOWED', {
-          method: method
-        });
-      }
-
       return successResponse(loginStaff(getRequestPayload(e).loginId), 'Login successful.');
     }
 

@@ -14,13 +14,18 @@
     }
   }
 
-  function buildUrl(action) {
+  function buildUrl(action, params) {
     if (!config.API_BASE_URL) {
       return '';
     }
 
     var url = new URL(config.API_BASE_URL);
     url.searchParams.set('action', action);
+    Object.keys(params || {}).forEach(function (key) {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+        url.searchParams.set(key, params[key]);
+      }
+    });
     if (action !== 'health' && action !== 'meta' && action !== 'login') {
       var token = getSessionToken();
       if (token) {
@@ -47,7 +52,7 @@
   }
 
   async function request(action, options) {
-    var url = buildUrl(action);
+    var url = action.indexOf('http') === 0 ? action : buildUrl(action);
 
     if (!url) {
       return {
@@ -114,6 +119,10 @@
     });
   }
 
+  function get(action, data) {
+    return request(buildUrl(action, data || {}));
+  }
+
   window.AffiliateSuccessApi = Object.freeze({
     request: request,
     health: function () {
@@ -123,7 +132,7 @@
       return request('meta');
     },
     login: function (data) {
-      return post('login', data);
+      return get('login', data);
     },
     getSession: function () {
       return request('getSession');
