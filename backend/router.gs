@@ -9,6 +9,7 @@ function handleRequest(e, method) {
     'health',
     'meta',
     'login',
+    'authlogin',
     'getsession',
     'logout',
     'validatesheets',
@@ -51,8 +52,8 @@ function handleRequest(e, method) {
       }, 'Application metadata loaded.');
     }
 
-    if (action === 'login') {
-      return successResponse(loginStaff(getRequestPayload(e).loginId), 'Login successful.');
+    if (action === 'login' || action === 'authlogin') {
+      return successResponse(loginStaff(getRequestLoginId(e)), 'Login successful.');
     }
 
     if (action === 'getsession') {
@@ -183,14 +184,54 @@ function getRequestErrorCode(error) {
 function getRequestPayload(e) {
   const params = (e && e.parameter) || {};
   const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
+  const contentType = safeString(e && e.postData && e.postData.type).toLowerCase();
 
   if (contents) {
+    if (contentType.indexOf('application/x-www-form-urlencoded') !== -1) {
+      return parseFormEncodedPayload(contents, params);
+    }
+
     try {
       return JSON.parse(contents);
     } catch (error) {
-      throw new Error('Invalid JSON request body.');
+      return parseFormEncodedPayload(contents, params);
     }
   }
 
   return params;
+}
+
+function getRequestLoginId(e) {
+  const payload = getRequestPayload(e);
+  return safeString(payload.loginId || payload.loginID || payload.Login_ID || payload.login_id || payload.staffId || payload.Staff_ID);
+}
+
+function parseFormEncodedPayload(contents, fallbackParams) {
+  const payload = {};
+
+  safeString(contents).split('&').forEach(function (pair) {
+    const parts = pair.split('=');
+    const key = decodeFormComponent(parts.shift() || '');
+    const value = decodeFormComponent(parts.join('=') || '');
+
+    if (key) {
+      payload[key] = value;
+    }
+  });
+
+  Object.keys(fallbackParams || {}).forEach(function (key) {
+    if (payload[key] === undefined) {
+      payload[key] = fallbackParams[key];
+    }
+  });
+
+  return payload;
+}
+
+function decodeFormComponent(value) {
+  try {
+    return decodeURIComponent(safeString(value).replace(/\+/g, ' '));
+  } catch (error) {
+    return safeString(value);
+  }
 }

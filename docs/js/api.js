@@ -3,6 +3,7 @@
 
   var config = window.AffiliateSuccessConfig || {};
   var SESSION_KEY = 'affiliateSuccessSession';
+  var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin'];
 
   function getSessionToken() {
     try {
@@ -26,7 +27,7 @@
         url.searchParams.set(key, params[key]);
       }
     });
-    if (action !== 'health' && action !== 'meta' && action !== 'login') {
+    if (PUBLIC_ACTIONS.indexOf(String(action).toLowerCase()) === -1) {
       var token = getSessionToken();
       if (token) {
         url.searchParams.set('sessionToken', token);
@@ -133,6 +134,9 @@
     },
     login: function (data) {
       return get('login', data);
+    },
+    authLogin: function (data) {
+      return get('authLogin', data);
     },
     getSession: function () {
       return request('getSession');
