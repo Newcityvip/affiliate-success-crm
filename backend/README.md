@@ -2,7 +2,7 @@
 
 This folder contains the Google Apps Script backend for Affiliate Success CRM.
 
-The backend exposes read APIs connected to the finalized Google Sheets CRM tabs. Sprint 3B adds write actions for `Followup_Queue` only. Authentication, schema changes, and secrets are not included.
+The backend exposes APIs connected to the finalized Google Sheets CRM tabs. Sprint 3B adds write actions for `Followup_Queue` only. Sprint 4A adds temporary Login_ID auth, server-side sessions, role-based filtering, and safe role restrictions. Passwords, private tokens, spreadsheet IDs, and secrets are not included.
 
 ## Files
 
@@ -10,6 +10,7 @@ The backend exposes read APIs connected to the finalized Google Sheets CRM tabs.
 - `config.gs`: non-secret app constants and `SPREADSHEET_ID` placeholder.
 - `router.gs`: read-only action router.
 - `response.gs`: consistent JSON response envelope.
+- `auth.gs`: temporary Login_ID auth, server-side sessions, role helpers, Staff_List matching, and future IP allowlist placeholders.
 - `sheets.gs`: spreadsheet access, sheet validation, and row mapping.
 - `dashboard.gs`: complete dashboard read model for KPI overview, follow-up queue, health, priority, brand, staff, activity, issues, tasks, and performance widgets.
 - `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
@@ -29,6 +30,28 @@ const SPREADSHEET_ID = "PASTE_SPREADSHEET_ID_HERE";
 with the real Google Spreadsheet ID in the Apps Script editor or secure deployment workflow.
 
 Do not commit the real spreadsheet ID, API secrets, bot tokens, passwords, or session secrets to this repository.
+
+## Sprint 4A Auth Setup
+
+Temporary login uses `Staff_List` if available. Recommended columns are:
+
+```text
+Staff_ID
+Login_ID
+Name
+Staff_Name
+Role
+Team
+Status
+Active
+Email
+Allowed_IPs
+Permission_Level
+```
+
+Supported roles are `SUPER_ADMIN`, `ADMIN`, and `STAFF`. If `Role` is missing, `ADMIN01` falls back to `SUPER_ADMIN`; all other users default to `STAFF`. If `Staff_List` is missing or empty, `ADMIN01` can sign in as a temporary development `SUPER_ADMIN`.
+
+Sessions are generated server-side and stored in Apps Script CacheService/PropertiesService with an 8-hour application expiry. Session tokens are never stored in Google Sheets.
 
 ## Deploy As Web App
 
@@ -69,6 +92,9 @@ The API also supports:
 
 ```text
 ?action=meta
+?action=login
+?action=getSession
+?action=logout
 ?action=affiliates
 ?action=staff
 ?action=brands
@@ -86,7 +112,7 @@ The API also supports:
 ?action=completeFollowup
 ```
 
-All responses use the standard `success`, `message`, `data`, `error`, and `meta` envelope.
+All protected endpoints require `sessionToken` after Sprint 4A. All responses use the standard `ok`, `success`, `message`, `data`, `error`, `code`, `details`, and `meta` envelope.
 
 Follow-up write actions require `POST` and only use these finalized `Followup_Queue` headers:
 
@@ -99,3 +125,7 @@ Priority
 Status
 Generated_From
 ```
+
+## Future IP Allowlist Plan
+
+Sprint 4A prepares `Allowed_IPs` as a Staff_List column and includes a `getClientIp(e)` helper, but it does not enforce IP blocking. Apps Script often cannot reliably see the true client IP behind browser/API layers. For production IP enforcement, place a Cloudflare Worker or equivalent session/IP gate in front of the Apps Script API.

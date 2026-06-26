@@ -29,3 +29,23 @@ const SESSION_CONFIG = Object.freeze({
   ttlMinutes: 480,
   secretPlaceholder: 'SET_SESSION_SECRET_OUTSIDE_SOURCE_CONTROL'
 });
+
+const AUTH_ROLES = Object.freeze({
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  STAFF: 'STAFF'
+});
+
+const STAFF_AUTH_COLUMNS = Object.freeze([
+  'Staff_ID',
+  'Login_ID',
+  'Name',
+  'Staff_Name',
+  'Role',
+  'Team',
+  'Status',
+  'Active',
+  'Email',
+  'Allowed_IPs',
+  'Permission_Level'
+]);

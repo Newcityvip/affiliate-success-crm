@@ -4,10 +4,11 @@ The backend is a Google Apps Script web app. It exposes read APIs for finalized 
 
 ## Response Format
 
-All endpoints return the same response envelope:
+All endpoints return the same response envelope. Sprint 4A adds `ok`, `code`, and `details` for safer frontend handling while preserving `success` compatibility:
 
 ```json
 {
+  "ok": true,
   "success": true,
   "message": "OK",
   "data": {},
@@ -20,7 +21,70 @@ All endpoints return the same response envelope:
 }
 ```
 
-Failed requests return `success: false`, an empty `data` object, and an `error` object with a code and details.
+Failed requests return `success: false`, an empty `data` object, an `error` string, a top-level `code`, and optional `details`.
+
+Sprint 4A failed requests use:
+
+```json
+{
+  "ok": false,
+  "success": false,
+  "message": "Unauthorized",
+  "data": {},
+  "error": "Unauthorized",
+  "code": "UNAUTHORIZED",
+  "details": {},
+  "meta": {}
+}
+```
+
+## Authentication Endpoints
+
+### `?action=login`
+
+Requires `POST`. Temporary Sprint 4A login uses `Login_ID` only:
+
+```json
+{
+  "loginId": "ADMIN01"
+}
+```
+
+Success returns `sessionToken`, `expiresAt`, and a sanitized `user` object. Password/PIN validation is intentionally reserved for a later security sprint.
+
+### `?action=getSession`
+
+Returns the current session when `sessionToken` is supplied.
+
+### `?action=logout`
+
+Requires `POST`. Destroys the server-side session for the supplied `sessionToken`.
+
+## Protected API Calls
+
+These actions require `sessionToken` as a query parameter or request body field:
+
+```text
+dashboard
+affiliates
+followups
+getFollowups
+interactions
+tasks
+issues
+performance
+leaderboard
+reports
+staff
+brands
+settings
+createFollowup
+updateFollowup
+completeFollowup
+validateSheets
+```
+
+`STAFF` users receive assigned rows only where sheet columns allow matching. `ADMIN` and `SUPER_ADMIN` receive global data.
 
 ## Foundation Endpoints
 
@@ -132,6 +196,8 @@ Reads rows from `Affiliates`.
 
 Reads rows from `Staff_List`.
 
+Requires `ADMIN` or `SUPER_ADMIN`.
+
 ### `?action=brands`
 
 Reads rows from `Brand_List`.
@@ -164,13 +230,19 @@ Reads rows from `Monthly_Performance`.
 
 Returns read-only report preview cards derived from existing dashboard data. No exports or generated CRM records are created.
 
+Requires `ADMIN` or `SUPER_ADMIN`.
+
 ### `?action=leaderboard`
 
 Returns read-only ranking groups derived from staff workload, brand summary, and affiliate priority counts.
 
+Requires `ADMIN` or `SUPER_ADMIN`.
+
 ### `?action=settings`
 
 Returns safe configuration and sheet-health summary data. It does not expose secrets, spreadsheet IDs, passwords, tokens, or editable settings.
+
+`STAFF` receives profile/session settings only. Admin roles receive the broader safe system summary.
 
 List endpoints return:
 

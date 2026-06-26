@@ -39,6 +39,9 @@ Use clear, conventional commit messages:
 - Sprint 3D expands the Dashboard through optional fields on `?action=dashboard`. Preserve the existing top-level dashboard fields and render empty states instead of inventing data.
 - Sprint 3E turns the remaining sidebar modules into live read-only workspace pages. Keep unsupported create/edit workflows as safe toast messages until a future sprint explicitly scopes writes.
 - The compact header should stay useful and dense: page context, API status, profile placeholder, notifications placeholder, and quick actions belong near the top without a large empty hero area.
+- Sprint 4A introduces Login_ID auth, localStorage session tokens on the frontend, and server-side Apps Script sessions. Do not add passwords, PINs, tokens, or spreadsheet IDs to the frontend.
+- Role-based work must keep Admin/Super Admin global and Staff scoped to assigned rows only. If sheet columns are missing, show empty states rather than inventing access or data.
+- New protected API calls must include `sessionToken` and handle `UNAUTHORIZED` by returning to `login.html`.
 
 ## Sprint 1 UI Shell
 
@@ -61,3 +64,12 @@ Use clear, conventional commit messages:
 3. In GitHub, open repository settings and enable Pages.
 4. Select the `main` branch and `/docs` folder as the Pages source.
 5. Verify `index.html` and `login.html` load without exposing sensitive data.
+
+## Sprint 4A Verification
+
+- Confirm `login.html` loads and can sign in with `ADMIN01` when Staff_List is unavailable or empty.
+- Confirm Admin users see all sidebar modules.
+- Confirm Staff users do not see Reports, Leaderboard, or Staff management.
+- Confirm Staff dashboard labels use "My" workspace language.
+- Confirm direct unauthorized routes show the restricted access state.
+- Confirm GitHub Pages `docs/` remains synced from `frontend/` except for deployment-specific `docs/js/config.js`.

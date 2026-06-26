@@ -8,6 +8,9 @@ function handleRequest(e, method) {
   const supportedActions = [
     'health',
     'meta',
+    'login',
+    'getsession',
+    'logout',
     'validatesheets',
     'dashboard',
     'affiliates',
@@ -26,6 +29,7 @@ function handleRequest(e, method) {
     'updatefollowup',
     'completefollowup'
   ];
+  var user = null;
 
   try {
     if (action === 'health') {
@@ -47,6 +51,32 @@ function handleRequest(e, method) {
       }, 'Application metadata loaded.');
     }
 
+    if (action === 'login') {
+      if (method !== 'POST') {
+        return errorResponse('Login requires POST.', 'METHOD_NOT_ALLOWED', {
+          method: method
+        });
+      }
+
+      return successResponse(loginStaff(getRequestPayload(e).loginId), 'Login successful.');
+    }
+
+    if (action === 'getsession') {
+      return successResponse(getSession(getSessionTokenFromRequest(e)), 'Session loaded.');
+    }
+
+    if (action === 'logout') {
+      if (method !== 'POST') {
+        return errorResponse('Logout requires POST.', 'METHOD_NOT_ALLOWED', {
+          method: method
+        });
+      }
+
+      return successResponse(logout(getSessionTokenFromRequest(e)), 'Logged out.');
+    }
+
+    user = requireAuth(e);
+
     if (['createfollowup', 'updatefollowup', 'completefollowup'].indexOf(action) !== -1 && method !== 'POST') {
       return errorResponse('This follow-up action requires POST.', 'METHOD_NOT_ALLOWED', {
         method: method
@@ -60,67 +90,71 @@ function handleRequest(e, method) {
     }
 
     if (action === 'validatesheets') {
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
       return successResponse(validateRequiredSheets(), 'Required sheets validated.');
     }
 
     if (action === 'dashboard') {
-      return successResponse(getDashboardSummary(), 'Dashboard summary loaded.');
+      return successResponse(getDashboardSummary(user), 'Dashboard summary loaded.');
     }
 
     if (action === 'affiliates') {
-      return successResponse(getAffiliates(), 'Affiliates loaded.');
+      return successResponse(getAffiliates(user), 'Affiliates loaded.');
     }
 
     if (action === 'staff') {
-      return successResponse(getStaff(), 'Staff loaded.');
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+      return successResponse(getStaff(user), 'Staff loaded.');
     }
 
     if (action === 'brands') {
-      return successResponse(getBrands(), 'Brands loaded.');
+      return successResponse(getBrands(user), 'Brands loaded.');
     }
 
     if (action === 'followups' || action === 'getfollowups') {
-      return successResponse(getFollowups(), 'Follow-ups loaded.');
+      return successResponse(getFollowups(user), 'Follow-ups loaded.');
     }
 
     if (action === 'createfollowup') {
-      return successResponse(createFollowup(getRequestPayload(e)), 'Follow-up created.');
+      return successResponse(createFollowup(getRequestPayload(e), user), 'Follow-up created.');
     }
 
     if (action === 'updatefollowup') {
-      return successResponse(updateFollowup(getRequestPayload(e)), 'Follow-up updated.');
+      return successResponse(updateFollowup(getRequestPayload(e), user), 'Follow-up updated.');
     }
 
     if (action === 'completefollowup') {
-      return successResponse(completeFollowup(getRequestPayload(e)), 'Follow-up completed.');
+      return successResponse(completeFollowup(getRequestPayload(e), user), 'Follow-up completed.');
     }
 
     if (action === 'tasks') {
-      return successResponse(getTasks(), 'Tasks loaded.');
+      return successResponse(getTasks(user), 'Tasks loaded.');
     }
 
     if (action === 'issues') {
-      return successResponse(getIssues(), 'Issues loaded.');
+      return successResponse(getIssues(user), 'Issues loaded.');
     }
 
     if (action === 'interactions') {
-      return successResponse(getInteractions(), 'Interactions loaded.');
+      return successResponse(getInteractions(user), 'Interactions loaded.');
     }
 
     if (action === 'performance') {
-      return successResponse(getPerformance(), 'Performance loaded.');
+      return successResponse(getPerformance(user), 'Performance loaded.');
     }
 
     if (action === 'reports') {
-      return successResponse(getReports(), 'Report previews loaded.');
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+      return successResponse(getReports(user), 'Report previews loaded.');
     }
 
     if (action === 'leaderboard') {
-      return successResponse(getLeaderboard(), 'Leaderboard loaded.');
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+      return successResponse(getLeaderboard(user), 'Leaderboard loaded.');
     }
 
     if (action === 'settings') {
-      return successResponse(getSettingsSummary(), 'Settings summary loaded.');
+      return successResponse(getSettingsSummary(user), 'Settings summary loaded.');
     }
 
     return errorResponse('Unknown action.', 'UNKNOWN_ACTION', {
@@ -136,6 +170,10 @@ function handleRequest(e, method) {
 
 function getRequestErrorCode(error) {
   const message = error && error.message ? error.message : String(error);
+
+  if (error && error.code) {
+    return error.code;
+  }
 
   if (message.indexOf('Spreadsheet ID is not configured') !== -1) {
     return 'MISSING_SPREADSHEET_ID';

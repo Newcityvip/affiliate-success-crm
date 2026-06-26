@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, Sprint 3D complete dashboard workspace, and Sprint 3E full CRM workspace page completion. It intentionally does not include authentication, production credentials, or destructive sheet operations beyond the scoped Followup_Queue actions.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, Sprint 3D complete dashboard workspace, Sprint 3E full CRM workspace page completion, and Sprint 4A secure auth foundation. It intentionally does not include production credentials, passwords, private tokens, spreadsheet IDs, or destructive sheet operations beyond the scoped Followup_Queue actions.
 
 ## Tech Stack
 
@@ -73,6 +73,16 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Unsupported create workflows outside Follow-ups use safe toast messages and do not write to Google Sheets.
 - GitHub Pages still publishes from `docs/`, synced from the modular `frontend/` source.
 
+## Sprint 4A Notes
+
+- Adds temporary Login_ID-based staff authentication backed by `Staff_List` where available.
+- Sessions are generated server-side, stored in Apps Script Cache/Properties, and expire after 8 hours.
+- Roles are normalized to `SUPER_ADMIN`, `ADMIN`, and `STAFF`.
+- `ADMIN01` can sign in as `SUPER_ADMIN` only when `Staff_List` is unavailable or empty, so development is not blocked.
+- Admin users keep the global workspace. Staff users see a limited “My Workspace” UI and staff-scoped API data.
+- Protected API actions require `sessionToken`; public actions are limited to `health`, `meta`, `login`, `getSession`, and `logout`.
+- IP allowlisting is prepared only as a future architecture note. It is not enforced in Sprint 4A.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -83,12 +93,24 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 6. Keep `frontend/` as the modular source for UI work and keep `docs/` as the deployable Pages copy.
 7. Keep all sensitive values, spreadsheet IDs, bot tokens, and passwords outside the repository.
 
+Recommended production security path for later:
+
+```text
+GitHub Pages or custom domain
+-> Cloudflare Worker/IP allowlist/session gate
+-> Apps Script API
+-> Google Sheets
+```
+
 GitHub Pages should serve `docs/index.html`. The copied frontend uses relative paths such as `css/base.css` and `js/app.js`, so assets resolve correctly from the `/docs` publish root.
 
 ## Current Backend Endpoints
 
 - `?action=health`
 - `?action=meta`
+- `?action=login`
+- `?action=getSession`
+- `?action=logout`
 - `?action=dashboard`
 - `?action=affiliates`
 - `?action=getFollowups`

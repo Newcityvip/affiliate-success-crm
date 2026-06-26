@@ -3,16 +3,25 @@
  * This file only reads sheet data and returns empty-safe dashboard sections.
  */
 
-function getDashboardSummary() {
-  const affiliates = safeReadSheetObjects(SHEET_NAMES.AFFILIATES);
-  const followups = enrichDashboardFollowups(safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), affiliates);
-  const tasks = safeReadSheetObjects(SHEET_NAMES.TASK_LOG);
-  const issues = safeReadSheetObjects(SHEET_NAMES.ISSUE_LOG);
-  const brands = safeReadSheetObjects(SHEET_NAMES.BRAND_LIST);
-  const staff = safeReadSheetObjects(SHEET_NAMES.STAFF_LIST);
-  const activity = safeReadSheetObjects(SHEET_NAMES.ACTIVITY_LOG);
-  const interactions = safeReadSheetObjects(SHEET_NAMES.INTERACTION_LOG);
-  const performance = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE);
+function getDashboardSummary(user) {
+  const rawAffiliates = safeReadSheetObjects(SHEET_NAMES.AFFILIATES);
+  const rawFollowups = safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE);
+  const rawTasks = safeReadSheetObjects(SHEET_NAMES.TASK_LOG);
+  const rawIssues = safeReadSheetObjects(SHEET_NAMES.ISSUE_LOG);
+  const rawBrands = safeReadSheetObjects(SHEET_NAMES.BRAND_LIST);
+  const rawStaff = safeReadSheetObjects(SHEET_NAMES.STAFF_LIST);
+  const rawActivity = safeReadSheetObjects(SHEET_NAMES.ACTIVITY_LOG);
+  const rawInteractions = safeReadSheetObjects(SHEET_NAMES.INTERACTION_LOG);
+  const rawPerformance = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const affiliates = filterAffiliatesForUser(rawAffiliates, user);
+  const followups = enrichDashboardFollowups(filterRowsForUser(rawFollowups, user), rawAffiliates);
+  const tasks = filterRowsForUser(rawTasks, user);
+  const issues = filterRowsForUser(rawIssues, user);
+  const brands = filterBrandsForUser(rawBrands, rawAffiliates, user);
+  const staff = isAdminUser(user) ? rawStaff : [];
+  const activity = filterRowsForUser(rawActivity, user);
+  const interactions = filterInteractionsForUser(rawInteractions, user);
+  const performance = filterPerformanceForUser(rawPerformance, user);
 
   const followupGroups = groupFollowups(followups);
   const healthDistribution = buildHealthDistribution(affiliates);
@@ -21,6 +30,8 @@ function getDashboardSummary() {
   const openIssues = filterOpenRows(issues);
   const recentActivity = buildRecentActivity(activity, interactions);
   const summary = {
+    currentUser: sanitizeUser(user || {}),
+    workspaceMode: isAdminUser(user) ? 'admin' : 'staff',
     totalAffiliates: affiliates.length,
     activeAffiliates: countByStatus(affiliates, ['active', 'yes', 'true']),
     healthyAffiliates: getDistributionCount(healthDistribution, 'Healthy'),

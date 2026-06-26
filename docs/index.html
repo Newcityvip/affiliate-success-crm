@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Affiliate Success CRM</title>
-    <link rel="stylesheet" href="css/base.css?v=3e">
-    <link rel="stylesheet" href="css/layout.css?v=3e">
-    <link rel="stylesheet" href="css/components.css?v=3e">
-    <link rel="stylesheet" href="css/pages.css?v=3e">
+    <link rel="stylesheet" href="css/base.css?v=4a">
+    <link rel="stylesheet" href="css/layout.css?v=4a">
+    <link rel="stylesheet" href="css/components.css?v=4a">
+    <link rel="stylesheet" href="css/pages.css?v=4a">
   </head>
   <body data-page="app">
     <div class="mobile-backdrop" data-sidebar-backdrop hidden></div>
@@ -28,18 +28,18 @@
         </div>
 
         <nav class="sidebar-nav" aria-label="Workspace">
-          <a class="nav-item is-active" href="#dashboard" data-route="dashboard">Dashboard</a>
-          <a class="nav-item" href="#affiliates" data-route="affiliates">Affiliates</a>
-          <a class="nav-item" href="#followups" data-route="followups">Follow-ups <span class="nav-count" data-nav-count="followups" hidden></span></a>
-          <a class="nav-item" href="#interactions" data-route="interactions">Interactions</a>
-          <a class="nav-item" href="#tasks" data-route="tasks">Tasks <span class="nav-count" data-nav-count="tasks" hidden></span></a>
-          <a class="nav-item" href="#issues" data-route="issues">Issues <span class="nav-count" data-nav-count="issues" hidden></span></a>
-          <a class="nav-item" href="#performance" data-route="performance">Performance</a>
-          <a class="nav-item" href="#leaderboard" data-route="leaderboard">Leaderboard</a>
-          <a class="nav-item" href="#reports" data-route="reports">Reports</a>
-          <a class="nav-item" href="#staff" data-route="staff">Staff</a>
-          <a class="nav-item" href="#brands" data-route="brands">Brands</a>
-          <a class="nav-item" href="#settings" data-route="settings">Settings</a>
+          <a class="nav-item is-active" href="#dashboard" data-route="dashboard" data-role-scope="all">Dashboard</a>
+          <a class="nav-item" href="#affiliates" data-route="affiliates" data-role-scope="all">Affiliates</a>
+          <a class="nav-item" href="#followups" data-route="followups" data-role-scope="all">Follow-ups <span class="nav-count" data-nav-count="followups" hidden></span></a>
+          <a class="nav-item" href="#interactions" data-route="interactions" data-role-scope="all">Interactions</a>
+          <a class="nav-item" href="#tasks" data-route="tasks" data-role-scope="all">Tasks <span class="nav-count" data-nav-count="tasks" hidden></span></a>
+          <a class="nav-item" href="#issues" data-route="issues" data-role-scope="all">Issues <span class="nav-count" data-nav-count="issues" hidden></span></a>
+          <a class="nav-item" href="#performance" data-route="performance" data-role-scope="all">Performance</a>
+          <a class="nav-item" href="#leaderboard" data-route="leaderboard" data-role-scope="admin">Leaderboard</a>
+          <a class="nav-item" href="#reports" data-route="reports" data-role-scope="admin">Reports</a>
+          <a class="nav-item" href="#staff" data-route="staff" data-role-scope="admin">Staff</a>
+          <a class="nav-item" href="#brands" data-route="brands" data-role-scope="all">Brands</a>
+          <a class="nav-item" href="#settings" data-route="settings" data-role-scope="all">Settings</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -71,12 +71,13 @@
               <span aria-hidden="true">!</span>
             </button>
             <div class="profile-chip" aria-label="User profile placeholder">
-              <span class="avatar" aria-hidden="true">ST</span>
+              <span class="avatar" aria-hidden="true" data-profile-initials>ST</span>
               <span>
-                <strong>Staff User</strong>
-                <small>Profile placeholder</small>
+                <strong data-profile-name>Staff User</strong>
+                <small data-profile-role>Profile placeholder</small>
               </span>
             </div>
+            <button class="button button-secondary button-small" type="button" data-logout>Logout</button>
           </div>
         </header>
 
@@ -93,6 +94,18 @@
         </section>
 
         <section class="content-stage">
+          <section class="page-section" data-section="restricted" aria-labelledby="restricted-title">
+            <div class="data-panel glass-panel">
+              <div class="table-state">
+                <div class="empty-icon" aria-hidden="true"></div>
+                <div>
+                  <h2 id="restricted-title">Restricted access</h2>
+                  <p class="muted">Your current role cannot access this workspace. Choose an available module from the sidebar.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section class="page-section is-active" data-section="dashboard" aria-labelledby="dashboard-title">
             <div class="dashboard-hero glass-panel">
               <div>
@@ -765,11 +778,11 @@
       </section>
     </div>
 
-    <script src="js/config.js?v=3e"></script>
-    <script src="js/utils.js?v=3e"></script>
-    <script src="js/api.js?v=3e"></script>
-    <script src="js/auth.js?v=3e"></script>
-    <script src="js/router.js?v=3e"></script>
-    <script src="js/app.js?v=3e"></script>
+    <script src="js/config.js?v=4a"></script>
+    <script src="js/utils.js?v=4a"></script>
+    <script src="js/api.js?v=4a"></script>
+    <script src="js/auth.js?v=4a"></script>
+    <script src="js/router.js?v=4a"></script>
+    <script src="js/app.js?v=4a"></script>
   </body>
 </html>

@@ -4,6 +4,9 @@
   var utils = window.AffiliateSuccessUtils;
   var api = window.AffiliateSuccessApi;
   var router = window.AffiliateSuccessRouter;
+  var auth = window.AffiliateSuccessAuth;
+  var currentUser = null;
+  var staffAllowedRoutes = ['dashboard', 'affiliates', 'followups', 'interactions', 'tasks', 'issues', 'performance', 'brands', 'settings'];
 
   var dashboardMetricLabels = {
     totalAffiliates: 'Live API data',
@@ -284,6 +287,7 @@
 
   function updatePage(routeKey) {
     var route = router.getRoute(routeKey);
+    var canAccess = canAccessRoute(route.key);
 
     utils.setText(utils.qs('[data-page-title]'), route.meta.title);
     utils.setText(utils.qs('[data-page-kicker]'), route.meta.kicker);
@@ -292,12 +296,21 @@
     updateCommandCenter(route.key);
 
     document.querySelectorAll('[data-route]').forEach(function (item) {
-      item.classList.toggle('is-active', item.dataset.route === route.key);
+      item.classList.toggle('is-active', canAccess && item.dataset.route === route.key);
     });
 
     document.querySelectorAll('[data-section]').forEach(function (section) {
-      section.classList.toggle('is-active', section.dataset.section === route.key);
+      section.classList.toggle('is-active', canAccess ? section.dataset.section === route.key : section.dataset.section === 'restricted');
     });
+
+    if (!canAccess) {
+      utils.setText(utils.qs('[data-page-title]'), 'Restricted');
+      renderCommandSummary([
+        { label: 'role', value: getRoleLabel(), tone: 'amber' },
+        { label: 'access', value: 'Restricted', tone: 'red' }
+      ]);
+      return;
+    }
 
     if (route.key === 'affiliates') {
       loadAffiliates();
@@ -325,7 +338,27 @@
       part = 'Evening';
     }
 
-    utils.setText(utils.qs('[data-command-greeting]'), 'Good ' + part + ', Staff User');
+    utils.setText(utils.qs('[data-command-greeting]'), 'Good ' + part + ', ' + getUserName());
+  }
+
+  function getUserName() {
+    return currentUser && currentUser.name ? currentUser.name : 'Staff User';
+  }
+
+  function getRoleLabel() {
+    return currentUser && currentUser.role ? currentUser.role.replace(/_/g, ' ') : 'STAFF';
+  }
+
+  function isAdminUser() {
+    return auth && auth.isAdmin ? auth.isAdmin(currentUser) : false;
+  }
+
+  function canAccessRoute(routeKey) {
+    if (isAdminUser()) {
+      return true;
+    }
+
+    return staffAllowedRoutes.indexOf(routeKey) !== -1;
   }
 
   function setGlobalStatus(label, tone) {
@@ -458,6 +491,21 @@
     return String(value);
   }
 
+  function isSuccessfulResult(result) {
+    if (result && (result.ok || result.success)) {
+      return true;
+    }
+
+    if (result && result.code === 'UNAUTHORIZED') {
+      if (auth && auth.clearSession) {
+        auth.clearSession();
+      }
+      window.location.href = 'login.html?expired=1';
+    }
+
+    return false;
+  }
+
   function asArray(value) {
     return Array.isArray(value) ? value : [];
   }
@@ -523,14 +571,133 @@
     });
   }
 
-  function preventDisabledLoginSubmit() {
+  function bindLoginForm() {
     var form = utils.qs('[data-login-form]');
+    var message = utils.qs('[data-login-message]');
+    var submit = utils.qs('[data-login-submit]');
+    var params = new URLSearchParams(window.location.search);
+
     if (!form) {
       return;
     }
 
+    if (auth.getCurrentSession() && params.get('expired') !== '1') {
+      window.location.href = 'index.html#dashboard';
+      return;
+    }
+
+    if (params.get('expired') === '1') {
+      utils.setText(message, 'Your session expired. Sign in again to continue.');
+    }
+
     form.addEventListener('submit', function (event) {
+      var loginId = form.loginId ? form.loginId.value.trim() : '';
       event.preventDefault();
+
+      if (!loginId) {
+        utils.setText(message, 'Enter your Login ID.');
+        return;
+      }
+
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = 'Signing in...';
+      }
+      utils.setText(message, 'Checking staff access...');
+
+      auth.login(loginId).then(function (result) {
+        if (!isSuccessfulResult(result)) {
+          utils.setText(message, result && result.message ? result.message : 'Unable to sign in.');
+          return;
+        }
+
+        window.location.href = 'index.html#dashboard';
+      }).catch(function () {
+        utils.setText(message, 'Unable to sign in. Check the Apps Script deployment.');
+      }).finally(function () {
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = 'Sign in';
+        }
+      });
+    });
+  }
+
+  function ensureSession() {
+    var session = auth && auth.getCurrentSession ? auth.getCurrentSession() : null;
+
+    if (!session || !session.sessionToken) {
+      window.location.href = 'login.html';
+      return false;
+    }
+
+    currentUser = session.user || {};
+    return true;
+  }
+
+  function applyUserToShell() {
+    var initials = getUserName().split(/\s+/).map(function (part) {
+      return part.charAt(0);
+    }).join('').slice(0, 2).toUpperCase() || 'ST';
+
+    utils.setText(utils.qs('[data-profile-name]'), getUserName());
+    utils.setText(utils.qs('[data-profile-role]'), getRoleLabel());
+    utils.setText(utils.qs('[data-profile-initials]'), initials);
+
+    document.querySelectorAll('[data-role-scope="admin"]').forEach(function (item) {
+      item.hidden = !isAdminUser();
+    });
+
+    document.querySelectorAll('[data-quick-action]').forEach(function (button) {
+      var action = button.dataset.quickAction;
+      if (!isAdminUser() && (action === 'affiliate' || action === 'task' || action === 'issue')) {
+        button.hidden = true;
+      }
+    });
+
+    if (!isAdminUser()) {
+      setNavLabel('dashboard', 'My Dashboard');
+      setNavLabel('affiliates', 'My Affiliates');
+      setNavLabel('followups', 'My Follow-ups');
+      setNavLabel('interactions', 'My Interactions');
+      setNavLabel('tasks', 'My Tasks');
+      setNavLabel('issues', 'My Issues');
+      setNavLabel('performance', 'My Performance');
+    }
+  }
+
+  function setNavLabel(routeKey, label) {
+    var item = utils.qs('.sidebar-nav [data-route="' + routeKey + '"]');
+    var textNode = null;
+
+    if (!item) {
+      return;
+    }
+
+    item.childNodes.forEach(function (node) {
+      if (!textNode && node.nodeType === 3 && node.nodeValue.trim()) {
+        textNode = node;
+      }
+    });
+
+    if (textNode) {
+      textNode.nodeValue = label + ' ';
+    } else {
+      item.insertBefore(document.createTextNode(label + ' '), item.firstChild);
+    }
+  }
+
+  function bindLogout() {
+    var button = utils.qs('[data-logout]');
+    if (!button) {
+      return;
+    }
+
+    button.addEventListener('click', function () {
+      button.disabled = true;
+      auth.logout().finally(function () {
+        window.location.href = 'login.html';
+      });
     });
   }
 
@@ -595,6 +762,7 @@
     dashboardState.data = data || {};
     dashboardState.loaded = true;
     setGlobalStatus('API: Live', 'live');
+    applyDashboardMode(data || {});
 
     document.querySelectorAll('[data-metric]').forEach(function (metric) {
       var key = metric.dataset.metric;
@@ -607,12 +775,33 @@
       utils.setText(status, dashboardMetricLabels[key] || 'Live API data');
     });
 
-    utils.setText(utils.qs('[data-dashboard-status]'), 'Dashboard statistics loaded from the live Apps Script API.');
     utils.setText(utils.qs('[data-dashboard-badge]'), 'Live API data');
     renderDashboardWorkspace(data || {});
     renderDashboardWidgets(data || {});
     updateDashboardNavCounts(data || {});
     updateCommandCenter(getCurrentRouteKey());
+  }
+
+  function applyDashboardMode(data) {
+    var isStaffMode = data.workspaceMode === 'staff' || !isAdminUser();
+    var hero = utils.qs('#dashboard-title');
+
+    utils.setText(hero, isStaffMode ? 'My Affiliate Workspace' : 'Affiliate manager command center');
+    utils.setText(utils.qs('[data-dashboard-status]'), isStaffMode ? 'Your assigned workspace loaded from the live Apps Script API.' : 'Dashboard statistics loaded from the live Apps Script API.');
+
+    setMetricLabel('totalAffiliates', isStaffMode ? 'My Affiliates' : 'Total Affiliates');
+    setMetricLabel('todayFollowups', isStaffMode ? 'My Due Follow-ups' : "Today's Follow-ups");
+    setMetricLabel('overdueFollowups', isStaffMode ? 'My Overdue Follow-ups' : 'Overdue Follow-ups');
+    setMetricLabel('openTasks', isStaffMode ? 'My Open Tasks' : 'Open Tasks');
+    setMetricLabel('openIssues', isStaffMode ? 'My Open Issues' : 'Open Issues');
+    setMetricLabel('completedFollowups', isStaffMode ? 'My Completed Follow-ups' : 'Completed Follow-ups');
+  }
+
+  function setMetricLabel(metricKey, label) {
+    var value = utils.qs('[data-metric="' + metricKey + '"]');
+    var parent = value ? value.parentElement : null;
+    var span = parent ? parent.querySelector('span') : null;
+    utils.setText(span, label);
   }
 
   function setDashboardDate() {
@@ -1027,7 +1216,7 @@
     setDashboardLoading();
 
     var result = await api.dashboard();
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       setDashboardError(result && result.message ? result.message : 'Unable to load dashboard statistics.');
       return;
     }
@@ -1053,7 +1242,7 @@
     result = await api[config.api]();
     state.loading = false;
 
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       setGlobalStatus('API: Error', 'error');
       setModuleError(routeKey, result && result.message ? result.message : 'Unable to load ' + config.itemName + '.');
       return;
@@ -1810,7 +1999,7 @@
     var result = await api.affiliates();
     affiliateState.loading = false;
 
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       setAffiliatesError(result && result.message ? result.message : 'Unable to load affiliates.');
       return;
     }
@@ -2090,7 +2279,7 @@
     var result = await api.followups();
     followupState.loading = false;
 
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       setFollowupsError(result && result.message ? result.message : 'Unable to load follow-ups.');
       return;
     }
@@ -2172,7 +2361,7 @@
       button.disabled = false;
     }
 
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       utils.setText(message, result && result.message ? result.message : 'Unable to save follow-up.');
       return;
     }
@@ -2189,7 +2378,7 @@
       Queue_ID: valueFor(row, 'Queue_ID')
     });
 
-    if (!result || !result.success) {
+    if (!isSuccessfulResult(result)) {
       setFollowupsError(result && result.message ? result.message : 'Unable to complete follow-up.');
       return;
     }
@@ -2372,12 +2561,18 @@
   }
 
   function initAppShell() {
+    if (!ensureSession()) {
+      return;
+    }
+
+    applyUserToShell();
     bindSidebar();
     bindNavigation();
     bindAffiliateControls();
     bindFollowupControls();
     bindModuleControls();
     bindQuickActions();
+    bindLogout();
     updatePage(router.routeFromHash());
     loadDashboard();
   }
@@ -2392,7 +2587,7 @@
     }
 
     if (document.body.dataset.page === 'login') {
-      preventDisabledLoginSubmit();
+      bindLoginForm();
     }
   }
 

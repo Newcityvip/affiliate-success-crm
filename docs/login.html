@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Staff Login | Affiliate Success CRM</title>
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/pages.css">
+    <title>Sign In | Affiliate Success CRM</title>
+    <link rel="stylesheet" href="css/base.css?v=4a">
+    <link rel="stylesheet" href="css/layout.css?v=4a">
+    <link rel="stylesheet" href="css/components.css?v=4a">
+    <link rel="stylesheet" href="css/pages.css?v=4a">
   </head>
   <body data-page="login">
     <main class="login-page">
@@ -23,31 +23,26 @@
         <div class="login-heading">
           <p class="eyebrow">Secure Access</p>
           <h1 id="login-title">Staff Login</h1>
-          <p class="muted">Authentication will be connected in Sprint 1.</p>
+          <p class="muted">Sign in with your staff Login ID. Password/PIN verification is planned for the next security sprint.</p>
         </div>
 
         <form class="form-stack" data-login-form>
           <label class="field">
-            <span>Staff ID</span>
-            <input type="text" name="staffId" autocomplete="username" placeholder="Enter Staff ID" disabled>
+            <span>Login ID</span>
+            <input type="text" name="loginId" autocomplete="username" placeholder="Example: ADMIN01" required>
           </label>
 
-          <label class="field">
-            <span>Password</span>
-            <input type="password" name="password" autocomplete="current-password" placeholder="Enter password" disabled>
-          </label>
-
-          <button class="button button-primary" type="submit" disabled>Login unavailable</button>
-          <p class="form-note">Authentication will be connected in Sprint 1. No credentials are stored or submitted yet.</p>
+          <button class="button button-primary" type="submit" data-login-submit>Sign in</button>
+          <p class="form-note" data-login-message>Temporary Sprint 4A dev auth uses Login ID only. Use ADMIN01 if Staff_List is unavailable.</p>
         </form>
       </section>
     </main>
 
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/router.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/config.js?v=4a"></script>
+    <script src="js/utils.js?v=4a"></script>
+    <script src="js/api.js?v=4a"></script>
+    <script src="js/auth.js?v=4a"></script>
+    <script src="js/router.js?v=4a"></script>
+    <script src="js/app.js?v=4a"></script>
   </body>
 </html>

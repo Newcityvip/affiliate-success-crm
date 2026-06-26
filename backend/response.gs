@@ -4,6 +4,7 @@
 
 function successResponse(data, message) {
   return jsonOutput({
+    ok: true,
     success: true,
     message: message || 'OK',
     data: data || {},
@@ -14,13 +15,13 @@ function successResponse(data, message) {
 
 function errorResponse(message, code, details) {
   return jsonOutput({
+    ok: false,
     success: false,
     message: message || 'Error',
     data: {},
-    error: {
-      code: code || 'ERROR',
-      details: details || {}
-    },
+    error: message || 'Error',
+    code: code || 'ERROR',
+    details: details || {},
     meta: responseMeta()
   });
 }

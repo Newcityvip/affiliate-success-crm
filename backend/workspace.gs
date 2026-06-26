@@ -2,8 +2,9 @@
  * Sprint 3E read-only workspace endpoints.
  */
 
-function getReports() {
-  const dashboard = getDashboardSummary();
+function getReports(user) {
+  requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+  const dashboard = getDashboardSummary(user);
   return {
     count: 5,
     items: [
@@ -41,8 +42,9 @@ function getReports() {
   };
 }
 
-function getLeaderboard() {
-  const dashboard = getDashboardSummary();
+function getLeaderboard(user) {
+  requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+  const dashboard = getDashboardSummary(user);
   return {
     count: dashboard.staffWorkload.length + dashboard.brandSummary.length + dashboard.priorityDistribution.length,
     staff: dashboard.staffWorkload,
@@ -52,9 +54,14 @@ function getLeaderboard() {
   };
 }
 
-function getSettingsSummary() {
+function getSettingsSummary(user) {
+  if (!isAdminUser(user)) {
+    return buildLimitedSettingsSummary(user);
+  }
+
   const validation = validateRequiredSheets();
   return {
+    profile: sanitizeUser(user || {}),
     apiStatus: 'Connected',
     appVersion: APP_VERSION,
     apiVersion: API_VERSION,
