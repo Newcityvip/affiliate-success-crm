@@ -11,6 +11,7 @@ function handleRequest(e, method) {
     'login',
     'authlogin',
     'authdebug',
+    'debugsheets',
     'getsession',
     'logout',
     'validatesheets',
@@ -59,6 +60,10 @@ function handleRequest(e, method) {
 
     if (action === 'authdebug') {
       return successResponse(getAuthDebug(getRequestLoginId(e)), 'Auth debug loaded.');
+    }
+
+    if (action === 'debugsheets') {
+      return successResponse(getDebugSheets(), 'Sheet debug loaded.');
     }
 
     if (action === 'getsession') {

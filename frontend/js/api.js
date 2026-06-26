@@ -3,7 +3,7 @@
 
   var config = window.AffiliateSuccessConfig || {};
   var SESSION_KEY = 'affiliateSuccessSession';
-  var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin', 'authdebug'];
+  var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin', 'authdebug', 'debugsheets'];
 
   function getSessionToken() {
     try {

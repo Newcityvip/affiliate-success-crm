@@ -267,43 +267,58 @@ function getSessionTokenFromRequest(e) {
 function getStaffRowsForAuth() {
   try {
     return {
-      rows: readSheetObjects(SHEET_NAMES.STAFF_LIST),
+      rows: readSheetObjectsRequired(SHEET_NAMES.STAFF_LIST),
       error: null
     };
   } catch (error) {
+    return getStaffRowsForAuthDirect(error);
+  }
+}
+
+function getStaffRowsForAuthDirect(originalError) {
+  try {
+    const spreadsheet = getSpreadsheet();
+    const sheet = spreadsheet.getSheetByName('Staff_List') || getSheetByNameSafe(SHEET_NAMES.STAFF_LIST);
+    return {
+      rows: sheet ? readSheetObjectsFromSheet(sheet) : [],
+      error: sheet ? null : (originalError || new Error('Missing required sheet: Staff_List'))
+    };
+  } catch (fallbackError) {
     return {
       rows: [],
-      error: error
+      error: originalError || fallbackError
     };
   }
 }
 
 function getAuthDebug(loginId) {
   const normalizedLogin = normalizeAuthValue(loginId);
-  var headers = [];
-  var rows = [];
-  var match = null;
-  var sheetFound = false;
-  var readError = '';
+  const result = getStaffRowsForAuth();
+  const headers = getSheetHeadersSafe(SHEET_NAMES.STAFF_LIST);
+  var match = findStaffUser(normalizedLogin, result.rows);
+  var raw = match && match.raw ? match.raw : {};
 
-  try {
-    headers = getSheetHeaders(SHEET_NAMES.STAFF_LIST);
-    sheetFound = true;
-    rows = readSheetObjects(SHEET_NAMES.STAFF_LIST);
-    match = findStaffUser(normalizedLogin, rows);
-  } catch (error) {
-    readError = error && error.message ? error.message : String(error);
+  if (!match && result.rows.length) {
+    match = findStaffUser(normalizedLogin, result.rows);
+    raw = match && match.raw ? match.raw : {};
   }
 
   return {
-    sheetFound: sheetFound,
+    staffSheetFound: headers.length > 0 || result.rows.length > 0,
+    sheetFound: headers.length > 0 || result.rows.length > 0,
     headers: headers,
+    rowCount: result.rows.length,
+    loginIdSearched: safeString(loginId),
     loginIdFound: !!match,
-    activeParsed: match ? isActiveStaffUser(match.raw || {}) : false,
-    normalizedRole: match ? normalizeRole(match.role) : '',
     matchedStaffId: match ? safeString(match.staffId) : '',
-    errorCode: readError ? 'AUTH_CONFIG_ERROR' : '',
-    errorMessage: readError ? 'Staff_List could not be read.' : ''
+    matchedName: match ? safeString(match.name) : '',
+    activeRaw: safeString(getFirstValue(raw, ['Active', 'Status'])),
+    activeParsed: match ? isActiveStaffUser(raw) : false,
+    roleRaw: safeString(getFirstValue(raw, ['Role'])),
+    permissionRaw: safeString(getFirstValue(raw, ['Permission_Level', 'Permission Level'])),
+    normalizedRole: match ? normalizeRole(match.role) : '',
+    errorCode: result.error ? 'AUTH_CONFIG_ERROR' : '',
+    errorMessage: result.error ? 'Staff_List could not be read.' : ''
   };
 }
 

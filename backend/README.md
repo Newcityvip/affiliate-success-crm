@@ -11,7 +11,7 @@ The backend exposes APIs connected to the finalized Google Sheets CRM tabs. Spri
 - `router.gs`: read-only action router.
 - `response.gs`: consistent JSON response envelope.
 - `auth.gs`: temporary Login_ID auth, server-side sessions, role helpers, Staff_List matching, and future IP allowlist placeholders.
-- `sheets.gs`: spreadsheet access, sheet validation, and row mapping.
+- `sheets.gs`: safe/required spreadsheet access, normalized sheet lookup, sheet validation, and row mapping.
 - `dashboard.gs`: complete dashboard read model for KPI overview, follow-up queue, health, priority, brand, staff, activity, issues, tasks, and performance widgets.
 - `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
 - `workspace.gs`: read-only report preview, leaderboard, and safe settings summary endpoints.
@@ -49,7 +49,9 @@ Allowed_IPs
 Permission_Level
 ```
 
-Supported roles are `SUPER_ADMIN`, `ADMIN`, and `STAFF`. If `Role` is missing, `ADMIN01` falls back to `SUPER_ADMIN`; all other users default to `STAFF`. If `Staff_List` is missing or empty, `ADMIN01` can sign in as a temporary development `SUPER_ADMIN`.
+Supported roles are `SUPER_ADMIN`, `ADMIN`, and `STAFF`. If `Role` is missing, `ADMIN01` falls back to `SUPER_ADMIN`; all other users default to `STAFF`. If `Staff_List` is missing or empty, `ADMIN01` can sign in as a temporary development `SUPER_ADMIN`. Other staff logins require a readable `Staff_List` row with a matching `Login_ID`.
+
+The auth reader checks exact `Staff_List` first and then a normalized sheet-name match. `Role` is preferred over `Permission_Level`; permission is only a fallback.
 
 Sessions are generated server-side and stored in Apps Script CacheService/PropertiesService with an 8-hour application expiry. Session tokens are never stored in Google Sheets.
 
@@ -69,7 +71,11 @@ After deployment, test these read-only endpoints:
 ?action=health
 ?action=validateSheets
 ?action=dashboard
+?action=debugSheets
+?action=authDebug&loginId=STAFF01
 ```
+
+`debugSheets` and `authDebug` return non-sensitive diagnostics only. Use them after copying backend files into Apps Script to confirm that the deployed script can open the spreadsheet, find `Staff_List`, and normalize `STAFF01` as `STAFF`.
 
 The dashboard response keeps the original summary fields and adds optional Sprint 3D sections:
 
@@ -93,6 +99,8 @@ The API also supports:
 ```text
 ?action=meta
 ?action=login
+?action=authDebug
+?action=debugSheets
 ?action=getSession
 ?action=logout
 ?action=affiliates

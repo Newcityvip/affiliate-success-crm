@@ -11,17 +11,30 @@ function getSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
-function getSheetByName(name) {
-  const sheetName = safeString(name);
-  if (!sheetName) {
-    throw new Error('Sheet name is required.');
+function getSheetByNameSafe(sheetName) {
+  const name = safeString(sheetName);
+  var spreadsheet;
+  var sheet;
+
+  if (!name) {
+    return null;
   }
 
-  const spreadsheet = getSpreadsheet();
-  var sheet = spreadsheet.getSheetByName(sheetName);
+  try {
+    spreadsheet = getSpreadsheet();
+    sheet = spreadsheet.getSheetByName(name);
+    return sheet || findSheetByNormalizedName(spreadsheet, name);
+  } catch (error) {
+    return null;
+  }
+}
 
-  if (!sheet) {
-    sheet = findSheetByNormalizedName(spreadsheet, sheetName);
+function getSheetByName(name) {
+  const sheetName = safeString(name);
+  const sheet = getSheetByNameSafe(sheetName);
+
+  if (!sheetName) {
+    throw new Error('Sheet name is required.');
   }
 
   if (!sheet) {
@@ -45,11 +58,10 @@ function findSheetByNormalizedName(spreadsheet, sheetName) {
 }
 
 function normalizeSheetName(name) {
-  return safeString(name).toLowerCase().replace(/\s+/g, '_');
+  return safeString(name).toLowerCase().replace(/[\s_]+/g, '');
 }
 
-function readSheetObjects(sheetName) {
-  const sheet = getSheetByName(sheetName);
+function readSheetObjectsFromSheet(sheet) {
   const values = sheet.getDataRange().getValues();
 
   if (!values || values.length === 0) {
@@ -83,20 +95,51 @@ function readSheetObjects(sheetName) {
     });
 }
 
-function safeReadSheetObjects(sheetName) {
+function readSheetObjectsRequired(sheetName) {
+  const sheet = getSheetByName(sheetName);
+  return readSheetObjectsFromSheet(sheet);
+}
+
+function readSheetObjectsSafe(sheetName) {
+  const sheet = getSheetByNameSafe(sheetName);
+  if (!sheet) {
+    return [];
+  }
+
   try {
-    return readSheetObjects(sheetName);
+    return readSheetObjectsFromSheet(sheet);
+  } catch (error) {
+    return [];
+  }
+}
+
+function readSheetObjects(sheetName) {
+  return readSheetObjectsRequired(sheetName);
+}
+
+function safeReadSheetObjects(sheetName) {
+  return readSheetObjectsSafe(sheetName);
+}
+
+function getSheetHeadersSafe(sheetName) {
+  const sheet = getSheetByNameSafe(sheetName);
+  const lastColumn = sheet ? sheet.getLastColumn() : 0;
+
+  if (!sheet || lastColumn < 1) {
+    return [];
+  }
+
+  try {
+    return sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (header) {
+      return safeString(header);
+    });
   } catch (error) {
     return [];
   }
 }
 
 function safeGetSheetHeaders(sheetName) {
-  try {
-    return getSheetHeaders(sheetName);
-  } catch (error) {
-    return [];
-  }
+  return getSheetHeadersSafe(sheetName);
 }
 
 function getSheetHeaders(sheetName) {
@@ -168,7 +211,7 @@ function validateRequiredSheets() {
 
   Object.keys(SHEET_NAMES).forEach(function (key) {
     const name = SHEET_NAMES[key];
-    if (!spreadsheet.getSheetByName(name)) {
+    if (!spreadsheet.getSheetByName(name) && !findSheetByNormalizedName(spreadsheet, name)) {
       missing.push(name);
     }
   });
@@ -180,6 +223,61 @@ function validateRequiredSheets() {
       return SHEET_NAMES[key];
     })
   };
+}
+
+function getDebugSheets() {
+  const keySheets = [
+    SHEET_NAMES.AFFILIATES,
+    SHEET_NAMES.STAFF_LIST,
+    SHEET_NAMES.BRAND_LIST,
+    SHEET_NAMES.FOLLOWUP_QUEUE
+  ];
+  const status = {};
+  var spreadsheet = null;
+  var spreadsheetOpened = false;
+  var sheetsFound = [];
+  var errorMessage = '';
+
+  try {
+    spreadsheet = getSpreadsheet();
+    spreadsheetOpened = true;
+    sheetsFound = spreadsheet.getSheets().map(function (sheet) {
+      return sheet.getName();
+    });
+  } catch (error) {
+    errorMessage = error && error.message ? error.message : String(error);
+  }
+
+  keySheets.forEach(function (sheetName) {
+    const sheet = spreadsheet ? (spreadsheet.getSheetByName(sheetName) || findSheetByNormalizedName(spreadsheet, sheetName)) : null;
+    const headers = sheet ? getHeadersFromSheet(sheet) : [];
+    const rowCount = sheet ? Math.max(0, sheet.getDataRange().getValues().length - 1) : 0;
+
+    status[sheetName] = {
+      found: !!sheet,
+      rowCount: rowCount,
+      headers: headers
+    };
+  });
+
+  return {
+    spreadsheetOpened: spreadsheetOpened,
+    sheetsFound: sheetsFound,
+    requiredSheetStatus: status,
+    errorMessage: errorMessage
+  };
+}
+
+function getHeadersFromSheet(sheet) {
+  const lastColumn = sheet ? sheet.getLastColumn() : 0;
+
+  if (!sheet || lastColumn < 1) {
+    return [];
+  }
+
+  return sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (header) {
+    return safeString(header);
+  });
 }
 
 function safeValidateRequiredSheets() {

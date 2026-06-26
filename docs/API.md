@@ -42,7 +42,7 @@ Sprint 4A failed requests use:
 
 ### `?action=login`
 
-Requires `POST`. Temporary Sprint 4A login uses `Login_ID` only:
+Supports `GET` query parameters and `POST` bodies. Temporary Sprint 4A login uses `Login_ID` only:
 
 ```json
 {
@@ -132,6 +132,54 @@ Example success data:
   ]
 }
 ```
+
+### `?action=debugSheets`
+
+Returns non-sensitive sheet-reader diagnostics:
+
+```json
+{
+  "spreadsheetOpened": true,
+  "sheetsFound": ["Affiliates", "Staff_List"],
+  "requiredSheetStatus": {
+    "Affiliates": {
+      "found": true,
+      "rowCount": 10,
+      "headers": ["Affiliate_ID"]
+    },
+    "Staff_List": {
+      "found": true,
+      "rowCount": 2,
+      "headers": ["Staff_ID", "Login_ID"]
+    }
+  }
+}
+```
+
+It does not return spreadsheet IDs, secrets, session tokens, or row data.
+
+### `?action=authDebug&loginId=STAFF01`
+
+Returns non-sensitive auth diagnostics for one login ID:
+
+```json
+{
+  "staffSheetFound": true,
+  "headers": ["Staff_ID", "Login_ID", "Staff_Name", "Role"],
+  "rowCount": 2,
+  "loginIdSearched": "STAFF01",
+  "loginIdFound": true,
+  "matchedStaffId": "ST002",
+  "matchedName": "Hasan",
+  "activeRaw": "Yes",
+  "activeParsed": true,
+  "roleRaw": "Staff",
+  "permissionRaw": "STAFF",
+  "normalizedRole": "STAFF"
+}
+```
+
+It does not return private row data, secrets, passwords, or session tokens.
 
 ## Read-Only CRM Endpoints
 
@@ -254,6 +302,8 @@ List endpoints return:
 ```
 
 Rows are mapped by the sheet header names. Empty rows are ignored.
+
+Sheet reads use a shared reader that checks exact sheet names first, then normalized names with spaces and underscores removed. Optional empty or missing sheets return empty arrays for read-only workspace views; required-sheet checks still report missing tabs clearly.
 
 ## Follow-up Queue Write Endpoints
 
