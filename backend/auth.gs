@@ -5,8 +5,9 @@
  */
 
 function loginStaff(loginId) {
-  const normalizedLogin = safeString(loginId);
-  const staffRows = getStaffRowsForAuth();
+  const normalizedLogin = normalizeAuthValue(loginId);
+  const staffResult = getStaffRowsForAuth();
+  const staffRows = staffResult.rows;
   var user;
 
   if (!normalizedLogin) {
@@ -19,12 +20,16 @@ function loginStaff(loginId) {
     user = createDevAdminUser(normalizedLogin);
   }
 
+  if (!user && staffResult.error) {
+    throwCodedError('AUTH_CONFIG_ERROR', 'Staff authentication could not read Staff_List.');
+  }
+
   if (!user) {
     throwCodedError('AUTH_INVALID_LOGIN', 'Login ID was not found.');
   }
 
   if (!isActiveStaffUser(user.raw || {})) {
-    throwCodedError('AUTH_INACTIVE', 'This staff account is inactive.');
+    throwCodedError('AUTH_INACTIVE_USER', 'This staff account is inactive.');
   }
 
   return createSession(user);
@@ -261,24 +266,30 @@ function getSessionTokenFromRequest(e) {
 
 function getStaffRowsForAuth() {
   try {
-    return readSheetObjects(SHEET_NAMES.STAFF_LIST);
+    return {
+      rows: readSheetObjects(SHEET_NAMES.STAFF_LIST),
+      error: null
+    };
   } catch (error) {
-    return [];
+    return {
+      rows: [],
+      error: error
+    };
   }
 }
 
 function findStaffUser(loginId, staffRows) {
-  const login = safeString(loginId).toLowerCase();
+  const login = normalizeAuthValue(loginId).toLowerCase();
   var match = null;
 
   (staffRows || []).some(function (row) {
     const candidates = [
-      getFirstValue(row, ['Login_ID', 'Login ID']),
-      getFirstValue(row, ['Staff_ID', 'Staff ID']),
+      getFirstValue(row, ['Login_ID', 'Login ID', 'LoginID', 'loginId', 'login_id']),
+      getFirstValue(row, ['Staff_ID', 'Staff ID', 'StaffID', 'staffId', 'staff_id']),
       getFirstValue(row, ['Email']),
-      getFirstValue(row, ['Name', 'Staff_Name', 'Staff Name'])
+      getFirstValue(row, ['Staff_Name', 'Staff Name', 'Name'])
     ].map(function (value) {
-      return safeString(value).toLowerCase();
+      return normalizeAuthValue(value).toLowerCase();
     });
 
     if (candidates.indexOf(login) !== -1) {
@@ -293,16 +304,17 @@ function findStaffUser(loginId, staffRows) {
 }
 
 function rowToUser(row, loginId) {
-  const roleSource = getFirstValue(row, ['Role', 'Permission_Level', 'Permission Level']);
-  const login = safeString(getFirstValue(row, ['Login_ID', 'Login ID'])) || safeString(loginId);
+  const roleValue = safeString(getFirstValue(row, ['Role']));
+  const permissionValue = safeString(getFirstValue(row, ['Permission_Level', 'Permission Level']));
+  const login = safeString(getFirstValue(row, ['Login_ID', 'Login ID', 'LoginID', 'loginId', 'login_id'])) || safeString(loginId);
 
   return {
-    staffId: safeString(getFirstValue(row, ['Staff_ID', 'Staff ID'])),
+    staffId: safeString(getFirstValue(row, ['Staff_ID', 'Staff ID', 'StaffID', 'staffId', 'staff_id'])),
     loginId: login,
-    name: safeString(getFirstValue(row, ['Name', 'Staff_Name', 'Staff Name'])) || login,
+    name: safeString(getFirstValue(row, ['Staff_Name', 'Staff Name', 'Name'])) || login,
     email: safeString(getFirstValue(row, ['Email'])),
     team: safeString(getFirstValue(row, ['Team'])),
-    role: normalizeRole(roleSource || (login.toUpperCase() === 'ADMIN01' ? AUTH_ROLES.SUPER_ADMIN : AUTH_ROLES.STAFF)),
+    role: normalizeRole(roleValue || permissionValue || (login.toUpperCase() === 'ADMIN01' ? AUTH_ROLES.SUPER_ADMIN : AUTH_ROLES.STAFF)),
     raw: row
   };
 }
@@ -352,7 +364,7 @@ function sanitizeUser(user) {
 function normalizeRole(role) {
   const normalized = safeString(role).toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
 
-  if (normalized === AUTH_ROLES.SUPER_ADMIN || normalized === 'SUPERADMIN') {
+  if (normalized === AUTH_ROLES.SUPER_ADMIN || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR') {
     return AUTH_ROLES.SUPER_ADMIN;
   }
 
@@ -361,6 +373,10 @@ function normalizeRole(role) {
   }
 
   return AUTH_ROLES.STAFF;
+}
+
+function normalizeAuthValue(value) {
+  return safeString(value).replace(/\s+/g, '');
 }
 
 function getUserIdentifiers(user) {

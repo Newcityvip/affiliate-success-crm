@@ -157,10 +157,18 @@ function handleRequest(e, method) {
       supportedActions: supportedActions
     });
   } catch (error) {
-    return errorResponse('Request failed.', getRequestErrorCode(error), {
+    return errorResponse(getRequestErrorMessage(error), getRequestErrorCode(error), {
       message: error && error.message ? error.message : String(error)
     });
   }
+}
+
+function getRequestErrorMessage(error) {
+  if (error && error.code) {
+    return error.message || error.code;
+  }
+
+  return 'Request failed.';
 }
 
 function getRequestErrorCode(error) {
