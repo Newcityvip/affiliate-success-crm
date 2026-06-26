@@ -1,5 +1,5 @@
 function getFollowups(user) {
-  const items = enrichFollowups(filterRowsForUser(readSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), user));
+  const items = enrichFollowups(filterRowsForUser(safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), user));
   return {
     count: items.length,
     items: items
@@ -102,7 +102,7 @@ function validateFollowupData(data) {
 
 function getFollowupByQueueId(queueId) {
   const id = safeString(queueId);
-  const matches = readSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE).filter(function (row) {
+  const matches = safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE).filter(function (row) {
     return safeString(row.Queue_ID) === id;
   });
 

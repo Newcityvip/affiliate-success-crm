@@ -17,12 +17,35 @@ function getSheetByName(name) {
     throw new Error('Sheet name is required.');
   }
 
-  const sheet = getSpreadsheet().getSheetByName(sheetName);
+  const spreadsheet = getSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = findSheetByNormalizedName(spreadsheet, sheetName);
+  }
+
   if (!sheet) {
     throw new Error('Missing required sheet: ' + sheetName);
   }
 
   return sheet;
+}
+
+function findSheetByNormalizedName(spreadsheet, sheetName) {
+  const expected = normalizeSheetName(sheetName);
+  const sheets = spreadsheet.getSheets();
+
+  for (var index = 0; index < sheets.length; index += 1) {
+    if (normalizeSheetName(sheets[index].getName()) === expected) {
+      return sheets[index];
+    }
+  }
+
+  return null;
+}
+
+function normalizeSheetName(name) {
+  return safeString(name).toLowerCase().replace(/\s+/g, '_');
 }
 
 function readSheetObjects(sheetName) {
@@ -58,6 +81,22 @@ function readSheetObjects(sheetName) {
 
       return item;
     });
+}
+
+function safeReadSheetObjects(sheetName) {
+  try {
+    return readSheetObjects(sheetName);
+  } catch (error) {
+    return [];
+  }
+}
+
+function safeGetSheetHeaders(sheetName) {
+  try {
+    return getSheetHeaders(sheetName);
+  } catch (error) {
+    return [];
+  }
 }
 
 function getSheetHeaders(sheetName) {
@@ -141,6 +180,21 @@ function validateRequiredSheets() {
       return SHEET_NAMES[key];
     })
   };
+}
+
+function safeValidateRequiredSheets() {
+  try {
+    return validateRequiredSheets();
+  } catch (error) {
+    return {
+      valid: false,
+      missing: [],
+      required: Object.keys(SHEET_NAMES).map(function (key) {
+        return SHEET_NAMES[key];
+      }),
+      error: error && error.message ? error.message : String(error)
+    };
+  }
 }
 
 function normalizeSheetValue(value) {

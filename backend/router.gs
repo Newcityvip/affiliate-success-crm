@@ -10,6 +10,7 @@ function handleRequest(e, method) {
     'meta',
     'login',
     'authlogin',
+    'authdebug',
     'getsession',
     'logout',
     'validatesheets',
@@ -54,6 +55,10 @@ function handleRequest(e, method) {
 
     if (action === 'login' || action === 'authlogin') {
       return successResponse(loginStaff(getRequestLoginId(e)), 'Login successful.');
+    }
+
+    if (action === 'authdebug') {
+      return successResponse(getAuthDebug(getRequestLoginId(e)), 'Auth debug loaded.');
     }
 
     if (action === 'getsession') {

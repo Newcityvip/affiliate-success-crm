@@ -25,3 +25,13 @@ function throwCodedError(code, message) {
   error.code = code || 'REQUEST_FAILED';
   throw error;
 }
+
+function getFirstValue(row, keys) {
+  for (var index = 0; index < keys.length; index += 1) {
+    if (row && row[keys[index]] !== null && row[keys[index]] !== undefined && safeString(row[keys[index]]) !== '') {
+      return row[keys[index]];
+    }
+  }
+
+  return '';
+}

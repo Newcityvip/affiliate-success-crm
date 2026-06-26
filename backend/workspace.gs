@@ -59,7 +59,7 @@ function getSettingsSummary(user) {
     return buildLimitedSettingsSummary(user);
   }
 
-  const validation = validateRequiredSheets();
+  const validation = safeValidateRequiredSheets();
   return {
     profile: sanitizeUser(user || {}),
     apiStatus: 'Connected',

@@ -3,7 +3,7 @@
 
   var config = window.AffiliateSuccessConfig || {};
   var SESSION_KEY = 'affiliateSuccessSession';
-  var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin'];
+  var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin', 'authdebug'];
 
   function getSessionToken() {
     try {
@@ -39,6 +39,8 @@
   function normalizePayload(payload) {
     var normalized = payload || {};
     var ok = normalized.ok;
+    var code = normalized.code || (normalized.error && normalized.error.code) || '';
+    var detailMessage = normalized.details && normalized.details.message ? normalized.details.message : '';
 
     if (ok === undefined) {
       ok = normalized.success;
@@ -46,10 +48,26 @@
 
     normalized.ok = ok === true;
     normalized.success = normalized.ok;
-    normalized.code = normalized.code || (normalized.error && normalized.error.code) || '';
-    normalized.message = normalized.message || (typeof normalized.error === 'string' ? normalized.error : 'API response received.');
+    normalized.code = code;
+    normalized.message = normalized.message || detailMessage || (typeof normalized.error === 'string' ? normalized.error : 'API response received.');
 
     return normalized;
+  }
+
+  function handleUnauthorized(payload) {
+    if (!payload || payload.code !== 'UNAUTHORIZED') {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(SESSION_KEY);
+    } catch (error) {
+      // Ignore storage cleanup failures.
+    }
+
+    if (!/login\.html$/i.test(window.location.pathname)) {
+      window.location.href = 'login.html';
+    }
   }
 
   async function request(action, options) {
@@ -71,6 +89,7 @@
     try {
       var response = await fetch(url, options || {});
       var payload = normalizePayload(await response.json());
+      handleUnauthorized(payload);
 
       if (!response.ok) {
         return {
@@ -79,11 +98,12 @@
           message: payload && payload.message ? payload.message : 'API request failed.',
           data: {},
           error: {
-            code: 'HTTP_ERROR',
+            code: payload.code || 'HTTP_ERROR',
             details: {
               status: response.status
             }
-          }
+          },
+          code: payload.code || 'HTTP_ERROR'
         };
       }
 

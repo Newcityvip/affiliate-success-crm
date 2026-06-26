@@ -80,14 +80,6 @@ function getDashboardSummary(user) {
   return summary;
 }
 
-function safeReadSheetObjects(sheetName) {
-  try {
-    return readSheetObjects(sheetName);
-  } catch (error) {
-    return [];
-  }
-}
-
 function enrichDashboardFollowups(followups, affiliates) {
   const affiliateMap = {};
 
@@ -544,16 +536,6 @@ function getRowDate(row) {
   }
 
   return date;
-}
-
-function getFirstValue(row, keys) {
-  for (var index = 0; index < keys.length; index += 1) {
-    if (row && row[keys[index]] !== null && row[keys[index]] !== undefined && safeString(row[keys[index]]) !== '') {
-      return row[keys[index]];
-    }
-  }
-
-  return '';
 }
 
 function getNormalizedValue(row, keys) {

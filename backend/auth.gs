@@ -278,6 +278,35 @@ function getStaffRowsForAuth() {
   }
 }
 
+function getAuthDebug(loginId) {
+  const normalizedLogin = normalizeAuthValue(loginId);
+  var headers = [];
+  var rows = [];
+  var match = null;
+  var sheetFound = false;
+  var readError = '';
+
+  try {
+    headers = getSheetHeaders(SHEET_NAMES.STAFF_LIST);
+    sheetFound = true;
+    rows = readSheetObjects(SHEET_NAMES.STAFF_LIST);
+    match = findStaffUser(normalizedLogin, rows);
+  } catch (error) {
+    readError = error && error.message ? error.message : String(error);
+  }
+
+  return {
+    sheetFound: sheetFound,
+    headers: headers,
+    loginIdFound: !!match,
+    activeParsed: match ? isActiveStaffUser(match.raw || {}) : false,
+    normalizedRole: match ? normalizeRole(match.role) : '',
+    matchedStaffId: match ? safeString(match.staffId) : '',
+    errorCode: readError ? 'AUTH_CONFIG_ERROR' : '',
+    errorMessage: readError ? 'Staff_List could not be read.' : ''
+  };
+}
+
 function findStaffUser(loginId, staffRows) {
   const login = normalizeAuthValue(loginId).toLowerCase();
   var match = null;
@@ -341,6 +370,10 @@ function isActiveStaffUser(row) {
 
   if (status && ['inactive', 'disabled', 'blocked', 'suspended'].indexOf(status) !== -1) {
     return false;
+  }
+
+  if (active && ['yes', 'true', 'active', '1'].indexOf(active) !== -1) {
+    return true;
   }
 
   if (active && ['no', 'false', '0', 'inactive', 'disabled'].indexOf(active) !== -1) {
