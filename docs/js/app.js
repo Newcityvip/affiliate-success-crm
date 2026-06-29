@@ -3149,7 +3149,11 @@
     }
 
     isEdit = isRecordEdit(config, recordState.context);
-    result = await api[isEdit ? config.updateApi : config.api](payload);
+    if (recordState.type === 'affiliate' && !isEdit) {
+      result = await api.createAffiliate(payload);
+    } else {
+      result = await api[isEdit ? config.updateApi : config.api](payload);
+    }
 
     if (button) {
       button.disabled = false;
