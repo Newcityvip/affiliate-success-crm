@@ -2,6 +2,6 @@
   'use strict';
 
   window.AffiliateSuccessConfig = Object.freeze({
-    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwI9HK-6stIYYvbPvCj1qeJ2_PQLa_q9S_4x3vWOaIyilpxQ4EWXYNvSumj59UAJWRw/exec'
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycby77Pk-cnWeUMh-dfW-2nC0J467dEU57mo9w8pFQvRC8lF-xOvb4M8x5Kpd-AfEZsf2QA/exec'
   });
 })(window);
