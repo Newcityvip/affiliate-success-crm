@@ -608,14 +608,6 @@ function objectValues(source) {
   });
 }
 
-function copyRow(row) {
-  const copy = {};
-  Object.keys(row || {}).forEach(function (key) {
-    copy[key] = row[key];
-  });
-  return copy;
-}
-
 function isToday(date) {
   if (!date) {
     return false;

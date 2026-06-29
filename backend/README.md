@@ -16,6 +16,7 @@ The backend exposes APIs connected to the finalized Google Sheets CRM tabs. Spri
 - `affiliates.gs`, `staff.gs`, `brands.gs`, `tasks.gs`, `issues.gs`, `interactions.gs`, `performance.gs`: read-only module endpoints.
 - `workspace.gs`: read-only report preview, leaderboard, and safe settings summary endpoints.
 - `followups.gs`: read and write actions for `Followup_Queue`.
+- `crud.gs`: Sprint 4B/4C header-aware create/update foundations for admin and staff-scoped workspace writes.
 
 ## Apps Script Setup
 
@@ -118,6 +119,19 @@ The API also supports:
 ?action=createFollowup
 ?action=updateFollowup
 ?action=completeFollowup
+?action=createAffiliate
+?action=updateAffiliate
+?action=createTask
+?action=updateTask
+?action=completeTask
+?action=createIssue
+?action=updateIssue
+?action=resolveIssue
+?action=createInteraction
+?action=createBrand
+?action=updateBrand
+?action=createStaff
+?action=updateStaff
 ```
 
 All protected endpoints require `sessionToken` after Sprint 4A. All responses use the standard `ok`, `success`, `message`, `data`, `error`, `code`, `details`, and `meta` envelope.
@@ -133,6 +147,16 @@ Priority
 Status
 Generated_From
 ```
+
+## Sprint 4B/4C Write Permissions
+
+- `SUPER_ADMIN` and `ADMIN` can create/update global records.
+- `STAFF` can create interactions, tasks, issues, and follow-ups only when the record is assigned to their workspace or linked to an assigned affiliate.
+- `STAFF` cannot create staff, brands, or global affiliates.
+- Delete actions are intentionally not implemented.
+- Writes are header-aware: fields without matching sheet headers are skipped, and no schema changes are made.
+- Generated IDs use existing ID columns when present: `AFF0002`, `TSK0002`, `ISS0002`, `INT0002`, `BRD0002`, `Q0002`, and `ST003`.
+- `Activity_Log` is appended after successful writes when its headers exist. Missing activity logging headers never block the primary write.
 
 ## Future IP Allowlist Plan
 

@@ -81,6 +81,45 @@
       completed: []
     }
   };
+  var recordState = {
+    type: '',
+    context: {}
+  };
+  var recordForms = {
+    affiliate: {
+      title: 'New Affiliate',
+      api: 'createAffiliate',
+      adminOnly: true,
+      fields: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
+    },
+    task: {
+      title: 'Create Task',
+      api: 'createTask',
+      fields: ['Affiliate_ID', 'Title', 'Task', 'Assigned_Staff', 'Due_Date', 'Priority', 'Status']
+    },
+    issue: {
+      title: 'Create Issue',
+      api: 'createIssue',
+      fields: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
+    },
+    interaction: {
+      title: 'Add Interaction',
+      api: 'createInteraction',
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
+    },
+    brand: {
+      title: 'New Brand',
+      api: 'createBrand',
+      adminOnly: true,
+      fields: ['Brand', 'Brand_Name', 'Market', 'Owner', 'Status', 'Active']
+    },
+    staff: {
+      title: 'New Staff',
+      api: 'createStaff',
+      adminOnly: true,
+      fields: ['Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Telegram', 'Active', 'Allowed_IPs', 'Permission_Level', 'Max_Affiliates', 'Can_View_All']
+    }
+  };
   var moduleRoutes = ['interactions', 'tasks', 'issues', 'performance', 'leaderboard', 'reports', 'staff', 'brands', 'settings'];
   var moduleState = {};
   var moduleConfigs = {
@@ -650,7 +689,14 @@
 
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
       var action = button.dataset.quickAction;
-      if (!isAdminUser() && (action === 'affiliate' || action === 'task' || action === 'issue')) {
+      if (!isAdminUser() && action === 'affiliate') {
+        button.hidden = true;
+      }
+    });
+
+    document.querySelectorAll('[data-admin-action]').forEach(function (button) {
+      var action = button.dataset.adminAction;
+      if (!isAdminUser() && recordForms[action] && recordForms[action].adminOnly) {
         button.hidden = true;
       }
     });
@@ -1951,6 +1997,8 @@
     });
 
     fields.appendChild(keyGrid);
+    fields.appendChild(createAffiliateActionBar(row));
+    fields.appendChild(createAffiliateRelatedSections(row));
 
     var remainingTitle = document.createElement('p');
     remainingTitle.className = 'drawer-section-title';
@@ -1978,6 +2026,102 @@
       appendFieldValue(item, row, key);
 
       return item;
+  }
+
+  function createAffiliateActionBar(row) {
+    var bar = document.createElement('div');
+    var actions = [
+      { label: 'Add interaction', type: 'interaction' },
+      { label: 'Add follow-up', type: 'followup' },
+      { label: 'Create task', type: 'task' },
+      { label: 'Create issue', type: 'issue' }
+    ];
+
+    bar.className = 'quick-actions drawer-actions';
+    actions.forEach(function (action) {
+      var button = document.createElement('button');
+      button.className = 'button button-secondary button-small';
+      button.type = 'button';
+      button.textContent = action.label;
+      button.addEventListener('click', function () {
+        var context = affiliateContext(row);
+        if (action.type === 'followup') {
+          openFollowupModal('create', context);
+          return;
+        }
+        openRecordModal(action.type, context);
+      });
+      bar.appendChild(button);
+    });
+
+    return bar;
+  }
+
+  function affiliateContext(row) {
+    return {
+      Affiliate_ID: valueFor(row, 'Affiliate_ID'),
+      Affiliate_Name: valueFor(row, 'Affiliate_Name'),
+      Brand: valueFor(row, 'Brand'),
+      Assigned_Staff: valueFor(row, 'Assigned_Staff') || getUserName()
+    };
+  }
+
+  function createAffiliateRelatedSections(row) {
+    var wrap = document.createElement('div');
+    var affiliateId = valueFor(row, 'Affiliate_ID');
+    var sections = [
+      { title: 'Overview', rows: [row], empty: 'Profile fields are listed below.' },
+      { title: 'Follow-ups', rows: relatedRows(followupState.all, affiliateId), empty: 'No follow-ups loaded for this affiliate.' },
+      { title: 'Interactions', rows: relatedRows(getModuleRows('interactions'), affiliateId), empty: 'No interactions loaded for this affiliate.' },
+      { title: 'Tasks', rows: relatedRows(getModuleRows('tasks'), affiliateId), empty: 'No tasks loaded for this affiliate.' },
+      { title: 'Issues', rows: relatedRows(getModuleRows('issues'), affiliateId), empty: 'No issues loaded for this affiliate.' },
+      { title: 'Performance', rows: relatedRows(getModuleRows('performance'), affiliateId), empty: 'No performance rows loaded for this affiliate.' },
+      { title: 'Notes', rows: [], empty: 'Notes will use interaction records in a later sprint.' }
+    ];
+
+    wrap.className = 'drawer-related';
+    sections.forEach(function (section) {
+      var panel = document.createElement('section');
+      var title = document.createElement('p');
+      var body = document.createElement('p');
+
+      panel.className = 'drawer-field';
+      title.className = 'drawer-section-title';
+      title.textContent = section.title;
+      body.className = 'muted';
+      body.textContent = section.rows.length ? section.rows.slice(0, 3).map(summaryForRelatedRow).join(' | ') : section.empty;
+      panel.appendChild(title);
+      panel.appendChild(body);
+      wrap.appendChild(panel);
+    });
+
+    return wrap;
+  }
+
+  function getModuleRows(routeKey) {
+    return moduleState[routeKey] && moduleState[routeKey].all ? moduleState[routeKey].all : [];
+  }
+
+  function relatedRows(rows, affiliateId) {
+    if (!affiliateId) {
+      return [];
+    }
+
+    return asArray(rows).filter(function (item) {
+      return valueFor(item, 'Affiliate_ID') === affiliateId;
+    });
+  }
+
+  function summaryForRelatedRow(row) {
+    return firstDefined(
+      valueFor(row, 'Queue_ID'),
+      valueFor(row, 'Interaction_ID'),
+      valueFor(row, 'Task_ID'),
+      valueFor(row, 'Issue_ID'),
+      valueFor(row, 'Month'),
+      valueFor(row, 'Status'),
+      'Related record'
+    );
   }
 
   function closeAffiliateDrawer() {
@@ -2389,6 +2533,188 @@
     showToast('Follow-up marked complete.');
   }
 
+  function openRecordModal(type, context) {
+    var config = recordForms[type];
+    var modal = utils.qs('[data-record-modal]');
+    var fields = utils.qs('[data-record-fields]');
+    var form = utils.qs('[data-record-form]');
+
+    if (!config || !modal || !fields || !form) {
+      showToast('This workflow is not available yet.');
+      return;
+    }
+
+    if (config.adminOnly && !isAdminUser()) {
+      showToast('Restricted to administrators.');
+      return;
+    }
+
+    recordState.type = type;
+    recordState.context = context || {};
+    fields.innerHTML = '';
+    form.reset();
+    utils.setText(utils.qs('[data-record-modal-title]'), config.title);
+    utils.setText(utils.qs('[data-record-modal-eyebrow]'), isAdminUser() ? 'Admin action' : 'My Workspace');
+    utils.setText(utils.qs('[data-record-form-message]'), '');
+
+    config.fields.forEach(function (field) {
+      fields.appendChild(createRecordField(field, recordState.context[field]));
+    });
+
+    modal.hidden = false;
+  }
+
+  function closeRecordModal() {
+    var modal = utils.qs('[data-record-modal]');
+    if (modal) {
+      modal.hidden = true;
+    }
+  }
+
+  function createRecordField(field, value) {
+    var label = document.createElement('label');
+    var input;
+
+    label.className = 'field';
+    label.appendChild(document.createElement('span')).textContent = field;
+
+    if (field === 'Notes' || field === 'Issue' || field === 'Task') {
+      input = document.createElement('textarea');
+      input.rows = 3;
+    } else if (field.indexOf('Date') !== -1) {
+      input = document.createElement('input');
+      input.type = 'date';
+    } else if (['Priority', 'Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All'].indexOf(field) !== -1) {
+      input = document.createElement('select');
+      getRecordOptions(field).forEach(function (optionValue) {
+        var option = document.createElement('option');
+        option.value = optionValue;
+        option.textContent = optionValue;
+        input.appendChild(option);
+      });
+    } else {
+      input = document.createElement('input');
+      input.type = field === 'Email' ? 'email' : 'text';
+    }
+
+    input.name = field;
+    input.value = value || getDefaultRecordValue(field);
+    label.appendChild(input);
+    return label;
+  }
+
+  function getRecordOptions(field) {
+    if (field === 'Priority') {
+      return ['Low', 'Medium', 'High', 'Critical'];
+    }
+    if (field === 'Active' || field === 'Can_View_All') {
+      return ['Yes', 'No'];
+    }
+    if (field === 'Role') {
+      return ['Staff', 'Admin', 'Super Admin'];
+    }
+    if (field === 'Permission_Level') {
+      return ['STAFF', 'ADMIN', 'SUPER_ADMIN'];
+    }
+    return ['Open', 'Pending', 'Completed', 'Resolved'];
+  }
+
+  function getDefaultRecordValue(field) {
+    if (field === 'Assigned_Staff') {
+      return getUserName();
+    }
+    if (field === 'Status') {
+      return 'Open';
+    }
+    if (field === 'Active') {
+      return 'Yes';
+    }
+    if (field === 'Priority') {
+      return 'Medium';
+    }
+    if (field === 'Generated_From') {
+      return 'Manual';
+    }
+    return '';
+  }
+
+  function getRecordFormData() {
+    var form = utils.qs('[data-record-form]');
+    var data = {};
+
+    if (!form) {
+      return data;
+    }
+
+    Array.prototype.slice.call(form.elements).forEach(function (element) {
+      if (element.name) {
+        data[element.name] = element.value;
+      }
+    });
+
+    return data;
+  }
+
+  async function submitRecordForm(event) {
+    var config = recordForms[recordState.type];
+    var message = utils.qs('[data-record-form-message]');
+    var button = utils.qs('[data-record-submit]');
+    var payload = getRecordFormData();
+    var result;
+
+    event.preventDefault();
+
+    if (!config || !api[config.api]) {
+      utils.setText(message, 'This action is not available.');
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+    utils.setText(message, 'Saving...');
+
+    result = await api[config.api](payload);
+
+    if (button) {
+      button.disabled = false;
+    }
+
+    if (!isSuccessfulResult(result)) {
+      utils.setText(message, result && result.message ? result.message : 'Unable to save record.');
+      return;
+    }
+
+    closeRecordModal();
+    showToast(config.title + ' saved.');
+    refreshAfterRecordSave(recordState.type);
+  }
+
+  function refreshAfterRecordSave(type) {
+    dashboardState.loaded = false;
+    loadDashboard();
+
+    if (type === 'affiliate') {
+      affiliateState.loaded = false;
+      loadAffiliates(true);
+    }
+
+    if (type === 'task' || type === 'issue' || type === 'interaction' || type === 'brand' || type === 'staff') {
+      if (moduleState[type + 's']) {
+        moduleState[type + 's'].loaded = false;
+        loadModule(type + 's', true);
+      }
+      if (type === 'brand' && moduleState.brands) {
+        moduleState.brands.loaded = false;
+        loadModule('brands', true);
+      }
+      if (type === 'staff' && moduleState.staff) {
+        moduleState.staff.loaded = false;
+        loadModule('staff', true);
+      }
+    }
+  }
+
   function showToast(message) {
     var region = utils.qs('[data-toast-region]');
     if (!region) {
@@ -2420,7 +2746,13 @@
           return;
         }
 
-        showToast('New ' + action + ' will be available in a later sprint.');
+        openRecordModal(action);
+      });
+    });
+
+    document.querySelectorAll('[data-admin-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openRecordModal(button.dataset.adminAction);
       });
     });
 
@@ -2555,8 +2887,36 @@
     document.querySelectorAll('[data-module-action]').forEach(function (button) {
       button.addEventListener('click', function () {
         var action = button.dataset.moduleAction || 'action';
-        showToast('New ' + action + ' workflow is planned for a later sprint.');
+        openRecordModal(action);
       });
+    });
+  }
+
+  function bindRecordModal() {
+    var close = utils.qs('[data-record-modal-close]');
+    var modal = utils.qs('[data-record-modal]');
+    var form = utils.qs('[data-record-form]');
+
+    if (close) {
+      close.addEventListener('click', closeRecordModal);
+    }
+
+    if (modal) {
+      modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+          closeRecordModal();
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', submitRecordForm);
+    }
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeRecordModal();
+      }
     });
   }
 
@@ -2572,6 +2932,7 @@
     bindFollowupControls();
     bindModuleControls();
     bindQuickActions();
+    bindRecordModal();
     bindLogout();
     updatePage(router.routeFromHash());
     loadDashboard();

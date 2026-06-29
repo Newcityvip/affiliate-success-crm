@@ -2,7 +2,7 @@
 
 Affiliate Success CRM is a professional operating system for affiliate success teams. The project will connect a lightweight GitHub Pages frontend with a Google Apps Script backend and a finalized Google Sheets database so teams can manage affiliate relationships, weekly contacts, performance tracking, issues, follow-ups, and KPI visibility from one focused workspace.
 
-This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, Sprint 3D complete dashboard workspace, Sprint 3E full CRM workspace page completion, and Sprint 4A secure auth foundation. It intentionally does not include production credentials, passwords, private tokens, spreadsheet IDs, or destructive sheet operations beyond the scoped Followup_Queue actions.
+This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI shell, Sprint 2 live dashboard connection, Sprint 3A live read-only Affiliates page, Sprint 3B Follow-up Queue module, Sprint 3C CRM polish pass, Sprint 3D complete dashboard workspace, Sprint 3E full CRM workspace page completion, Sprint 4A secure auth foundation, and Sprint 4B/4C admin CRUD plus staff daily workspace foundations. It intentionally does not include production credentials, passwords, private tokens, or spreadsheet IDs.
 
 ## Tech Stack
 
@@ -83,6 +83,14 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Protected API actions require `sessionToken`; public actions are limited to `health`, `meta`, `login`, `getSession`, and `logout`.
 - IP allowlisting is prepared only as a future architecture note. It is not enforced in Sprint 4A.
 
+## Sprint 4B/4C Notes
+
+- Adds header-aware create/update foundations for affiliates, tasks, issues, interactions, brands, staff, and follow-ups.
+- Admin and Super Admin can create/update global CRM records. Staff can create daily workspace records only when scoped to assigned affiliates or their own staff ownership.
+- Adds reusable frontend modals for Admin quick actions and Staff daily actions without changing the visual system or adding frameworks.
+- Affiliate profile drawer now includes a 360 foundation with related sections and quick actions for interaction, follow-up, task, and issue creation.
+- Successful writes append to `Activity_Log` when that sheet and relevant headers exist. Logging is skipped safely when unavailable.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -123,5 +131,18 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 - `?action=reports`
 - `?action=leaderboard`
 - `?action=settings`
+- `?action=createAffiliate`
+- `?action=updateAffiliate`
+- `?action=createTask`
+- `?action=updateTask`
+- `?action=completeTask`
+- `?action=createIssue`
+- `?action=updateIssue`
+- `?action=resolveIssue`
+- `?action=createInteraction`
+- `?action=createBrand`
+- `?action=updateBrand`
+- `?action=createStaff`
+- `?action=updateStaff`
 
 See [docs/API.md](docs/API.md) for the response shape and foundation endpoint details.

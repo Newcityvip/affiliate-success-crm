@@ -208,6 +208,45 @@
     },
     completeFollowup: function (data) {
       return post('completeFollowup', data);
+    },
+    createAffiliate: function (data) {
+      return post('createAffiliate', data);
+    },
+    updateAffiliate: function (data) {
+      return post('updateAffiliate', data);
+    },
+    createTask: function (data) {
+      return post('createTask', data);
+    },
+    updateTask: function (data) {
+      return post('updateTask', data);
+    },
+    completeTask: function (data) {
+      return post('completeTask', data);
+    },
+    createIssue: function (data) {
+      return post('createIssue', data);
+    },
+    updateIssue: function (data) {
+      return post('updateIssue', data);
+    },
+    resolveIssue: function (data) {
+      return post('resolveIssue', data);
+    },
+    createInteraction: function (data) {
+      return post('createInteraction', data);
+    },
+    createBrand: function (data) {
+      return post('createBrand', data);
+    },
+    updateBrand: function (data) {
+      return post('updateBrand', data);
+    },
+    createStaff: function (data) {
+      return post('createStaff', data);
+    },
+    updateStaff: function (data) {
+      return post('updateStaff', data);
     }
   });
 })(window);

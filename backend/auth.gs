@@ -160,7 +160,7 @@ function isAssignedToUser(row, user) {
 }
 
 function filterRowsForUser(rows, user) {
-  if (isAdminUser(user)) {
+  if (isAdminUser(user) || userCanViewAll(user)) {
     return rows || [];
   }
 
@@ -170,7 +170,7 @@ function filterRowsForUser(rows, user) {
 }
 
 function filterAffiliatesForUser(rows, user) {
-  if (isAdminUser(user)) {
+  if (isAdminUser(user) || userCanViewAll(user)) {
     return rows || [];
   }
 
@@ -180,7 +180,7 @@ function filterAffiliatesForUser(rows, user) {
 }
 
 function filterInteractionsForUser(rows, user) {
-  if (isAdminUser(user)) {
+  if (isAdminUser(user) || userCanViewAll(user)) {
     return rows || [];
   }
 
@@ -190,7 +190,7 @@ function filterInteractionsForUser(rows, user) {
 }
 
 function filterPerformanceForUser(rows, user) {
-  if (isAdminUser(user)) {
+  if (isAdminUser(user) || userCanViewAll(user)) {
     return rows || [];
   }
 
@@ -202,7 +202,7 @@ function filterPerformanceForUser(rows, user) {
 function filterBrandsForUser(rows, affiliates, user) {
   const allowedBrands = {};
 
-  if (isAdminUser(user)) {
+  if (isAdminUser(user) || userCanViewAll(user)) {
     return rows || [];
   }
 
@@ -359,6 +359,7 @@ function rowToUser(row, loginId) {
     email: safeString(getFirstValue(row, ['Email'])),
     team: safeString(getFirstValue(row, ['Team'])),
     role: normalizeRole(roleValue || permissionValue || (login.toUpperCase() === 'ADMIN01' ? AUTH_ROLES.SUPER_ADMIN : AUTH_ROLES.STAFF)),
+    canViewAll: parseTruthy(getFirstValue(row, ['Can_View_All', 'Can View All'])),
     raw: row
   };
 }
@@ -371,6 +372,7 @@ function createDevAdminUser(loginId) {
     email: '',
     team: 'Administration',
     role: AUTH_ROLES.SUPER_ADMIN,
+    canViewAll: true,
     raw: {
       Login_ID: 'ADMIN01',
       Status: 'Active',
@@ -405,8 +407,18 @@ function sanitizeUser(user) {
     name: safeString(user.name) || safeString(user.loginId) || 'Staff User',
     email: safeString(user.email),
     team: safeString(user.team),
-    role: normalizeRole(user.role)
+    role: normalizeRole(user.role),
+    canViewAll: parseTruthy(user.canViewAll)
   };
+}
+
+function userCanViewAll(user) {
+  return parseTruthy(user && user.canViewAll);
+}
+
+function parseTruthy(value) {
+  const normalized = safeString(value).toLowerCase();
+  return ['yes', 'true', 'active', '1', 'y'].indexOf(normalized) !== -1;
 }
 
 function normalizeRole(role) {

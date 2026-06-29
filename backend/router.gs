@@ -30,7 +30,38 @@ function handleRequest(e, method) {
     'getfollowups',
     'createfollowup',
     'updatefollowup',
-    'completefollowup'
+    'completefollowup',
+    'createaffiliate',
+    'updateaffiliate',
+    'createtask',
+    'updatetask',
+    'completetask',
+    'createissue',
+    'updateissue',
+    'resolveissue',
+    'createinteraction',
+    'createbrand',
+    'updatebrand',
+    'createstaff',
+    'updatestaff'
+  ];
+  const writeActions = [
+    'createfollowup',
+    'updatefollowup',
+    'completefollowup',
+    'createaffiliate',
+    'updateaffiliate',
+    'createtask',
+    'updatetask',
+    'completetask',
+    'createissue',
+    'updateissue',
+    'resolveissue',
+    'createinteraction',
+    'createbrand',
+    'updatebrand',
+    'createstaff',
+    'updatestaff'
   ];
   var user = null;
 
@@ -82,13 +113,13 @@ function handleRequest(e, method) {
 
     user = requireAuth(e);
 
-    if (['createfollowup', 'updatefollowup', 'completefollowup'].indexOf(action) !== -1 && method !== 'POST') {
-      return errorResponse('This follow-up action requires POST.', 'METHOD_NOT_ALLOWED', {
+    if (writeActions.indexOf(action) !== -1 && method !== 'POST') {
+      return errorResponse('This action requires POST.', 'METHOD_NOT_ALLOWED', {
         method: method
       });
     }
 
-    if (['createfollowup', 'updatefollowup', 'completefollowup'].indexOf(action) === -1 && method !== 'GET') {
+    if (writeActions.indexOf(action) === -1 && method !== 'GET') {
       return errorResponse('Only GET requests are supported for this endpoint.', 'METHOD_NOT_ALLOWED', {
         method: method
       });
@@ -130,6 +161,58 @@ function handleRequest(e, method) {
 
     if (action === 'completefollowup') {
       return successResponse(completeFollowup(getRequestPayload(e), user), 'Follow-up completed.');
+    }
+
+    if (action === 'createaffiliate') {
+      return successResponse(createAffiliate(getRequestPayload(e), user), 'Affiliate created.');
+    }
+
+    if (action === 'updateaffiliate') {
+      return successResponse(updateAffiliate(getRequestPayload(e), user), 'Affiliate updated.');
+    }
+
+    if (action === 'createtask') {
+      return successResponse(createTask(getRequestPayload(e), user), 'Task created.');
+    }
+
+    if (action === 'updatetask') {
+      return successResponse(updateTask(getRequestPayload(e), user), 'Task updated.');
+    }
+
+    if (action === 'completetask') {
+      return successResponse(completeTask(getRequestPayload(e), user), 'Task completed.');
+    }
+
+    if (action === 'createissue') {
+      return successResponse(createIssue(getRequestPayload(e), user), 'Issue created.');
+    }
+
+    if (action === 'updateissue') {
+      return successResponse(updateIssue(getRequestPayload(e), user), 'Issue updated.');
+    }
+
+    if (action === 'resolveissue') {
+      return successResponse(resolveIssue(getRequestPayload(e), user), 'Issue resolved.');
+    }
+
+    if (action === 'createinteraction') {
+      return successResponse(createInteraction(getRequestPayload(e), user), 'Interaction created.');
+    }
+
+    if (action === 'createbrand') {
+      return successResponse(createBrand(getRequestPayload(e), user), 'Brand created.');
+    }
+
+    if (action === 'updatebrand') {
+      return successResponse(updateBrand(getRequestPayload(e), user), 'Brand updated.');
+    }
+
+    if (action === 'createstaff') {
+      return successResponse(createStaff(getRequestPayload(e), user), 'Staff created.');
+    }
+
+    if (action === 'updatestaff') {
+      return successResponse(updateStaff(getRequestPayload(e), user), 'Staff updated.');
     }
 
     if (action === 'tasks') {

@@ -81,6 +81,19 @@ settings
 createFollowup
 updateFollowup
 completeFollowup
+createAffiliate
+updateAffiliate
+createTask
+updateTask
+completeTask
+createIssue
+updateIssue
+resolveIssue
+createInteraction
+createBrand
+updateBrand
+createStaff
+updateStaff
 validateSheets
 ```
 
@@ -307,7 +320,7 @@ Sheet reads use a shared reader that checks exact sheet names first, then normal
 
 ## Follow-up Queue Write Endpoints
 
-Follow-up write endpoints require `POST` and only write to `Followup_Queue`.
+Write endpoints require `POST`, a valid `sessionToken`, and existing sheet headers. They never delete rows and never add sheet columns.
 
 ### `?action=createFollowup`
 
@@ -357,6 +370,64 @@ Request body:
 ```
 
 Completion sets `Status` to `Completed`. Dashboard follow-up counts update after the frontend refreshes data.
+
+## Sprint 4B/4C Write Endpoints
+
+Admin and Super Admin can create/update all supported entities:
+
+```text
+?action=createAffiliate
+?action=updateAffiliate
+?action=createBrand
+?action=updateBrand
+?action=createStaff
+?action=updateStaff
+```
+
+Admin, Super Admin, and scoped Staff users can write daily workspace records:
+
+```text
+?action=createTask
+?action=updateTask
+?action=completeTask
+?action=createIssue
+?action=updateIssue
+?action=resolveIssue
+?action=createInteraction
+?action=createFollowup
+?action=updateFollowup
+?action=completeFollowup
+```
+
+Staff writes are allowed only for their assigned workspace or assigned affiliates. Staff cannot create global affiliates, brands, or staff records.
+
+Generated IDs use existing headers when available:
+
+```text
+Affiliate_ID -> AFF0002
+Task_ID -> TSK0002
+Issue_ID -> ISS0002
+Interaction_ID -> INT0002
+Brand_ID -> BRD0002
+Queue_ID -> Q0002
+Staff_ID -> ST003
+```
+
+Successful create/update/complete/resolve actions append to `Activity_Log` when the sheet exists with supported headers:
+
+```text
+Activity_ID
+Timestamp
+Actor
+Actor_ID
+Role
+Action
+Entity_Type
+Entity_ID
+Summary
+```
+
+If `Activity_Log` or optional headers are missing, logging is skipped safely and the primary write still succeeds.
 
 ## Errors
 

@@ -9,6 +9,8 @@ function getFollowups(user) {
 function createFollowup(payload, user) {
   const data = normalizeFollowupPayload(payload);
 
+  requireScopedWrite(data, user);
+
   if (!isAdminUser(user)) {
     data.Assigned_Staff = getUserDisplayName(user);
   }
@@ -16,10 +18,11 @@ function createFollowup(payload, user) {
   validateFollowupData(data);
 
   if (!data.Queue_ID) {
-    data.Queue_ID = createSimpleId('FU');
+    data.Queue_ID = nextSheetId(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', 'Q', 4);
   }
 
   appendSheetObject(SHEET_NAMES.FOLLOWUP_QUEUE, data);
+  logActivity(user, 'create', 'Follow-up', data.Queue_ID, buildActivitySummary('Follow-up', data, 'created'));
 
   return {
     item: data
@@ -37,7 +40,7 @@ function updateFollowup(payload, user) {
 
   existing = getFollowupByQueueId(queueId);
 
-  if (!isAdminUser(user) && !isAssignedToUser(existing, user)) {
+  if (!isAdminUser(user) && !userCanViewAll(user) && !isAssignedToUser(existing, user)) {
     throwCodedError('FORBIDDEN', 'You can only update your assigned follow-ups.');
   }
 
@@ -47,8 +50,11 @@ function updateFollowup(payload, user) {
 
   validateFollowupData(data);
 
+  const updated = updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', queueId, data);
+  logActivity(user, 'update', 'Follow-up', queueId, buildActivitySummary('Follow-up', updated, 'updated'));
+
   return {
-    item: updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', queueId, data)
+    item: updated
   };
 }
 
@@ -62,14 +68,17 @@ function completeFollowup(payload, user) {
 
   existing = getFollowupByQueueId(queueId);
 
-  if (!isAdminUser(user) && !isAssignedToUser(existing, user)) {
+  if (!isAdminUser(user) && !userCanViewAll(user) && !isAssignedToUser(existing, user)) {
     throwCodedError('FORBIDDEN', 'You can only complete your assigned follow-ups.');
   }
 
+  const updated = updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', queueId, {
+    Status: 'Completed'
+  });
+  logActivity(user, 'complete', 'Follow-up', queueId, buildActivitySummary('Follow-up', updated, 'completed'));
+
   return {
-    item: updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', queueId, {
-      Status: 'Completed'
-    })
+    item: updated
   };
 }
 

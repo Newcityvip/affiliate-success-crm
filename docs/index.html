@@ -63,6 +63,7 @@
             <span class="module-chip live-status" data-global-status>API: Loading</span>
             <div class="quick-actions topbar-quick-actions" aria-label="Quick actions">
               <button class="button button-primary" type="button" data-quick-action="followup">New Follow-up</button>
+              <button class="button button-secondary" type="button" data-quick-action="interaction">Add Interaction</button>
               <button class="button button-secondary" type="button" data-quick-action="affiliate">New Affiliate</button>
               <button class="button button-secondary" type="button" data-quick-action="task">New Task</button>
               <button class="button button-secondary" type="button" data-quick-action="issue">New Issue</button>
@@ -319,6 +320,7 @@
                   <h2 id="affiliates-title">Affiliates</h2>
                   <p class="muted" data-affiliates-count>Loading affiliates...</p>
                 </div>
+                <button class="button button-primary" type="button" data-admin-action="affiliate">New Affiliate</button>
                 <label class="search-field">
                   <span>Search affiliates</span>
                   <input type="search" placeholder="Search by name, username, brand, country, staff" data-affiliate-search>
@@ -612,7 +614,7 @@
                   <h2 id="tasks-title">Tasks</h2>
                   <p class="muted" data-module-count>Loading task records...</p>
                 </div>
-                <button class="button button-secondary" type="button" data-module-action="task">Add Task</button>
+                <button class="button button-secondary" type="button" data-admin-action="task">Add Task</button>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">
@@ -630,7 +632,7 @@
             <div class="data-panel glass-panel module-workspace" data-module-workspace="issues">
               <div class="data-toolbar">
                 <div><p class="eyebrow">Resolution tracking</p><h2 id="issues-title">Issues</h2><p class="muted" data-module-count>Loading issue records...</p></div>
-                <button class="button button-secondary" type="button" data-module-action="issue">Add Issue</button>
+                <button class="button button-secondary" type="button" data-admin-action="issue">Add Issue</button>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">
@@ -685,7 +687,7 @@
 
           <section class="page-section" data-section="staff" aria-labelledby="staff-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="staff">
-              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div><button class="button button-secondary" type="button" data-admin-action="staff">New Staff</button></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search staff</span><input type="search" placeholder="Search name, role, team, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live staff...</p></div>
@@ -697,7 +699,7 @@
 
           <section class="page-section" data-section="brands" aria-labelledby="brands-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="brands">
-              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div><button class="button button-secondary" type="button" data-admin-action="brand">New Brand</button></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search brands</span><input type="search" placeholder="Search brand, market, owner, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live brands...</p></div>
@@ -774,6 +776,26 @@
           </label>
           <p class="form-note" data-followup-form-message></p>
           <button class="button button-primary" type="submit" data-followup-submit>Save Follow-up</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" data-record-modal hidden>
+      <section class="modal-card glass-panel" aria-labelledby="record-modal-title">
+        <div class="drawer-header">
+          <div>
+            <p class="eyebrow" data-record-modal-eyebrow>Workspace action</p>
+            <h2 id="record-modal-title" data-record-modal-title>Create record</h2>
+          </div>
+          <button class="icon-button" type="button" data-record-modal-close aria-label="Close record modal">
+            <span aria-hidden="true">x</span>
+          </button>
+        </div>
+
+        <form class="form-stack" data-record-form>
+          <div class="drawer-grid" data-record-fields></div>
+          <p class="form-note" data-record-form-message></p>
+          <button class="button button-primary" type="submit" data-record-submit>Save</button>
         </form>
       </section>
     </div>

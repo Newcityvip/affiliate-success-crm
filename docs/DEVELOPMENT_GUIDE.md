@@ -42,6 +42,10 @@ Use clear, conventional commit messages:
 - Sprint 4A introduces Login_ID auth, localStorage session tokens on the frontend, and server-side Apps Script sessions. Do not add passwords, PINs, tokens, or spreadsheet IDs to the frontend.
 - Role-based work must keep Admin/Super Admin global and Staff scoped to assigned rows only. If sheet columns are missing, show empty states rather than inventing access or data.
 - New protected API calls must include `sessionToken` and handle `UNAUTHORIZED` by returning to `login.html`.
+- Sprint 4B/4C adds header-aware writes. Do not add sheet columns from code; only write fields that already exist in sheet headers.
+- Admin/Super Admin may create/update global CRM records. Staff writes must stay scoped to assigned affiliates or assigned staff ownership.
+- Delete operations remain out of scope.
+- Keep `frontend/` and `docs/` synced for changed static files, except never overwrite deployment-specific `docs/js/config.js` unless the API URL intentionally changes.
 
 ## Sprint 1 UI Shell
 
@@ -73,3 +77,12 @@ Use clear, conventional commit messages:
 - Confirm Staff dashboard labels use "My" workspace language.
 - Confirm direct unauthorized routes show the restricted access state.
 - Confirm GitHub Pages `docs/` remains synced from `frontend/` except for deployment-specific `docs/js/config.js`.
+
+## Sprint 4B/4C Verification
+
+- Confirm `ADMIN01` can open New Affiliate, New Task, New Issue, New Brand, New Staff, and New Follow-up modals.
+- Confirm `STAFF01` sees the limited My Workspace sidebar and can open Add Interaction, Add Follow-up, Create Task, and Create Issue modals.
+- Confirm staff users cannot open admin-only affiliate, brand, or staff creation controls.
+- Test write APIs with clearly marked test records only, then report any live sheet mutations.
+- Confirm successful writes append to `Activity_Log` when that tab and headers exist.
+- Confirm no console errors and no mobile overflow beyond data tables.

@@ -35,3 +35,11 @@ function getFirstValue(row, keys) {
 
   return '';
 }
+
+function copyRow(row) {
+  const copy = {};
+  Object.keys(row || {}).forEach(function (key) {
+    copy[key] = row[key];
+  });
+  return copy;
+}
