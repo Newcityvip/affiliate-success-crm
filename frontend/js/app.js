@@ -195,11 +195,11 @@
   var csvConfigs = {
     affiliate: {
       title: 'Import Affiliates',
-      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Active']
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
     },
     followup: {
       title: 'Import Follow-ups',
-      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status']
+      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status', 'Notes']
     },
     task: {
       title: 'Import Tasks',
@@ -310,7 +310,7 @@
       actions: [
         { label: 'Add update', form: 'issue' },
         { label: 'Escalate', status: 'Escalated', api: 'updateIssue', when: 'open' },
-        { label: 'Close', api: 'closeIssue', tone: 'primary', when: 'open' },
+        { label: 'Resolve', api: 'closeIssue', tone: 'primary', when: 'open' },
         { label: 'Reopen', api: 'reopenIssue', when: 'closed' }
       ]
     },
@@ -808,7 +808,7 @@
 
     document.querySelectorAll('[data-admin-action]').forEach(function (button) {
       var action = button.dataset.adminAction;
-      if (!isAdminUser() && recordForms[action] && recordForms[action].adminOnly) {
+      if (!isAdminUser() && (action === 'affiliate' || action === 'staff' || (recordForms[action] && recordForms[action].adminOnly))) {
         button.hidden = true;
       }
     });
@@ -2484,6 +2484,7 @@
 
   function renderFollowups() {
     renderFollowupHeaders();
+    updateFollowupWorkspaceLabels();
 
     var groups = {
       today: [],
@@ -2646,7 +2647,7 @@
     filterFollowups();
   }
 
-  function openFollowupModal(mode, row) {
+  async function openFollowupModal(mode, row) {
     var modal = utils.qs('[data-followup-modal]');
     var form = utils.qs('[data-followup-form]');
     if (!modal || !form) {
@@ -2658,14 +2659,20 @@
     utils.setText(utils.qs('[data-followup-form-message]'), '');
     utils.setText(utils.qs('[data-followup-modal-title]'), followupState.mode === 'reschedule' ? 'Reschedule Follow-up' : 'Add New Follow-up');
 
+    await preloadRecordReferences('task');
+    populateFollowupModalReferences();
+
     if (row) {
       form.Queue_ID.value = valueFor(row, 'Queue_ID');
-      form.Affiliate_ID.value = valueFor(row, 'Affiliate_ID');
-      form.Assigned_Staff.value = valueFor(row, 'Assigned_Staff');
+      setFormValue(form, 'Affiliate_ID', valueFor(row, 'Affiliate_ID'));
+      setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
       form.Followup_Date.value = getDateOnly(valueFor(row, 'Followup_Date'));
       form.Priority.value = valueFor(row, 'Priority') || 'Medium';
       form.Status.value = valueFor(row, 'Status') || 'Open';
       form.Generated_From.value = valueFor(row, 'Generated_From');
+      if (form.Notes) {
+        form.Notes.value = valueFor(row, 'Notes');
+      }
     } else {
       form.Priority.value = 'Medium';
       form.Status.value = 'Open';
@@ -2673,6 +2680,93 @@
     }
 
     modal.hidden = false;
+  }
+
+  function updateFollowupWorkspaceLabels() {
+    if (!isAdminUser()) {
+      utils.setText(utils.qs('#followups-title'), 'My Pending Follow-ups');
+      utils.setText(utils.qs('[data-followup-group-title="today"]'), 'My follow-ups due today');
+      utils.setText(utils.qs('[data-followup-group-title="overdue"]'), 'My overdue follow-ups');
+      utils.setText(utils.qs('[data-followup-group-title="upcoming"]'), 'My upcoming follow-ups');
+      utils.setText(utils.qs('[data-followup-group-title="completed"]'), 'My completed follow-ups');
+      return;
+    }
+
+    utils.setText(utils.qs('#followups-title'), 'Follow-ups');
+    utils.setText(utils.qs('[data-followup-group-title="today"]'), "Today's follow-ups");
+    utils.setText(utils.qs('[data-followup-group-title="overdue"]'), 'Overdue follow-ups');
+    utils.setText(utils.qs('[data-followup-group-title="upcoming"]'), 'Upcoming follow-ups');
+    utils.setText(utils.qs('[data-followup-group-title="completed"]'), 'Completed follow-ups');
+  }
+
+  function populateFollowupModalReferences() {
+    var form = utils.qs('[data-followup-form]');
+
+    if (!form) {
+      return;
+    }
+
+    populateSelectOptions(form.Affiliate_ID, getKnownAffiliates(), 'Select affiliate');
+    populateSelectOptions(form.Assigned_Staff, getKnownStaff(), 'Select staff');
+
+    if (form.Affiliate_ID) {
+      form.Affiliate_ID.onchange = function () {
+        applyFollowupAffiliateSelection(form.Affiliate_ID.value);
+      };
+    }
+  }
+
+  function populateSelectOptions(select, options, placeholder) {
+    var current = select ? select.value : '';
+
+    if (!select) {
+      return;
+    }
+
+    select.innerHTML = '';
+    appendSelectOption(select, '', placeholder || 'Select');
+    asArray(options).forEach(function (optionValue) {
+      if (typeof optionValue === 'object') {
+        appendSelectOption(select, optionValue.value, optionValue.label);
+      } else {
+        appendSelectOption(select, optionValue, optionValue);
+      }
+    });
+
+    if (current) {
+      ensureSelectOption(select, current, current);
+      select.value = current;
+    }
+  }
+
+  function appendSelectOption(select, value, label) {
+    var option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+  }
+
+  function ensureSelectOption(select, value, label) {
+    var exists = Array.prototype.slice.call(select.options).some(function (option) {
+      return option.value === value;
+    });
+
+    if (!exists && value) {
+      appendSelectOption(select, value, label || value);
+    }
+  }
+
+  function applyFollowupAffiliateSelection(affiliateId) {
+    var form = utils.qs('[data-followup-form]');
+    var row = (affiliateState.all || []).filter(function (affiliate) {
+      return valueFor(affiliate, 'Affiliate_ID') === affiliateId;
+    })[0];
+
+    if (!form || !row) {
+      return;
+    }
+
+    setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
   }
 
   function closeFollowupModal() {
@@ -2691,7 +2785,8 @@
       Followup_Date: form.Followup_Date.value,
       Priority: form.Priority.value,
       Status: form.Status.value,
-      Generated_From: form.Generated_From.value
+      Generated_From: form.Generated_From.value,
+      Notes: form.Notes ? form.Notes.value : ''
     };
   }
 
@@ -2878,7 +2973,7 @@
       input.type = 'date';
     } else if (shouldUseSelect(field)) {
       input = document.createElement('select');
-      getRecordOptions(field).forEach(function (optionValue) {
+      getRecordOptions(field, config).forEach(function (optionValue) {
         var option = document.createElement('option');
         if (typeof optionValue === 'object') {
           option.value = optionValue.value;
@@ -2917,7 +3012,7 @@
     return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type'].indexOf(field) !== -1;
   }
 
-  function getRecordOptions(field) {
+  function getRecordOptions(field, config) {
     var dynamic;
 
     if (field === 'Brand') {
@@ -2936,7 +3031,7 @@
       return ['Low', 'Medium', 'High', 'Critical'];
     }
     if (field === 'Health_Status') {
-      return ['Healthy', 'Watch', 'At Risk', 'Dormant'];
+      return ['Healthy', 'Attention', 'Warning', 'Critical'];
     }
     if (field === 'Active' || field === 'Can_View_All') {
       return ['Yes', 'No'];
@@ -2956,6 +3051,28 @@
     if (field === 'Interaction_Type') {
       return ['Daily follow-up', 'Call', 'Message', 'Email', 'Telegram', 'Meeting', 'Other'];
     }
+    if (field === 'Status') {
+      return getStatusOptionsForRecord(config);
+    }
+    return ['Open', 'Active', 'Pending', 'Paused', 'Closed', 'Completed', 'Resolved', 'Rescheduled'];
+  }
+
+  function getStatusOptionsForRecord(config) {
+    var title = safeLower(config && config.title);
+
+    if (title.indexOf('affiliate') !== -1 || title.indexOf('brand') !== -1) {
+      return ['Open', 'Active', 'Paused', 'Closed'];
+    }
+    if (title.indexOf('task') !== -1) {
+      return ['Open', 'Pending', 'In Progress', 'Completed', 'Rescheduled'];
+    }
+    if (title.indexOf('issue') !== -1) {
+      return ['Open', 'Pending', 'Escalated', 'Resolved', 'Closed'];
+    }
+    if (title.indexOf('interaction') !== -1) {
+      return ['Open', 'Contacted', 'Interested', 'Not Responding', 'Completed'];
+    }
+
     return ['Open', 'Active', 'Pending', 'Paused', 'Closed', 'Completed', 'Resolved', 'Rescheduled'];
   }
 
@@ -3267,8 +3384,8 @@
     importState.type = type;
     importState.preview = null;
     utils.setText(utils.qs('[data-import-modal-title]'), config.title);
-    utils.setText(utils.qs('[data-import-guide]'), 'Required headers: ' + config.required.join(', '));
-    utils.setText(utils.qs('[data-import-message]'), 'Preview validates rows before anything is committed.');
+    utils.setText(utils.qs('[data-import-guide]'), formatCsvHeaderGuide(config));
+    utils.setText(utils.qs('[data-import-message]'), 'Download the sample or choose a CSV file. Preview validates every row before commit.');
     if (textarea) {
       textarea.value = buildSampleCsv(type);
     }
@@ -3300,6 +3417,11 @@
     return config.required.join(',') + '\n' + config.required.map(function (field) {
       return csvEscape(sample[field]);
     }).join(',');
+  }
+
+  function formatCsvHeaderGuide(config) {
+    var headers = asArray(config && config.required);
+    return 'Required CSV headers, in any order: ' + headers.join(', ') + '. Use these names exactly; preview will show row errors before import.';
   }
 
   function csvEscape(value) {

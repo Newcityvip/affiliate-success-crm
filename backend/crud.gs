@@ -497,7 +497,18 @@ function getImportConfig(entityKey) {
       prefix: 'Q',
       width: 4,
       type: 'Follow-up',
-      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status']
+      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status', 'Notes']
+    };
+  }
+
+  if (entityKey === 'affiliate') {
+    return {
+      sheet: ENTITY_CONFIG.affiliate.sheet,
+      idKey: ENTITY_CONFIG.affiliate.idKey,
+      prefix: ENTITY_CONFIG.affiliate.prefix,
+      width: ENTITY_CONFIG.affiliate.width,
+      type: ENTITY_CONFIG.affiliate.type,
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
     };
   }
 
@@ -527,11 +538,7 @@ function getImportConfig(entityKey) {
 }
 
 function requireImportPermission(entityKey, user) {
-  if (entityKey === 'followup') {
-    return true;
-  }
-
-  if (['affiliate', 'brand', 'staff'].indexOf(entityKey) !== -1) {
+  if (['affiliate', 'followup', 'interaction', 'task', 'issue', 'brand', 'staff'].indexOf(entityKey) !== -1) {
     requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
   }
 

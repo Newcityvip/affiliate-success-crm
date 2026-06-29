@@ -97,7 +97,8 @@ function normalizeFollowupPayload(payload) {
     Followup_Date: safeString(source.Followup_Date),
     Priority: safeString(source.Priority),
     Status: safeString(source.Status) || 'Open',
-    Generated_From: safeString(source.Generated_From)
+    Generated_From: safeString(source.Generated_From),
+    Notes: safeString(source.Notes)
   };
 }
 

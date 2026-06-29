@@ -322,7 +322,7 @@
                 </div>
                 <div class="toolbar-actions">
                   <button class="button button-primary" type="button" data-admin-action="affiliate">New Affiliate</button>
-                  <button class="button button-secondary" type="button" data-import-action="affiliate" data-role-scope="admin">Import CSV</button>
+                  <button class="button button-secondary" type="button" data-import-action="affiliate" data-role-scope="admin">Bulk Affiliates</button>
                 </div>
                 <label class="search-field">
                   <span>Search affiliates</span>
@@ -441,7 +441,7 @@
                 </div>
                 <div class="toolbar-actions">
                   <button class="button button-primary" type="button" data-followup-add>Add New Follow-up</button>
-                  <button class="button button-secondary" type="button" data-import-action="followup" data-role-scope="admin">Import CSV</button>
+                  <button class="button button-secondary" type="button" data-import-action="followup" data-role-scope="admin">Bulk Follow-ups</button>
                 </div>
               </div>
 
@@ -525,7 +525,7 @@
                   <div class="group-heading">
                     <div>
                       <p class="eyebrow">Due today</p>
-                      <h3>Today's follow-ups</h3>
+                      <h3 data-followup-group-title="today">Today's follow-ups</h3>
                     </div>
                     <span class="status-badge is-blue" data-followup-group-count="today">0</span>
                   </div>
@@ -541,7 +541,7 @@
                   <div class="group-heading">
                     <div>
                       <p class="eyebrow">Needs attention</p>
-                      <h3>Overdue follow-ups</h3>
+                      <h3 data-followup-group-title="overdue">Overdue follow-ups</h3>
                     </div>
                     <span class="status-badge is-red" data-followup-group-count="overdue">0</span>
                   </div>
@@ -557,7 +557,7 @@
                   <div class="group-heading">
                     <div>
                       <p class="eyebrow">Planned queue</p>
-                      <h3>Upcoming follow-ups</h3>
+                      <h3 data-followup-group-title="upcoming">Upcoming follow-ups</h3>
                     </div>
                     <span class="status-badge is-amber" data-followup-group-count="upcoming">0</span>
                   </div>
@@ -573,7 +573,7 @@
                   <div class="group-heading">
                     <div>
                       <p class="eyebrow">Closed loop</p>
-                      <h3>Completed follow-ups</h3>
+                      <h3 data-followup-group-title="completed">Completed follow-ups</h3>
                     </div>
                     <span class="status-badge is-green" data-followup-group-count="completed">0</span>
                   </div>
@@ -598,7 +598,7 @@
                 </div>
                 <div class="toolbar-actions">
                   <button class="button button-secondary" type="button" data-module-action="interaction">Add Interaction</button>
-                  <button class="button button-secondary" type="button" data-import-action="interaction" data-role-scope="admin">Import CSV</button>
+                  <button class="button button-secondary" type="button" data-import-action="interaction" data-role-scope="admin">Bulk Interactions</button>
                 </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
@@ -626,7 +626,7 @@
                 </div>
                 <div class="toolbar-actions">
                   <button class="button button-secondary" type="button" data-admin-action="task">Add Task</button>
-                  <button class="button button-secondary" type="button" data-import-action="task" data-role-scope="admin">Import CSV</button>
+                  <button class="button button-secondary" type="button" data-import-action="task" data-role-scope="admin">Bulk Tasks</button>
                 </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
@@ -647,7 +647,7 @@
                 <div><p class="eyebrow">Resolution tracking</p><h2 id="issues-title">Issues</h2><p class="muted" data-module-count>Loading issue records...</p></div>
                 <div class="toolbar-actions">
                   <button class="button button-secondary" type="button" data-admin-action="issue">Add Issue</button>
-                  <button class="button button-secondary" type="button" data-import-action="issue" data-role-scope="admin">Import CSV</button>
+                  <button class="button button-secondary" type="button" data-import-action="issue" data-role-scope="admin">Bulk Issues</button>
                 </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
@@ -756,12 +756,12 @@
         <form class="form-stack" data-followup-form>
           <input type="hidden" name="Queue_ID" data-followup-queue-id>
           <label class="field">
-            <span>Affiliate ID</span>
-            <input type="text" name="Affiliate_ID" required>
+            <span>Affiliate</span>
+            <select name="Affiliate_ID" required data-followup-affiliate></select>
           </label>
           <label class="field">
             <span>Assigned staff</span>
-            <input type="text" name="Assigned_Staff" required>
+            <select name="Assigned_Staff" required data-followup-staff></select>
           </label>
           <label class="field">
             <span>Follow-up date</span>
@@ -791,6 +791,10 @@
           <label class="field">
             <span>Generated from</span>
             <input type="text" name="Generated_From" required>
+          </label>
+          <label class="field">
+            <span>Notes</span>
+            <textarea rows="3" name="Notes" placeholder="Add follow-up result or next-step notes"></textarea>
           </label>
           <p class="form-note" data-followup-form-message></p>
           <div class="modal-footer">
