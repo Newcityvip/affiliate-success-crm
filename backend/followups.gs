@@ -58,6 +58,12 @@ function updateFollowup(payload, user) {
   };
 }
 
+function rescheduleFollowup(payload, user) {
+  const data = normalizeFollowupPayload(payload);
+  data.Status = data.Status || 'Rescheduled';
+  return updateFollowup(data, user);
+}
+
 function completeFollowup(payload, user) {
   const queueId = safeString(payload && payload.Queue_ID);
   var existing;

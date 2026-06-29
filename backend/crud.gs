@@ -77,6 +77,10 @@ function completeTask(payload, user) {
   return updateTask(setStatusPayload(payload, 'Completed'), user);
 }
 
+function reopenTask(payload, user) {
+  return updateTask(setStatusPayload(payload, 'Open'), user);
+}
+
 function createIssue(payload, user) {
   requireScopedWrite(payload, user);
   return createEntity('issue', payload, user);
@@ -92,6 +96,10 @@ function resolveIssue(payload, user) {
 
 function closeIssue(payload, user) {
   return updateIssue(setStatusPayload(payload, 'Closed'), user);
+}
+
+function reopenIssue(payload, user) {
+  return updateIssue(setStatusPayload(payload, 'Open'), user);
 }
 
 function createInteraction(payload, user) {

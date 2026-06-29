@@ -276,9 +276,10 @@
         { label: 'Due Date', keys: ['Due_Date', 'Due Date', 'Date'], format: 'date' }
       ],
       actions: [
-        { label: 'Start', status: 'In Progress', api: 'updateTask' },
-        { label: 'Complete', api: 'completeTask', tone: 'primary' },
-        { label: 'Reschedule', form: 'task' }
+        { label: 'Start', status: 'In Progress', api: 'updateTask', when: 'open' },
+        { label: 'Complete', api: 'completeTask', tone: 'primary', when: 'open' },
+        { label: 'Reopen', api: 'reopenTask', when: 'closed' },
+        { label: 'Reschedule', form: 'task', when: 'open' }
       ]
     },
     issues: {
@@ -308,8 +309,9 @@
       ],
       actions: [
         { label: 'Add update', form: 'issue' },
-        { label: 'Escalate', status: 'Escalated', api: 'updateIssue' },
-        { label: 'Close', api: 'closeIssue', tone: 'primary' }
+        { label: 'Escalate', status: 'Escalated', api: 'updateIssue', when: 'open' },
+        { label: 'Close', api: 'closeIssue', tone: 'primary', when: 'open' },
+        { label: 'Reopen', api: 'reopenIssue', when: 'closed' }
       ]
     },
     performance: {
@@ -1736,6 +1738,9 @@
   function appendModuleRowActions(parent, config, item) {
     (config.actions || []).forEach(function (actionConfig) {
       var button = document.createElement('button');
+      if (!shouldShowModuleAction(actionConfig, item)) {
+        return;
+      }
       button.className = 'button ' + (actionConfig.tone === 'primary' ? 'button-primary' : 'button-secondary') + ' button-small';
       button.type = 'button';
       button.textContent = actionConfig.label;
@@ -1744,6 +1749,16 @@
       });
       parent.appendChild(button);
     });
+  }
+
+  function shouldShowModuleAction(actionConfig, item) {
+    if (actionConfig.when === 'open') {
+      return isModuleOpen(item);
+    }
+    if (actionConfig.when === 'closed') {
+      return !isModuleOpen(item);
+    }
+    return true;
   }
 
   async function handleModuleRowAction(actionConfig, item) {
@@ -2459,7 +2474,7 @@
       var tr = document.createElement('tr');
       followupColumns.forEach(function (column) {
         var th = document.createElement('th');
-        th.textContent = column;
+        th.textContent = friendlyFieldLabel(column);
         tr.appendChild(th);
       });
       head.appendChild(tr);
@@ -2693,7 +2708,7 @@
     utils.setText(message, 'Saving follow-up...');
 
     if (followupState.mode === 'reschedule') {
-      result = await api.updateFollowup(payload);
+      result = await api.rescheduleFollowup(payload);
     } else {
       result = await api.createFollowup(payload);
     }
@@ -2730,7 +2745,7 @@
     showToast('Follow-up marked complete.');
   }
 
-  function openRecordModal(type, context) {
+  async function openRecordModal(type, context) {
     var config = recordForms[type];
     var modal = utils.qs('[data-record-modal]');
     var fields = utils.qs('[data-record-fields]');
@@ -2750,13 +2765,53 @@
     recordState.context = context || {};
     fields.innerHTML = '';
     form.reset();
+    fields.appendChild(createEmptyPanel('Loading form options...'));
     utils.setText(utils.qs('[data-record-modal-title]'), isRecordEdit(config, recordState.context) ? 'Edit ' + config.title.replace(/^New |^Create |^Add /, '') : config.title);
     utils.setText(utils.qs('[data-record-modal-eyebrow]'), isAdminUser() ? 'Admin action' : 'My Workspace');
     utils.setText(utils.qs('[data-record-form-message]'), '');
-
-    appendRecordSections(fields, config);
-
     modal.hidden = false;
+
+    await preloadRecordReferences(type);
+    fields.innerHTML = '';
+    appendRecordSections(fields, config);
+  }
+
+  async function preloadRecordReferences(type) {
+    var requests = [];
+
+    if (!affiliateState.loaded && ['affiliate', 'task', 'issue', 'interaction'].indexOf(type) !== -1) {
+      requests.push(api.affiliates().then(function (result) {
+        if (isSuccessfulResult(result)) {
+          affiliateState.all = asArray(result.data && result.data.items);
+          affiliateState.filtered = affiliateState.all.slice();
+          affiliateState.loaded = true;
+        }
+      }));
+    }
+
+    if (isAdminUser() && moduleState.brands && !moduleState.brands.loaded && ['affiliate', 'issue', 'interaction', 'brand'].indexOf(type) !== -1) {
+      requests.push(api.brands().then(function (result) {
+        if (isSuccessfulResult(result)) {
+          moduleState.brands.all = normalizeModuleItems('brands', result.data || {});
+          moduleState.brands.filtered = moduleState.brands.all.slice();
+          moduleState.brands.loaded = true;
+        }
+      }));
+    }
+
+    if (isAdminUser() && moduleState.staff && !moduleState.staff.loaded && ['affiliate', 'task', 'issue', 'interaction', 'staff'].indexOf(type) !== -1) {
+      requests.push(api.staff().then(function (result) {
+        if (isSuccessfulResult(result)) {
+          moduleState.staff.all = normalizeModuleItems('staff', result.data || {});
+          moduleState.staff.filtered = moduleState.staff.all.slice();
+          moduleState.staff.loaded = true;
+        }
+      }));
+    }
+
+    await Promise.all(requests.map(function (request) {
+      return request.catch(function () {});
+    }));
   }
 
   function closeRecordModal() {
@@ -2825,8 +2880,13 @@
       input = document.createElement('select');
       getRecordOptions(field).forEach(function (optionValue) {
         var option = document.createElement('option');
-        option.value = optionValue;
-        option.textContent = optionValue;
+        if (typeof optionValue === 'object') {
+          option.value = optionValue.value;
+          option.textContent = optionValue.label;
+        } else {
+          option.value = optionValue;
+          option.textContent = optionValue;
+        }
         input.appendChild(option);
       });
     } else {
@@ -2837,6 +2897,11 @@
     input.name = field;
     input.required = required;
     input.value = input.type === 'date' ? getDateOnly(value || getDefaultRecordValue(field)) : value || getDefaultRecordValue(field);
+    if (field === 'Affiliate_ID') {
+      input.addEventListener('change', function () {
+        applyAffiliateSelection(input.value);
+      });
+    }
     error.className = 'field-error';
     error.dataset.fieldError = field;
     label.appendChild(input);
@@ -2849,7 +2914,7 @@
   }
 
   function shouldUseSelect(field) {
-    return ['Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type'].indexOf(field) !== -1;
+    return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type'].indexOf(field) !== -1;
   }
 
   function getRecordOptions(field) {
@@ -2862,6 +2927,10 @@
     if (field === 'Assigned_Staff') {
       dynamic = getKnownStaff();
       return dynamic.length ? dynamic : [getUserName()];
+    }
+    if (field === 'Affiliate_ID') {
+      dynamic = getKnownAffiliates();
+      return dynamic.length ? dynamic : [''];
     }
     if (field === 'Priority') {
       return ['Low', 'Medium', 'High', 'Critical'];
@@ -2914,6 +2983,9 @@
     var brandRows = moduleState.brands && moduleState.brands.all ? moduleState.brands.all : [];
 
     brandRows.concat(affiliateState.all || []).forEach(function (row) {
+      if (brandRows.indexOf(row) !== -1 && !isActiveReference(row)) {
+        return;
+      }
       [valueFor(row, 'Brand_Name'), valueFor(row, 'Brand'), valueFor(row, 'Name')].forEach(function (value) {
         if (value && values.indexOf(value) === -1) {
           values.push(value);
@@ -2929,6 +3001,9 @@
     var staffRows = moduleState.staff && moduleState.staff.all ? moduleState.staff.all : [];
 
     staffRows.concat(affiliateState.all || []).forEach(function (row) {
+      if (staffRows.indexOf(row) !== -1 && !isActiveReference(row)) {
+        return;
+      }
       [valueFor(row, 'Staff_Name'), valueFor(row, 'Assigned_Staff'), valueFor(row, 'Name')].forEach(function (value) {
         if (value && values.indexOf(value) === -1) {
           values.push(value);
@@ -2941,6 +3016,40 @@
     }
 
     return values.sort();
+  }
+
+  function isActiveReference(row) {
+    var value = safeLower(firstDefined(valueFor(row, 'Active'), valueFor(row, 'Status')));
+    return !value || ['yes', 'true', 'active', 'open'].indexOf(value) !== -1;
+  }
+
+  function getKnownAffiliates() {
+    return (affiliateState.all || []).map(function (row) {
+      var affiliateId = valueFor(row, 'Affiliate_ID');
+      var label = [affiliateId, valueFor(row, 'Affiliate_Name'), valueFor(row, 'Brand')].filter(Boolean).join(' - ');
+      return affiliateId ? { value: affiliateId, label: label } : null;
+    }).filter(Boolean);
+  }
+
+  function applyAffiliateSelection(affiliateId) {
+    var form = utils.qs('[data-record-form]');
+    var row = (affiliateState.all || []).filter(function (affiliate) {
+      return valueFor(affiliate, 'Affiliate_ID') === affiliateId;
+    })[0];
+
+    if (!form || !row) {
+      return;
+    }
+
+    setFormValue(form, 'Affiliate_Name', valueFor(row, 'Affiliate_Name'));
+    setFormValue(form, 'Brand', valueFor(row, 'Brand'));
+    setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
+  }
+
+  function setFormValue(form, name, value) {
+    if (form.elements[name] && value) {
+      form.elements[name].value = value;
+    }
   }
 
   function getRecordFormData() {

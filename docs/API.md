@@ -81,14 +81,18 @@ settings
 createFollowup
 updateFollowup
 completeFollowup
+rescheduleFollowup
 createAffiliate
 updateAffiliate
 createTask
 updateTask
 completeTask
+reopenTask
 createIssue
 updateIssue
 resolveIssue
+closeIssue
+reopenIssue
 createInteraction
 createBrand
 updateBrand
@@ -320,7 +324,7 @@ Sheet reads use a shared reader that checks exact sheet names first, then normal
 
 ## Follow-up Queue Write Endpoints
 
-Write endpoints require `POST`, a valid `sessionToken`, and existing sheet headers. They never delete rows and never add sheet columns.
+Write endpoints require a valid `sessionToken` and existing sheet headers. They accept POST JSON or an encoded GET `payload` query parameter for GitHub Pages + Apps Script compatibility. They never delete rows and never add sheet columns.
 
 ### `?action=createFollowup`
 
@@ -390,14 +394,17 @@ Admin, Super Admin, and scoped Staff users can write daily workspace records:
 ?action=createTask
 ?action=updateTask
 ?action=completeTask
+?action=reopenTask
 ?action=createIssue
 ?action=updateIssue
 ?action=resolveIssue
 ?action=closeIssue
+?action=reopenIssue
 ?action=createInteraction
 ?action=createFollowup
 ?action=updateFollowup
 ?action=completeFollowup
+?action=rescheduleFollowup
 ?action=importCsvPreview
 ?action=importCsvCommit
 ```

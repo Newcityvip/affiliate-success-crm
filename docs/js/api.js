@@ -221,6 +221,9 @@
     completeFollowup: function (data) {
       return write('completeFollowup', data);
     },
+    rescheduleFollowup: function (data) {
+      return write('rescheduleFollowup', data);
+    },
     createAffiliate: function (data) {
       return write('createAffiliate', data);
     },
@@ -236,6 +239,9 @@
     completeTask: function (data) {
       return write('completeTask', data);
     },
+    reopenTask: function (data) {
+      return write('reopenTask', data);
+    },
     createIssue: function (data) {
       return write('createIssue', data);
     },
@@ -247,6 +253,9 @@
     },
     closeIssue: function (data) {
       return write('closeIssue', data);
+    },
+    reopenIssue: function (data) {
+      return write('reopenIssue', data);
     },
     createInteraction: function (data) {
       return write('createInteraction', data);

@@ -31,15 +31,18 @@ function handleRequest(e, method) {
     'createfollowup',
     'updatefollowup',
     'completefollowup',
+    'reschedulefollowup',
     'createaffiliate',
     'updateaffiliate',
     'createtask',
     'updatetask',
     'completetask',
+    'reopentask',
     'createissue',
     'updateissue',
     'resolveissue',
     'closeissue',
+    'reopenissue',
     'createinteraction',
     'createbrand',
     'updatebrand',
@@ -52,15 +55,18 @@ function handleRequest(e, method) {
     'createfollowup',
     'updatefollowup',
     'completefollowup',
+    'reschedulefollowup',
     'createaffiliate',
     'updateaffiliate',
     'createtask',
     'updatetask',
     'completetask',
+    'reopentask',
     'createissue',
     'updateissue',
     'resolveissue',
     'closeissue',
+    'reopenissue',
     'createinteraction',
     'createbrand',
     'updatebrand',
@@ -163,6 +169,10 @@ function handleRequest(e, method) {
       return successResponse(completeFollowup(getRequestPayload(e), user), 'Follow-up completed.');
     }
 
+    if (action === 'reschedulefollowup') {
+      return successResponse(rescheduleFollowup(getRequestPayload(e), user), 'Follow-up rescheduled.');
+    }
+
     if (action === 'createaffiliate') {
       return successResponse(createAffiliate(getRequestPayload(e), user), 'Affiliate created.');
     }
@@ -183,6 +193,10 @@ function handleRequest(e, method) {
       return successResponse(completeTask(getRequestPayload(e), user), 'Task completed.');
     }
 
+    if (action === 'reopentask') {
+      return successResponse(reopenTask(getRequestPayload(e), user), 'Task reopened.');
+    }
+
     if (action === 'createissue') {
       return successResponse(createIssue(getRequestPayload(e), user), 'Issue created.');
     }
@@ -197,6 +211,10 @@ function handleRequest(e, method) {
 
     if (action === 'closeissue') {
       return successResponse(closeIssue(getRequestPayload(e), user), 'Issue closed.');
+    }
+
+    if (action === 'reopenissue') {
+      return successResponse(reopenIssue(getRequestPayload(e), user), 'Issue reopened.');
     }
 
     if (action === 'createinteraction') {
