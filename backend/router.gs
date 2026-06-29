@@ -4,13 +4,14 @@
 
 function handleRequest(e, method) {
   const params = (e && e.parameter) || {};
-  const action = safeString(params.action || 'health').toLowerCase();
+  const action = getRequestAction(e);
   const supportedActions = [
     'health',
     'meta',
     'login',
     'authlogin',
     'authdebug',
+    'debugactions',
     'debugsheets',
     'getsession',
     'logout',
@@ -105,6 +106,10 @@ function handleRequest(e, method) {
 
     if (action === 'authdebug') {
       return successResponse(getAuthDebug(getRequestLoginId(e)), 'Auth debug loaded.');
+    }
+
+    if (action === 'debugactions') {
+      return successResponse(getDebugActions(e, method, action, supportedActions, writeActions), 'Action debug loaded.');
     }
 
     if (action === 'debugsheets') {
@@ -286,6 +291,41 @@ function handleRequest(e, method) {
       message: error && error.message ? error.message : String(error)
     });
   }
+}
+
+function getRequestAction(e) {
+  const params = (e && e.parameter) || {};
+  const payload = getRequestPayload(e);
+  return safeString(params.action || payload.action || payload.Action || 'health').toLowerCase();
+}
+
+function getDebugActions(e, method, action, supportedActions, writeActions) {
+  const params = (e && e.parameter) || {};
+  const payload = getRequestPayload(e);
+  const postData = e && e.postData ? e.postData : {};
+  const contentType = safeString(postData.type);
+  const hasBody = Boolean(postData.contents);
+
+  return {
+    supportedActions: supportedActions,
+    writeActions: writeActions,
+    requestMethodSeen: method,
+    queryAction: safeString(params.action),
+    payloadAction: safeString(payload.action || payload.Action),
+    parsedAction: action,
+    actionIsSupported: supportedActions.indexOf(action) !== -1,
+    actionIsWrite: writeActions.indexOf(action) !== -1,
+    parser: {
+      readsQueryAction: Boolean(params.action),
+      readsPayloadAction: Boolean(payload.action || payload.Action),
+      bodyPresent: hasBody,
+      contentType: contentType
+    },
+    app: APP_NAME,
+    version: APP_VERSION,
+    apiVersion: API_VERSION,
+    commitMarker: 'debug-actions-2026-06-29'
+  };
 }
 
 function getRequestErrorMessage(error) {
