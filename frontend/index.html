@@ -703,7 +703,7 @@
 
           <section class="page-section" data-section="staff" aria-labelledby="staff-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="staff">
-              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="staff">New Staff</button><button class="button button-secondary" type="button" data-import-action="staff" data-role-scope="admin">Import CSV</button></div></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="staff">New Staff</button></div></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search staff</span><input type="search" placeholder="Search name, role, team, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live staff...</p></div>
@@ -715,7 +715,7 @@
 
           <section class="page-section" data-section="brands" aria-labelledby="brands-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="brands">
-              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="brand">New Brand</button><button class="button button-secondary" type="button" data-import-action="brand" data-role-scope="admin">Import CSV</button></div></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="brand">New Brand</button></div></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search brands</span><input type="search" placeholder="Search brand, market, owner, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live brands...</p></div>
@@ -793,7 +793,10 @@
             <input type="text" name="Generated_From" required>
           </label>
           <p class="form-note" data-followup-form-message></p>
-          <button class="button button-primary" type="submit" data-followup-submit>Save Follow-up</button>
+          <div class="modal-footer">
+            <button class="button button-secondary" type="button" data-followup-modal-cancel>Cancel</button>
+            <button class="button button-primary" type="submit" data-followup-submit>Save Follow-up</button>
+          </div>
         </form>
       </section>
     </div>
@@ -813,7 +816,10 @@
         <form class="form-stack" data-record-form>
           <div class="drawer-grid" data-record-fields></div>
           <p class="form-note" data-record-form-message></p>
-          <button class="button button-primary" type="submit" data-record-submit>Save</button>
+          <div class="modal-footer">
+            <button class="button button-secondary" type="button" data-record-modal-cancel>Cancel</button>
+            <button class="button button-primary" type="submit" data-record-submit>Save</button>
+          </div>
         </form>
       </section>
     </div>
@@ -833,6 +839,10 @@
         <div class="import-actions">
           <button class="button button-secondary button-small" type="button" data-import-sample>Download sample CSV</button>
         </div>
+        <label class="field">
+          <span>CSV file</span>
+          <input type="file" accept=".csv,text/csv" data-import-file>
+        </label>
         <label class="field">
           <span>CSV content</span>
           <textarea rows="8" data-import-csv placeholder="Paste CSV content here"></textarea>

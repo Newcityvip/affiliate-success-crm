@@ -43,6 +43,7 @@ function handleRequest(e, method) {
     'resolveissue',
     'closeissue',
     'reopenissue',
+    'addinteraction',
     'createinteraction',
     'createbrand',
     'updatebrand',
@@ -67,6 +68,7 @@ function handleRequest(e, method) {
     'resolveissue',
     'closeissue',
     'reopenissue',
+    'addinteraction',
     'createinteraction',
     'createbrand',
     'updatebrand',
@@ -217,7 +219,7 @@ function handleRequest(e, method) {
       return successResponse(reopenIssue(getRequestPayload(e), user), 'Issue reopened.');
     }
 
-    if (action === 'createinteraction') {
+    if (action === 'addinteraction' || action === 'createinteraction') {
       return successResponse(createInteraction(getRequestPayload(e), user), 'Interaction created.');
     }
 

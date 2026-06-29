@@ -383,6 +383,9 @@ function importCsvPreview(payload, user) {
   const required = config.required || [];
   const previewRows = [];
   const errors = [];
+  const missingHeaders = required.filter(function (field) {
+    return parsed.headers.indexOf(field) === -1;
+  });
 
   requireImportPermission(entityKey, user);
 
@@ -394,6 +397,10 @@ function importCsvPreview(payload, user) {
       if (headers.indexOf(header) !== -1 || required.indexOf(header) !== -1) {
         item[header] = row[columnIndex] || '';
       }
+    });
+
+    missingHeaders.forEach(function (field) {
+      rowErrors.push('Missing required header: ' + field);
     });
 
     required.forEach(function (field) {
@@ -421,6 +428,7 @@ function importCsvPreview(payload, user) {
     entity: entityKey,
     headers: parsed.headers,
     requiredHeaders: required,
+    missingHeaders: missingHeaders,
     rows: previewRows,
     validRows: previewRows.filter(function (row) { return row.valid; }).length,
     invalidRows: errors.length,

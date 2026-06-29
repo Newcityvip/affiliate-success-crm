@@ -3349,6 +3349,9 @@
   function renderImportPreview(previewData) {
     var container = utils.qs('[data-import-preview]');
     var rows = asArray(previewData && previewData.rows).slice(0, 8);
+    var table;
+    var head;
+    var body;
 
     if (!container) {
       return;
@@ -3356,17 +3359,28 @@
 
     container.hidden = false;
     container.innerHTML = '';
+    table = document.createElement('table');
+    head = document.createElement('thead');
+    body = document.createElement('tbody');
+    table.className = 'compact-table';
+    head.innerHTML = '<tr><th>Row</th><th>Status</th><th>Preview / Errors</th></tr>';
     rows.forEach(function (row) {
-      var item = document.createElement('div');
-      var title = document.createElement('strong');
-      var detail = document.createElement('small');
-      item.className = 'import-preview-row ' + (row.valid ? 'is-valid' : 'is-invalid');
-      title.textContent = 'Row ' + row.rowNumber + ': ' + (row.valid ? 'Ready' : 'Needs fixes');
-      detail.textContent = row.valid ? summarizeImportRow(row.item) : asArray(row.errors).join(', ');
-      item.appendChild(title);
-      item.appendChild(detail);
-      container.appendChild(item);
+      var tr = document.createElement('tr');
+      var rowCell = document.createElement('td');
+      var statusCell = document.createElement('td');
+      var detailCell = document.createElement('td');
+      rowCell.textContent = row.rowNumber;
+      statusCell.appendChild(createBadge('Status', row.valid ? 'Ready' : 'Needs fixes'));
+      detailCell.textContent = row.valid ? summarizeImportRow(row.item) : asArray(row.errors).join(', ');
+      tr.className = row.valid ? 'is-valid' : 'is-invalid';
+      tr.appendChild(rowCell);
+      tr.appendChild(statusCell);
+      tr.appendChild(detailCell);
+      body.appendChild(tr);
     });
+    table.appendChild(head);
+    table.appendChild(body);
+    container.appendChild(table);
 
     if (asArray(previewData && previewData.rows).length > rows.length) {
       container.appendChild(createEmptyPanel('Showing first ' + rows.length + ' preview rows.'));
@@ -3524,6 +3538,11 @@
       close.addEventListener('click', closeFollowupModal);
     }
 
+    var cancel = utils.qs('[data-followup-modal-cancel]');
+    if (cancel) {
+      cancel.addEventListener('click', closeFollowupModal);
+    }
+
     var modal = utils.qs('[data-followup-modal]');
     if (modal) {
       modal.addEventListener('click', function (event) {
@@ -3567,11 +3586,16 @@
 
   function bindRecordModal() {
     var close = utils.qs('[data-record-modal-close]');
+    var cancel = utils.qs('[data-record-modal-cancel]');
     var modal = utils.qs('[data-record-modal]');
     var form = utils.qs('[data-record-form]');
 
     if (close) {
       close.addEventListener('click', closeRecordModal);
+    }
+
+    if (cancel) {
+      cancel.addEventListener('click', closeRecordModal);
     }
 
     if (modal) {
@@ -3599,6 +3623,7 @@
     var preview = utils.qs('[data-import-preview-button]');
     var commit = utils.qs('[data-import-commit]');
     var sample = utils.qs('[data-import-sample]');
+    var file = utils.qs('[data-import-file]');
 
     document.querySelectorAll('[data-import-action]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -3617,6 +3642,23 @@
     }
     if (sample) {
       sample.addEventListener('click', downloadImportSample);
+    }
+    if (file) {
+      file.addEventListener('change', function () {
+        var selected = file.files && file.files[0];
+        var reader;
+        if (!selected) {
+          return;
+        }
+        reader = new FileReader();
+        reader.onload = function () {
+          var textarea = utils.qs('[data-import-csv]');
+          if (textarea) {
+            textarea.value = String(reader.result || '');
+          }
+        };
+        reader.readAsText(selected);
+      });
     }
     if (modal) {
       modal.addEventListener('click', function (event) {

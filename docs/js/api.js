@@ -260,6 +260,9 @@
     createInteraction: function (data) {
       return write('createInteraction', data);
     },
+    addInteraction: function (data) {
+      return write('addInteraction', data);
+    },
     createBrand: function (data) {
       return write('createBrand', data);
     },
