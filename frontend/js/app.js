@@ -26,6 +26,9 @@
     'Brand',
     'Affiliate_Name',
     'Affiliate_Username',
+    'Telegram',
+    'WhatsApp',
+    'Email',
     'Country',
     'Language',
     'Assigned_Staff',
@@ -42,7 +45,8 @@
   var affiliateFilterFields = ['Brand', 'Assigned_Staff', 'Health_Status', 'Status', 'Priority', 'Active'];
   var affiliateSearchFields = ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Assigned_Staff'];
   var affiliateBadgeFields = ['Health_Status', 'Status', 'Priority', 'Active'];
-  var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Assigned_Staff', 'Health_Status', 'Status'];
+  var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Health_Status', 'Status'];
+  var copyableAffiliateFields = ['Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email'];
   var followupColumns = [
     'Queue_ID',
     'Affiliate_ID',
@@ -135,13 +139,13 @@
       title: 'Add Interaction',
       api: 'createInteraction',
       idKey: 'Interaction_ID',
-      required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status'],
+      required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Market_Channel', 'Interaction_Type', 'Notes', 'Status'],
       sections: {
         'Basic Info': ['Affiliate_ID', 'Affiliate_Name', 'Brand'],
         Assignment: ['Assigned_Staff'],
-        Notes: ['Interaction_Type', 'Notes', 'Status']
+        Notes: ['Market_Channel', 'Interaction_Type', 'Notes', 'Status']
       },
-      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Market_Channel', 'Interaction_Type', 'Notes', 'Status']
     },
     brand: {
       title: 'New Brand',
@@ -276,8 +280,9 @@
         { label: 'Due Date', keys: ['Due_Date', 'Due Date', 'Date'], format: 'date' }
       ],
       actions: [
-        { label: 'Start', status: 'In Progress', api: 'updateTask', when: 'open' },
+        { label: 'Mark In Progress', status: 'In Progress', api: 'updateTask', when: 'open' },
         { label: 'Complete', api: 'completeTask', tone: 'primary', when: 'open' },
+        { label: 'Add note', form: 'interaction', when: 'open' },
         { label: 'Reopen', api: 'reopenTask', when: 'closed' },
         { label: 'Reschedule', form: 'task', when: 'open' }
       ]
@@ -801,15 +806,29 @@
 
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
       var action = button.dataset.quickAction;
-      if (!isAdminUser() && action === 'affiliate') {
+      if (!isAdminUser() && ['affiliate', 'task', 'issue'].indexOf(action) !== -1) {
         button.hidden = true;
+        return;
+      }
+      if (!isAdminUser() && action === 'followup') {
+        button.textContent = 'Log Follow-up';
+      }
+      if (!isAdminUser() && action === 'interaction') {
+        button.textContent = 'Log Interaction';
       }
     });
 
     document.querySelectorAll('[data-admin-action]').forEach(function (button) {
       var action = button.dataset.adminAction;
-      if (!isAdminUser() && (action === 'affiliate' || action === 'staff' || (recordForms[action] && recordForms[action].adminOnly))) {
+      if (!isAdminUser() && (['affiliate', 'task', 'issue', 'brand', 'staff'].indexOf(action) !== -1 || (recordForms[action] && recordForms[action].adminOnly))) {
         button.hidden = true;
+      }
+    });
+
+    document.querySelectorAll('[data-module-action]').forEach(function (button) {
+      var action = button.dataset.moduleAction;
+      if (!isAdminUser() && action === 'interaction') {
+        button.textContent = 'Log Interaction';
       }
     });
 
@@ -821,7 +840,32 @@
       setNavLabel('tasks', 'My Tasks');
       setNavLabel('issues', 'My Issues');
       setNavLabel('performance', 'My Performance');
+      hideStaffAdminRoutes();
+      var footer = utils.qs('.sidebar-footer .muted');
+      if (footer) {
+        footer.textContent = 'My assigned affiliate work, follow-ups, tasks, and issues.';
+      }
+      setStaffEmptyCopy();
     }
+  }
+
+  function hideStaffAdminRoutes() {
+    ['leaderboard', 'reports', 'staff'].forEach(function (routeKey) {
+      var item = utils.qs('.sidebar-nav [data-route="' + routeKey + '"]');
+      if (item) {
+        item.hidden = true;
+      }
+    });
+  }
+
+  function setStaffEmptyCopy() {
+    var followupEmpty = utils.qs('[data-followups-empty] .muted');
+    var taskEmpty = utils.qs('[data-module-workspace="tasks"] [data-module-empty] .muted');
+    var issueEmpty = utils.qs('[data-module-workspace="issues"] [data-module-empty] .muted');
+
+    utils.setText(followupEmpty, 'No assigned follow-ups. Check My Affiliates or wait for admin assignment.');
+    utils.setText(taskEmpty, 'No assigned tasks.');
+    utils.setText(issueEmpty, 'No assigned issues.');
   }
 
   function setNavLabel(routeKey, label) {
@@ -2017,9 +2061,84 @@
       return;
     }
 
+    if (copyableAffiliateFields.indexOf(key) !== -1) {
+      appendCopyableValue(parent, key, value);
+      return;
+    }
+
     var strong = document.createElement('strong');
     strong.textContent = value;
     parent.appendChild(strong);
+  }
+
+  function appendCopyableValue(parent, key, value) {
+    var wrap = document.createElement('div');
+    var strong = document.createElement('strong');
+    var button = document.createElement('button');
+    var canCopy = value && value !== 'N/A';
+
+    wrap.className = 'copy-value';
+    strong.textContent = value;
+    button.className = 'copy-button';
+    button.type = 'button';
+    button.textContent = 'Copy';
+    button.disabled = !canCopy;
+    button.setAttribute('aria-label', 'Copy ' + friendlyFieldLabel(key));
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      copyTextToClipboard(value, friendlyFieldLabel(key), button);
+    });
+
+    wrap.appendChild(strong);
+    wrap.appendChild(button);
+    parent.appendChild(wrap);
+  }
+
+  function copyTextToClipboard(value, label, button) {
+    var text = value === 'N/A' ? '' : String(value || '');
+    if (!text) {
+      showToast('Nothing to copy.');
+      return;
+    }
+
+    copyText(text).then(function () {
+      if (button) {
+        button.textContent = 'Copied';
+        window.setTimeout(function () {
+          button.textContent = 'Copy';
+        }, 1400);
+      }
+      showToast(label + ' copied.');
+    }).catch(function () {
+      showToast('Unable to copy ' + label + '.');
+    });
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    return new Promise(function (resolve, reject) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', 'readonly');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        if (document.execCommand('copy')) {
+          resolve();
+        } else {
+          reject(new Error('Copy command failed.'));
+        }
+      } catch (error) {
+        reject(error);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    });
   }
 
   function formatDate(value) {
@@ -2242,11 +2361,15 @@
 
   function createAffiliateActionBar(row) {
     var bar = document.createElement('div');
-    var actions = [
+    var actions = isAdminUser() ? [
       { label: 'Add interaction', type: 'interaction' },
       { label: 'Add follow-up', type: 'followup' },
       { label: 'Create task', type: 'task' },
       { label: 'Create issue', type: 'issue' }
+    ] : [
+      { label: 'Log Interaction', type: 'interaction' },
+      { label: 'Log Follow-up', type: 'followup' },
+      { label: 'Report Issue', type: 'issue' }
     ];
 
     bar.className = 'quick-actions drawer-actions';
@@ -2561,7 +2684,7 @@
     var complete = document.createElement('button');
     complete.className = 'button button-secondary button-small';
     complete.type = 'button';
-    complete.textContent = 'Mark Complete';
+    complete.textContent = isAdminUser() ? 'Mark Complete' : 'Complete';
     complete.disabled = isCompletedFollowup(row);
     complete.addEventListener('click', function () {
       markFollowupComplete(row);
@@ -2570,7 +2693,7 @@
     var reschedule = document.createElement('button');
     reschedule.className = 'button button-secondary button-small';
     reschedule.type = 'button';
-    reschedule.textContent = 'Reschedule';
+    reschedule.textContent = isAdminUser() ? 'Reschedule' : 'Update / Reschedule';
     reschedule.addEventListener('click', function () {
       openFollowupModal('reschedule', row);
     });
@@ -2869,6 +2992,9 @@
     await preloadRecordReferences(type);
     fields.innerHTML = '';
     appendRecordSections(fields, config);
+    if (recordState.context && recordState.context.Affiliate_ID) {
+      applyAffiliateSelection(recordState.context.Affiliate_ID);
+    }
   }
 
   async function preloadRecordReferences(type) {
@@ -3141,7 +3267,7 @@
   }
 
   function getKnownAffiliates() {
-    return (affiliateState.all || []).map(function (row) {
+    return (affiliateState.all || []).filter(isActiveReference).map(function (row) {
       var affiliateId = valueFor(row, 'Affiliate_ID');
       var label = [affiliateId, valueFor(row, 'Affiliate_Name'), valueFor(row, 'Brand')].filter(Boolean).join(' - ');
       return affiliateId ? { value: affiliateId, label: label } : null;
