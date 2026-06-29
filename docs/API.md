@@ -393,10 +393,13 @@ Admin, Super Admin, and scoped Staff users can write daily workspace records:
 ?action=createIssue
 ?action=updateIssue
 ?action=resolveIssue
+?action=closeIssue
 ?action=createInteraction
 ?action=createFollowup
 ?action=updateFollowup
 ?action=completeFollowup
+?action=importCsvPreview
+?action=importCsvCommit
 ```
 
 Staff writes are allowed only for their assigned workspace or assigned affiliates. Staff cannot create global affiliates, brands, or staff records.
@@ -429,10 +432,45 @@ Summary
 
 If `Activity_Log` or optional headers are missing, logging is skipped safely and the primary write still succeeds.
 
+Write actions may be called with either POST JSON body or a GET query parameter named `payload` containing JSON. The GET payload mode exists for the current GitHub Pages + Apps Script deployment path.
+
+## CSV Import Foundation
+
+CSV import is preview-first and commit-on-confirmation:
+
+```text
+?action=importCsvPreview
+?action=importCsvCommit
+```
+
+Request payload:
+
+```json
+{
+  "entity": "affiliate",
+  "csv": "Affiliate_Name,Affiliate_Username,Brand,..."
+}
+```
+
+Supported entities:
+
+```text
+affiliate
+followup
+task
+issue
+interaction
+staff
+brand
+```
+
+Preview returns row validation results and does not write data. Commit writes valid rows only and logs activity where `Activity_Log` headers exist.
+
 ## Errors
 
 - `UNKNOWN_ACTION`: the requested action is not supported.
 - `METHOD_NOT_ALLOWED`: the request method is not valid for the endpoint.
+- `VALIDATION_ERROR`: required fields or CSV content are missing.
 - `MISSING_SPREADSHEET_ID`: the spreadsheet ID placeholder has not been replaced in Apps Script.
 - `MISSING_SHEET`: one of the finalized Google Sheet tabs is missing.
 - `REQUEST_FAILED`: another read error occurred.

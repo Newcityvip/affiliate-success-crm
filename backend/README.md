@@ -127,16 +127,21 @@ The API also supports:
 ?action=createIssue
 ?action=updateIssue
 ?action=resolveIssue
+?action=closeIssue
 ?action=createInteraction
 ?action=createBrand
 ?action=updateBrand
 ?action=createStaff
 ?action=updateStaff
+?action=importCsvPreview
+?action=importCsvCommit
 ```
 
 All protected endpoints require `sessionToken` after Sprint 4A. All responses use the standard `ok`, `success`, `message`, `data`, `error`, `code`, `details`, and `meta` envelope.
 
-Follow-up write actions require `POST` and only use these finalized `Followup_Queue` headers:
+Write actions accept POST JSON and also accept a GET query parameter named `payload` containing JSON for the current GitHub Pages + Apps Script web app path.
+
+Follow-up write actions only use these finalized `Followup_Queue` headers:
 
 ```text
 Queue_ID
@@ -157,6 +162,7 @@ Generated_From
 - Writes are header-aware: fields without matching sheet headers are skipped, and no schema changes are made.
 - Generated IDs use existing ID columns when present: `AFF0002`, `TSK0002`, `ISS0002`, `INT0002`, `BRD0002`, `Q0002`, and `ST003`.
 - `Activity_Log` is appended after successful writes when its headers exist. Missing activity logging headers never block the primary write.
+- CSV import uses `importCsvPreview` before `importCsvCommit`; preview never writes to Google Sheets.
 
 ## Future IP Allowlist Plan
 

@@ -9,42 +9,48 @@ const ENTITY_CONFIG = Object.freeze({
     idKey: 'Affiliate_ID',
     prefix: 'AFF',
     width: 4,
-    type: 'Affiliate'
+    type: 'Affiliate',
+    required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Active']
   },
   task: {
     sheet: SHEET_NAMES.TASK_LOG,
     idKey: 'Task_ID',
     prefix: 'TSK',
     width: 4,
-    type: 'Task'
+    type: 'Task',
+    required: ['Affiliate_ID', 'Title', 'Task', 'Assigned_Staff', 'Due_Date', 'Priority', 'Status']
   },
   issue: {
     sheet: SHEET_NAMES.ISSUE_LOG,
     idKey: 'Issue_ID',
     prefix: 'ISS',
     width: 4,
-    type: 'Issue'
+    type: 'Issue',
+    required: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
   },
   interaction: {
     sheet: SHEET_NAMES.INTERACTION_LOG,
     idKey: 'Interaction_ID',
     prefix: 'INT',
     width: 4,
-    type: 'Interaction'
+    type: 'Interaction',
+    required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
   },
   brand: {
     sheet: SHEET_NAMES.BRAND_LIST,
     idKey: 'Brand_ID',
     prefix: 'BRD',
     width: 4,
-    type: 'Brand'
+    type: 'Brand',
+    required: ['Brand_Name', 'Market', 'Active']
   },
   staff: {
     sheet: SHEET_NAMES.STAFF_LIST,
     idKey: 'Staff_ID',
     prefix: 'ST',
     width: 3,
-    type: 'Staff'
+    type: 'Staff',
+    required: ['Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Active', 'Permission_Level']
   }
 });
 
@@ -84,6 +90,10 @@ function resolveIssue(payload, user) {
   return updateIssue(setStatusPayload(payload, 'Resolved'), user);
 }
 
+function closeIssue(payload, user) {
+  return updateIssue(setStatusPayload(payload, 'Closed'), user);
+}
+
 function createInteraction(payload, user) {
   requireScopedWrite(payload, user);
   return createEntity('interaction', payload, user);
@@ -118,6 +128,8 @@ function createEntity(entityKey, payload, user) {
     throwCodedError('MISSING_SHEET', config.sheet + ' is missing or has no headers.');
   }
 
+  validateEntityPayload(config, data, headers, true);
+
   appendSheetObject(config.sheet, data);
   logActivity(user, 'create', config.type, data[config.idKey], buildActivitySummary(config.type, data, 'created'));
 
@@ -146,6 +158,7 @@ function updateEntity(entityKey, payload, user) {
 
   data = buildEntityData(config, payload, headers, user, false);
   data[config.idKey] = entityId;
+  validateEntityPayload(config, data, headers, false);
   updated = updateSheetObjectByKey(config.sheet, config.idKey, entityId, data);
   logActivity(user, 'update', config.type, entityId, buildActivitySummary(config.type, updated, 'updated'));
 
@@ -332,4 +345,230 @@ function buildActivitySummary(entityType, data, verb) {
   ]));
 
   return entityType + ' ' + verb + (name ? ': ' + name : '.');
+}
+
+function validateEntityPayload(config, data, headers, isCreate) {
+  const missing = [];
+
+  if (!isCreate) {
+    return true;
+  }
+
+  (config.required || []).forEach(function (field) {
+    if (headers.indexOf(field) !== -1 && !safeString(data[field])) {
+      missing.push(field);
+    }
+  });
+
+  if (missing.length) {
+    throwCodedError('VALIDATION_ERROR', 'Missing required fields: ' + missing.join(', '));
+  }
+
+  return true;
+}
+
+function importCsvPreview(payload, user) {
+  const entityKey = normalizeImportEntity(payload && (payload.entity || payload.type || payload.module));
+  const config = getImportConfig(entityKey);
+  const parsed = parseCsvText(safeString(payload && payload.csv));
+  const headers = getSheetHeadersSafe(config.sheet);
+  const required = config.required || [];
+  const previewRows = [];
+  const errors = [];
+
+  requireImportPermission(entityKey, user);
+
+  parsed.rows.forEach(function (row, index) {
+    const item = {};
+    const rowErrors = [];
+
+    parsed.headers.forEach(function (header, columnIndex) {
+      if (headers.indexOf(header) !== -1 || required.indexOf(header) !== -1) {
+        item[header] = row[columnIndex] || '';
+      }
+    });
+
+    required.forEach(function (field) {
+      if (!safeString(item[field])) {
+        rowErrors.push(field + ' is required');
+      }
+    });
+
+    previewRows.push({
+      rowNumber: index + 2,
+      valid: rowErrors.length === 0,
+      errors: rowErrors,
+      item: item
+    });
+
+    if (rowErrors.length) {
+      errors.push({
+        rowNumber: index + 2,
+        errors: rowErrors
+      });
+    }
+  });
+
+  return {
+    entity: entityKey,
+    headers: parsed.headers,
+    requiredHeaders: required,
+    rows: previewRows,
+    validRows: previewRows.filter(function (row) { return row.valid; }).length,
+    invalidRows: errors.length,
+    errors: errors
+  };
+}
+
+function importCsvCommit(payload, user) {
+  const preview = importCsvPreview(payload, user);
+  const committed = [];
+  const entityKey = preview.entity;
+
+  preview.rows.filter(function (row) {
+    return row.valid;
+  }).forEach(function (row) {
+    if (entityKey === 'followup') {
+      committed.push(createFollowup(row.item, user).item);
+    } else {
+      committed.push(createEntity(entityKey, row.item, user).item);
+    }
+  });
+
+  return {
+    entity: entityKey,
+    committed: committed.length,
+    skipped: preview.invalidRows,
+    items: committed
+  };
+}
+
+function normalizeImportEntity(value) {
+  const key = safeString(value).toLowerCase().replace(/[-_\s]/g, '');
+  const map = {
+    affiliates: 'affiliate',
+    affiliate: 'affiliate',
+    followups: 'followup',
+    followup: 'followup',
+    tasks: 'task',
+    task: 'task',
+    issues: 'issue',
+    issue: 'issue',
+    interactions: 'interaction',
+    interaction: 'interaction',
+    staff: 'staff',
+    brands: 'brand',
+    brand: 'brand'
+  };
+  const normalized = map[key];
+
+  if (normalized === 'followup') {
+    return 'followup';
+  }
+
+  if (!normalized || !ENTITY_CONFIG[normalized]) {
+    throwCodedError('VALIDATION_ERROR', 'Unsupported CSV import module.');
+  }
+
+  return normalized;
+}
+
+function getImportConfig(entityKey) {
+  if (entityKey === 'followup') {
+    return {
+      sheet: SHEET_NAMES.FOLLOWUP_QUEUE,
+      idKey: 'Queue_ID',
+      prefix: 'Q',
+      width: 4,
+      type: 'Follow-up',
+      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status']
+    };
+  }
+
+  if (entityKey === 'brand') {
+    return {
+      sheet: ENTITY_CONFIG.brand.sheet,
+      idKey: ENTITY_CONFIG.brand.idKey,
+      prefix: ENTITY_CONFIG.brand.prefix,
+      width: ENTITY_CONFIG.brand.width,
+      type: ENTITY_CONFIG.brand.type,
+      required: ['Brand_ID', 'Brand_Name', 'Market', 'Active']
+    };
+  }
+
+  if (entityKey === 'staff') {
+    return {
+      sheet: ENTITY_CONFIG.staff.sheet,
+      idKey: ENTITY_CONFIG.staff.idKey,
+      prefix: ENTITY_CONFIG.staff.prefix,
+      width: ENTITY_CONFIG.staff.width,
+      type: ENTITY_CONFIG.staff.type,
+      required: ['Staff_ID', 'Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Active', 'Permission_Level']
+    };
+  }
+
+  return ENTITY_CONFIG[entityKey];
+}
+
+function requireImportPermission(entityKey, user) {
+  if (entityKey === 'followup') {
+    return true;
+  }
+
+  if (['affiliate', 'brand', 'staff'].indexOf(entityKey) !== -1) {
+    requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+  }
+
+  return true;
+}
+
+function parseCsvText(csv) {
+  const rows = [];
+  var row = [];
+  var cell = '';
+  var inQuotes = false;
+  var index;
+  var char;
+  var next;
+
+  for (index = 0; index < csv.length; index += 1) {
+    char = csv.charAt(index);
+    next = csv.charAt(index + 1);
+
+    if (char === '"' && inQuotes && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell);
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') {
+        index += 1;
+      }
+      row.push(cell);
+      if (row.some(function (value) { return safeString(value) !== ''; })) {
+        rows.push(row);
+      }
+      row = [];
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
+
+  row.push(cell);
+  if (row.some(function (value) { return safeString(value) !== ''; })) {
+    rows.push(row);
+  }
+
+  if (!rows.length) {
+    throwCodedError('VALIDATION_ERROR', 'CSV content is empty.');
+  }
+
+  return {
+    headers: rows[0].map(function (header) { return safeString(header); }),
+    rows: rows.slice(1)
+  };
 }

@@ -91,6 +91,14 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Affiliate profile drawer now includes a 360 foundation with related sections and quick actions for interaction, follow-up, task, and issue creation.
 - Successful writes append to `Activity_Log` when that sheet and relevant headers exist. Logging is skipped safely when unavailable.
 
+## Operations Dashboard Stabilization Notes
+
+- Write calls now support the GitHub Pages + Apps Script deployment path through an encoded GET payload while the backend continues to accept POST requests.
+- Admin forms use friendly labels, grouped sections, dropdowns, required-field validation, and friendly save errors instead of raw sheet headers or backend method messages.
+- Affiliate rows include View/Edit actions; Task and Issue rows expose practical workflow actions such as Start, Complete, Escalate, and Close.
+- Admin CSV import foundation is available for Affiliates, Follow-ups, Tasks, Issues, Interactions, Staff, and Brands with sample CSV download, preview validation, and commit confirmation.
+- Staff users keep a scoped daily workspace with admin-only actions and imports hidden.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -139,10 +147,13 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 - `?action=createIssue`
 - `?action=updateIssue`
 - `?action=resolveIssue`
+- `?action=closeIssue`
 - `?action=createInteraction`
 - `?action=createBrand`
 - `?action=updateBrand`
 - `?action=createStaff`
 - `?action=updateStaff`
+- `?action=importCsvPreview`
+- `?action=importCsvCommit`
 
 See [docs/API.md](docs/API.md) for the response shape and foundation endpoint details.

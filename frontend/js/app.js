@@ -85,39 +85,141 @@
     type: '',
     context: {}
   };
+  var importState = {
+    type: '',
+    preview: null
+  };
   var recordForms = {
     affiliate: {
       title: 'New Affiliate',
       api: 'createAffiliate',
+      updateApi: 'updateAffiliate',
+      idKey: 'Affiliate_ID',
       adminOnly: true,
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Active'],
+      sections: {
+        'Basic Info': ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language'],
+        Assignment: ['Assigned_Staff'],
+        'Status & Priority': ['Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Active'],
+        'Follow-up Plan': ['Next_Followup_Date']
+      },
       fields: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
     },
     task: {
       title: 'Create Task',
       api: 'createTask',
+      updateApi: 'updateTask',
+      idKey: 'Task_ID',
+      required: ['Affiliate_ID', 'Title', 'Task', 'Assigned_Staff', 'Due_Date', 'Priority', 'Status'],
+      sections: {
+        'Basic Info': ['Affiliate_ID', 'Title', 'Task'],
+        Assignment: ['Assigned_Staff'],
+        'Status & Priority': ['Due_Date', 'Priority', 'Status']
+      },
       fields: ['Affiliate_ID', 'Title', 'Task', 'Assigned_Staff', 'Due_Date', 'Priority', 'Status']
     },
     issue: {
       title: 'Create Issue',
       api: 'createIssue',
+      updateApi: 'updateIssue',
+      idKey: 'Issue_ID',
+      required: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status'],
+      sections: {
+        'Basic Info': ['Affiliate_ID', 'Issue', 'Brand'],
+        Assignment: ['Assigned_Staff'],
+        'Status & Priority': ['Priority', 'Status']
+      },
       fields: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
     },
     interaction: {
       title: 'Add Interaction',
       api: 'createInteraction',
+      idKey: 'Interaction_ID',
+      required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status'],
+      sections: {
+        'Basic Info': ['Affiliate_ID', 'Affiliate_Name', 'Brand'],
+        Assignment: ['Assigned_Staff'],
+        Notes: ['Interaction_Type', 'Notes', 'Status']
+      },
       fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
     },
     brand: {
       title: 'New Brand',
       api: 'createBrand',
+      updateApi: 'updateBrand',
+      idKey: 'Brand_ID',
       adminOnly: true,
+      required: ['Brand_Name', 'Market', 'Active'],
+      sections: {
+        'Basic Info': ['Brand_Name', 'Brand', 'Market'],
+        Assignment: ['Owner'],
+        'Status & Priority': ['Status', 'Active']
+      },
       fields: ['Brand', 'Brand_Name', 'Market', 'Owner', 'Status', 'Active']
     },
     staff: {
       title: 'New Staff',
       api: 'createStaff',
+      updateApi: 'updateStaff',
+      idKey: 'Staff_ID',
       adminOnly: true,
+      required: ['Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Active', 'Permission_Level'],
+      sections: {
+        'Basic Info': ['Login_ID', 'Staff_Name', 'Email', 'Telegram'],
+        Assignment: ['Role', 'Team', 'Permission_Level'],
+        'Status & Priority': ['Active', 'Allowed_IPs', 'Max_Affiliates', 'Can_View_All']
+      },
       fields: ['Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Telegram', 'Active', 'Allowed_IPs', 'Permission_Level', 'Max_Affiliates', 'Can_View_All']
+    }
+  };
+  var fieldLabels = {
+    Affiliate_ID: 'Affiliate ID',
+    Affiliate_Name: 'Affiliate name',
+    Affiliate_Username: 'Username',
+    Assigned_Staff: 'Assigned staff',
+    Health_Status: 'Health status',
+    Next_Followup_Date: 'Next follow-up date',
+    Last_Contact_Date: 'Last contact date',
+    Affiliate_Type: 'Affiliate type',
+    Market_Channel: 'Market channel',
+    Followup_Date: 'Follow-up date',
+    Generated_From: 'Generated from',
+    Due_Date: 'Due date',
+    Login_ID: 'Login ID',
+    Staff_Name: 'Staff name',
+    Permission_Level: 'Permission level',
+    Can_View_All: 'Can view all',
+    Brand_Name: 'Brand name',
+    Interaction_Type: 'Interaction type'
+  };
+  var csvConfigs = {
+    affiliate: {
+      title: 'Import Affiliates',
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Active']
+    },
+    followup: {
+      title: 'Import Follow-ups',
+      required: ['Affiliate_ID', 'Assigned_Staff', 'Followup_Date', 'Priority', 'Status']
+    },
+    task: {
+      title: 'Import Tasks',
+      required: ['Affiliate_ID', 'Title', 'Task', 'Assigned_Staff', 'Due_Date', 'Priority', 'Status']
+    },
+    issue: {
+      title: 'Import Issues',
+      required: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
+    },
+    interaction: {
+      title: 'Import Interactions',
+      required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
+    },
+    staff: {
+      title: 'Import Staff',
+      required: ['Staff_ID', 'Login_ID', 'Staff_Name', 'Role', 'Team', 'Email', 'Active', 'Permission_Level']
+    },
+    brand: {
+      title: 'Import Brands',
+      required: ['Brand_ID', 'Brand_Name', 'Market', 'Active']
     }
   };
   var moduleRoutes = ['interactions', 'tasks', 'issues', 'performance', 'leaderboard', 'reports', 'staff', 'brands', 'settings'];
@@ -173,7 +275,11 @@
         { label: 'Assigned Staff', keys: ['Assigned_Staff', 'Assigned Staff', 'Staff'] },
         { label: 'Due Date', keys: ['Due_Date', 'Due Date', 'Date'], format: 'date' }
       ],
-      actionText: 'Complete action coming later'
+      actions: [
+        { label: 'Start', status: 'In Progress', api: 'updateTask' },
+        { label: 'Complete', api: 'completeTask', tone: 'primary' },
+        { label: 'Reschedule', form: 'task' }
+      ]
     },
     issues: {
       api: 'issues',
@@ -200,7 +306,11 @@
         { label: 'Assigned Staff', keys: ['Assigned_Staff', 'Assigned Staff', 'Staff'] },
         { label: 'Created', keys: ['Created_Date', 'Date'], format: 'date' }
       ],
-      actionText: 'Resolve action coming later'
+      actions: [
+        { label: 'Add update', form: 'issue' },
+        { label: 'Escalate', status: 'Escalated', api: 'updateIssue' },
+        { label: 'Close', api: 'closeIssue', tone: 'primary' }
+      ]
     },
     performance: {
       api: 'performance',
@@ -1583,7 +1693,7 @@
       th.textContent = column.label;
       tr.appendChild(th);
     });
-    if (config.actionText) {
+    if (config.actionText || config.actions) {
       var actionHead = document.createElement('th');
       actionHead.textContent = 'Actions';
       tr.appendChild(actionHead);
@@ -1605,17 +1715,71 @@
       appendModuleCell(td, item, column);
       tr.appendChild(td);
     });
-    if (config.actionText) {
+    if (config.actionText || config.actions) {
       var action = document.createElement('td');
-      var button = document.createElement('button');
-      button.className = 'button button-secondary button-small';
-      button.type = 'button';
-      button.disabled = true;
-      button.textContent = config.actionText;
-      action.appendChild(button);
+      action.className = 'table-actions';
+      if (config.actions) {
+        appendModuleRowActions(action, config, item);
+      } else {
+        var button = document.createElement('button');
+        button.className = 'button button-secondary button-small';
+        button.type = 'button';
+        button.disabled = true;
+        button.textContent = config.actionText;
+        action.appendChild(button);
+      }
       tr.appendChild(action);
     }
     return tr;
+  }
+
+  function appendModuleRowActions(parent, config, item) {
+    (config.actions || []).forEach(function (actionConfig) {
+      var button = document.createElement('button');
+      button.className = 'button ' + (actionConfig.tone === 'primary' ? 'button-primary' : 'button-secondary') + ' button-small';
+      button.type = 'button';
+      button.textContent = actionConfig.label;
+      button.addEventListener('click', function () {
+        handleModuleRowAction(actionConfig, item);
+      });
+      parent.appendChild(button);
+    });
+  }
+
+  async function handleModuleRowAction(actionConfig, item) {
+    var payload = copyRecord(item);
+    var result;
+
+    if (actionConfig.form) {
+      openRecordModal(actionConfig.form, payload);
+      return;
+    }
+
+    if (actionConfig.status) {
+      payload.Status = actionConfig.status;
+    }
+
+    if (!actionConfig.api || !api[actionConfig.api]) {
+      showToast('This action is not available yet.');
+      return;
+    }
+
+    result = await api[actionConfig.api](payload);
+    if (!isSuccessfulResult(result)) {
+      showToast(friendlyErrorMessage(result, 'Unable to update record.'));
+      return;
+    }
+
+    showToast(actionConfig.label + ' saved.');
+    refreshAfterRecordSave(actionConfig.api.indexOf('Task') !== -1 ? 'task' : 'issue');
+  }
+
+  function copyRecord(item) {
+    var copy = {};
+    Object.keys(item || {}).forEach(function (key) {
+      copy[key] = item[key];
+    });
+    return copy;
   }
 
   function appendModuleCell(parent, item, column) {
@@ -1961,6 +2125,8 @@
         tr.appendChild(td);
       });
 
+      tr.appendChild(createAffiliateActionsCell(row));
+
       tr.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
@@ -1974,6 +2140,37 @@
     setAffiliatesCount(affiliateState.filtered.length, affiliateState.all.length);
     setAffiliatesVisibility(affiliateState.filtered.length ? 'table' : 'empty');
     updateCommandCenter(getCurrentRouteKey());
+  }
+
+  function createAffiliateActionsCell(row) {
+    var td = document.createElement('td');
+    var actions = document.createElement('div');
+    var view = document.createElement('button');
+    var edit = document.createElement('button');
+
+    actions.className = 'table-actions';
+    view.className = 'button button-secondary button-small';
+    view.type = 'button';
+    view.textContent = 'View';
+    view.addEventListener('click', function (event) {
+      event.stopPropagation();
+      openAffiliateDrawer(row);
+    });
+    actions.appendChild(view);
+
+    if (isAdminUser()) {
+      edit.className = 'button button-secondary button-small';
+      edit.type = 'button';
+      edit.textContent = 'Edit';
+      edit.addEventListener('click', function (event) {
+        event.stopPropagation();
+        openRecordModal('affiliate', row);
+      });
+      actions.appendChild(edit);
+    }
+
+    td.appendChild(actions);
+    return td;
   }
 
   function openAffiliateDrawer(row) {
@@ -2506,7 +2703,7 @@
     }
 
     if (!isSuccessfulResult(result)) {
-      utils.setText(message, result && result.message ? result.message : 'Unable to save follow-up.');
+      utils.setText(message, friendlyErrorMessage(result, 'Unable to save follow-up.'));
       return;
     }
 
@@ -2523,7 +2720,7 @@
     });
 
     if (!isSuccessfulResult(result)) {
-      setFollowupsError(result && result.message ? result.message : 'Unable to complete follow-up.');
+      setFollowupsError(friendlyErrorMessage(result, 'Unable to complete follow-up.'));
       return;
     }
 
@@ -2553,13 +2750,11 @@
     recordState.context = context || {};
     fields.innerHTML = '';
     form.reset();
-    utils.setText(utils.qs('[data-record-modal-title]'), config.title);
+    utils.setText(utils.qs('[data-record-modal-title]'), isRecordEdit(config, recordState.context) ? 'Edit ' + config.title.replace(/^New |^Create |^Add /, '') : config.title);
     utils.setText(utils.qs('[data-record-modal-eyebrow]'), isAdminUser() ? 'Admin action' : 'My Workspace');
     utils.setText(utils.qs('[data-record-form-message]'), '');
 
-    config.fields.forEach(function (field) {
-      fields.appendChild(createRecordField(field, recordState.context[field]));
-    });
+    appendRecordSections(fields, config);
 
     modal.hidden = false;
   }
@@ -2571,12 +2766,54 @@
     }
   }
 
-  function createRecordField(field, value) {
+  function appendRecordSections(container, config) {
+    var used = [];
+
+    Object.keys(config.sections || {}).forEach(function (sectionName) {
+      var sectionFields = (config.sections[sectionName] || []).filter(function (field) {
+        return config.fields.indexOf(field) !== -1;
+      });
+      var section;
+      var title;
+      var grid;
+
+      if (!sectionFields.length) {
+        return;
+      }
+
+      section = document.createElement('section');
+      title = document.createElement('h3');
+      grid = document.createElement('div');
+      section.className = 'form-section';
+      title.textContent = sectionName;
+      grid.className = 'form-section-grid';
+      sectionFields.forEach(function (field) {
+        used.push(field);
+        grid.appendChild(createRecordField(field, recordState.context[field], config));
+      });
+      section.appendChild(title);
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+
+    (config.fields || []).forEach(function (field) {
+      if (used.indexOf(field) === -1) {
+        container.appendChild(createRecordField(field, recordState.context[field], config));
+      }
+    });
+  }
+
+  function createRecordField(field, value, config) {
     var label = document.createElement('label');
+    var caption = document.createElement('span');
+    var error = document.createElement('small');
     var input;
+    var required = config && asArray(config.required).indexOf(field) !== -1;
 
     label.className = 'field';
-    label.appendChild(document.createElement('span')).textContent = field;
+    label.dataset.fieldName = field;
+    caption.textContent = friendlyFieldLabel(field) + (required ? ' *' : '');
+    label.appendChild(caption);
 
     if (field === 'Notes' || field === 'Issue' || field === 'Task') {
       input = document.createElement('textarea');
@@ -2584,7 +2821,7 @@
     } else if (field.indexOf('Date') !== -1) {
       input = document.createElement('input');
       input.type = 'date';
-    } else if (['Priority', 'Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All'].indexOf(field) !== -1) {
+    } else if (shouldUseSelect(field)) {
       input = document.createElement('select');
       getRecordOptions(field).forEach(function (optionValue) {
         var option = document.createElement('option');
@@ -2598,14 +2835,39 @@
     }
 
     input.name = field;
-    input.value = value || getDefaultRecordValue(field);
+    input.required = required;
+    input.value = input.type === 'date' ? getDateOnly(value || getDefaultRecordValue(field)) : value || getDefaultRecordValue(field);
+    error.className = 'field-error';
+    error.dataset.fieldError = field;
     label.appendChild(input);
+    label.appendChild(error);
     return label;
   }
 
+  function friendlyFieldLabel(field) {
+    return fieldLabels[field] || String(field || '').replace(/_/g, ' ');
+  }
+
+  function shouldUseSelect(field) {
+    return ['Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type'].indexOf(field) !== -1;
+  }
+
   function getRecordOptions(field) {
+    var dynamic;
+
+    if (field === 'Brand') {
+      dynamic = getKnownBrands();
+      return dynamic.length ? dynamic : [''];
+    }
+    if (field === 'Assigned_Staff') {
+      dynamic = getKnownStaff();
+      return dynamic.length ? dynamic : [getUserName()];
+    }
     if (field === 'Priority') {
       return ['Low', 'Medium', 'High', 'Critical'];
+    }
+    if (field === 'Health_Status') {
+      return ['Healthy', 'Watch', 'At Risk', 'Dormant'];
     }
     if (field === 'Active' || field === 'Can_View_All') {
       return ['Yes', 'No'];
@@ -2616,7 +2878,16 @@
     if (field === 'Permission_Level') {
       return ['STAFF', 'ADMIN', 'SUPER_ADMIN'];
     }
-    return ['Open', 'Pending', 'Completed', 'Resolved'];
+    if (field === 'Affiliate_Type') {
+      return ['Social Media', 'Streamer', 'SEO', 'Community', 'Agent', 'Other'];
+    }
+    if (field === 'Market_Channel') {
+      return ['Facebook', 'TikTok', 'YouTube', 'Telegram', 'WhatsApp', 'Website', 'Other'];
+    }
+    if (field === 'Interaction_Type') {
+      return ['Daily follow-up', 'Call', 'Message', 'Email', 'Telegram', 'Meeting', 'Other'];
+    }
+    return ['Open', 'Active', 'Pending', 'Paused', 'Closed', 'Completed', 'Resolved', 'Rescheduled'];
   }
 
   function getDefaultRecordValue(field) {
@@ -2638,6 +2909,40 @@
     return '';
   }
 
+  function getKnownBrands() {
+    var values = [];
+    var brandRows = moduleState.brands && moduleState.brands.all ? moduleState.brands.all : [];
+
+    brandRows.concat(affiliateState.all || []).forEach(function (row) {
+      [valueFor(row, 'Brand_Name'), valueFor(row, 'Brand'), valueFor(row, 'Name')].forEach(function (value) {
+        if (value && values.indexOf(value) === -1) {
+          values.push(value);
+        }
+      });
+    });
+
+    return values.sort();
+  }
+
+  function getKnownStaff() {
+    var values = [];
+    var staffRows = moduleState.staff && moduleState.staff.all ? moduleState.staff.all : [];
+
+    staffRows.concat(affiliateState.all || []).forEach(function (row) {
+      [valueFor(row, 'Staff_Name'), valueFor(row, 'Assigned_Staff'), valueFor(row, 'Name')].forEach(function (value) {
+        if (value && values.indexOf(value) === -1) {
+          values.push(value);
+        }
+      });
+    });
+
+    if (!values.length && getUserName()) {
+      values.push(getUserName());
+    }
+
+    return values.sort();
+  }
+
   function getRecordFormData() {
     var form = utils.qs('[data-record-form]');
     var data = {};
@@ -2655,17 +2960,73 @@
     return data;
   }
 
+  function isRecordEdit(config, context) {
+    return !!(config && config.updateApi && config.idKey && context && context[config.idKey]);
+  }
+
+  function validateRecordForm(config) {
+    var form = utils.qs('[data-record-form]');
+    var data = getRecordFormData();
+    var missing = [];
+
+    if (!form) {
+      return missing;
+    }
+
+    form.querySelectorAll('[data-field-error]').forEach(function (error) {
+      error.textContent = '';
+    });
+
+    asArray(config.required).forEach(function (field) {
+      var input = form.elements[field];
+      var error = form.querySelector('[data-field-error="' + field + '"]');
+      if (!String(data[field] || '').trim()) {
+        missing.push(friendlyFieldLabel(field));
+        if (error) {
+          error.textContent = friendlyFieldLabel(field) + ' is required.';
+        }
+        if (input) {
+          input.setAttribute('aria-invalid', 'true');
+        }
+      } else if (input) {
+        input.removeAttribute('aria-invalid');
+      }
+    });
+
+    return missing;
+  }
+
+  function friendlyErrorMessage(result, fallback) {
+    var message = result && result.message ? result.message : fallback;
+
+    if (!message) {
+      return 'Unable to save right now.';
+    }
+
+    if (/Only GET requests are supported|requires POST/i.test(message)) {
+      return 'This save request used an outdated connection. Refresh the page and try again.';
+    }
+
+    return message.replace(/_/g, ' ');
+  }
+
   async function submitRecordForm(event) {
     var config = recordForms[recordState.type];
     var message = utils.qs('[data-record-form-message]');
     var button = utils.qs('[data-record-submit]');
     var payload = getRecordFormData();
+    var isEdit;
     var result;
 
     event.preventDefault();
 
-    if (!config || !api[config.api]) {
+    if (!config || !api[config.api] || (isRecordEdit(config, recordState.context) && !api[config.updateApi])) {
       utils.setText(message, 'This action is not available.');
+      return;
+    }
+
+    if (validateRecordForm(config).length) {
+      utils.setText(message, 'Please complete the required fields before saving.');
       return;
     }
 
@@ -2674,19 +3035,24 @@
     }
     utils.setText(message, 'Saving...');
 
-    result = await api[config.api](payload);
+    if (config.idKey && recordState.context[config.idKey]) {
+      payload[config.idKey] = recordState.context[config.idKey];
+    }
+
+    isEdit = isRecordEdit(config, recordState.context);
+    result = await api[isEdit ? config.updateApi : config.api](payload);
 
     if (button) {
       button.disabled = false;
     }
 
     if (!isSuccessfulResult(result)) {
-      utils.setText(message, result && result.message ? result.message : 'Unable to save record.');
+      utils.setText(message, friendlyErrorMessage(result, 'Unable to save record.'));
       return;
     }
 
     closeRecordModal();
-    showToast(config.title + ' saved.');
+    showToast((isEdit ? 'Update' : config.title) + ' saved.');
     refreshAfterRecordSave(recordState.type);
   }
 
@@ -2697,6 +3063,11 @@
     if (type === 'affiliate') {
       affiliateState.loaded = false;
       loadAffiliates(true);
+    }
+
+    if (type === 'followup') {
+      followupState.loaded = false;
+      loadFollowups(true);
     }
 
     if (type === 'task' || type === 'issue' || type === 'interaction' || type === 'brand' || type === 'staff') {
@@ -2761,6 +3132,199 @@
         showToast(button.dataset.placeholderAction + ' is planned for a later sprint.');
       });
     });
+  }
+
+  function openImportModal(type) {
+    var config = csvConfigs[type];
+    var modal = utils.qs('[data-import-modal]');
+    var textarea = utils.qs('[data-import-csv]');
+    var preview = utils.qs('[data-import-preview]');
+    var commit = utils.qs('[data-import-commit]');
+
+    if (!config || !modal) {
+      showToast('CSV import is not available for this module.');
+      return;
+    }
+
+    if (!isAdminUser()) {
+      showToast('CSV import is restricted to administrators.');
+      return;
+    }
+
+    importState.type = type;
+    importState.preview = null;
+    utils.setText(utils.qs('[data-import-modal-title]'), config.title);
+    utils.setText(utils.qs('[data-import-guide]'), 'Required headers: ' + config.required.join(', '));
+    utils.setText(utils.qs('[data-import-message]'), 'Preview validates rows before anything is committed.');
+    if (textarea) {
+      textarea.value = buildSampleCsv(type);
+    }
+    if (preview) {
+      preview.hidden = true;
+      preview.innerHTML = '';
+    }
+    if (commit) {
+      commit.disabled = true;
+    }
+    modal.hidden = false;
+  }
+
+  function closeImportModal() {
+    var modal = utils.qs('[data-import-modal]');
+    if (modal) {
+      modal.hidden = true;
+    }
+  }
+
+  function buildSampleCsv(type) {
+    var config = csvConfigs[type];
+    var sample = {};
+
+    asArray(config && config.required).forEach(function (field) {
+      sample[field] = getDefaultRecordValue(field) || friendlyFieldLabel(field);
+    });
+
+    return config.required.join(',') + '\n' + config.required.map(function (field) {
+      return csvEscape(sample[field]);
+    }).join(',');
+  }
+
+  function csvEscape(value) {
+    var text = String(value || '');
+    if (/[",\n\r]/.test(text)) {
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+    return text;
+  }
+
+  async function previewImportCsv() {
+    var textarea = utils.qs('[data-import-csv]');
+    var message = utils.qs('[data-import-message]');
+    var button = utils.qs('[data-import-preview-button]');
+    var commit = utils.qs('[data-import-commit]');
+    var result;
+
+    if (!textarea || !textarea.value.trim()) {
+      utils.setText(message, 'Paste CSV content before previewing.');
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+    utils.setText(message, 'Checking CSV rows...');
+    result = await api.importCsvPreview({
+      entity: importState.type,
+      csv: textarea.value
+    });
+    if (button) {
+      button.disabled = false;
+    }
+
+    if (!isSuccessfulResult(result)) {
+      utils.setText(message, friendlyErrorMessage(result, 'Unable to preview CSV.'));
+      if (commit) {
+        commit.disabled = true;
+      }
+      return;
+    }
+
+    importState.preview = result.data || {};
+    renderImportPreview(importState.preview);
+    utils.setText(message, 'Preview ready: ' + displayPlainValue(importState.preview.validRows) + ' valid rows, ' + displayPlainValue(importState.preview.invalidRows) + ' rows with issues.');
+    if (commit) {
+      commit.disabled = Number(importState.preview.validRows || 0) === 0;
+    }
+  }
+
+  function renderImportPreview(previewData) {
+    var container = utils.qs('[data-import-preview]');
+    var rows = asArray(previewData && previewData.rows).slice(0, 8);
+
+    if (!container) {
+      return;
+    }
+
+    container.hidden = false;
+    container.innerHTML = '';
+    rows.forEach(function (row) {
+      var item = document.createElement('div');
+      var title = document.createElement('strong');
+      var detail = document.createElement('small');
+      item.className = 'import-preview-row ' + (row.valid ? 'is-valid' : 'is-invalid');
+      title.textContent = 'Row ' + row.rowNumber + ': ' + (row.valid ? 'Ready' : 'Needs fixes');
+      detail.textContent = row.valid ? summarizeImportRow(row.item) : asArray(row.errors).join(', ');
+      item.appendChild(title);
+      item.appendChild(detail);
+      container.appendChild(item);
+    });
+
+    if (asArray(previewData && previewData.rows).length > rows.length) {
+      container.appendChild(createEmptyPanel('Showing first ' + rows.length + ' preview rows.'));
+    }
+  }
+
+  function summarizeImportRow(row) {
+    return [row.Affiliate_Name, row.Brand_Name, row.Staff_Name, row.Title, row.Issue, row.Affiliate_ID, row.Brand].filter(Boolean).slice(0, 3).join(' | ') || 'Valid row';
+  }
+
+  async function commitImportCsv() {
+    var textarea = utils.qs('[data-import-csv]');
+    var message = utils.qs('[data-import-message]');
+    var button = utils.qs('[data-import-commit]');
+    var result;
+
+    if (!importState.preview || Number(importState.preview.validRows || 0) === 0) {
+      utils.setText(message, 'Preview a CSV with valid rows before committing.');
+      return;
+    }
+
+    if (!window.confirm('Commit ' + importState.preview.validRows + ' valid CSV rows?')) {
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+    utils.setText(message, 'Committing valid rows...');
+    result = await api.importCsvCommit({
+      entity: importState.type,
+      csv: textarea ? textarea.value : ''
+    });
+
+    if (button) {
+      button.disabled = false;
+    }
+
+    if (!isSuccessfulResult(result)) {
+      utils.setText(message, friendlyErrorMessage(result, 'Unable to commit CSV.'));
+      return;
+    }
+
+    closeImportModal();
+    showToast('CSV import committed: ' + displayPlainValue(result.data && result.data.committed) + ' rows.');
+    refreshAfterRecordSave(importState.type);
+  }
+
+  function downloadImportSample() {
+    var config = csvConfigs[importState.type];
+    var blob;
+    var link;
+
+    if (!config) {
+      return;
+    }
+
+    blob = new Blob([buildSampleCsv(importState.type)], { type: 'text/csv;charset=utf-8' });
+    link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = importState.type + '-sample.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(function () {
+      URL.revokeObjectURL(link.href);
+    }, 500);
   }
 
   function bindAffiliateControls() {
@@ -2920,6 +3484,45 @@
     });
   }
 
+  function bindImportModal() {
+    var modal = utils.qs('[data-import-modal]');
+    var close = utils.qs('[data-import-modal-close]');
+    var preview = utils.qs('[data-import-preview-button]');
+    var commit = utils.qs('[data-import-commit]');
+    var sample = utils.qs('[data-import-sample]');
+
+    document.querySelectorAll('[data-import-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openImportModal(button.dataset.importAction);
+      });
+    });
+
+    if (close) {
+      close.addEventListener('click', closeImportModal);
+    }
+    if (preview) {
+      preview.addEventListener('click', previewImportCsv);
+    }
+    if (commit) {
+      commit.addEventListener('click', commitImportCsv);
+    }
+    if (sample) {
+      sample.addEventListener('click', downloadImportSample);
+    }
+    if (modal) {
+      modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+          closeImportModal();
+        }
+      });
+    }
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeImportModal();
+      }
+    });
+  }
+
   function initAppShell() {
     if (!ensureSession()) {
       return;
@@ -2933,6 +3536,7 @@
     bindModuleControls();
     bindQuickActions();
     bindRecordModal();
+    bindImportModal();
     bindLogout();
     updatePage(router.routeFromHash());
     loadDashboard();

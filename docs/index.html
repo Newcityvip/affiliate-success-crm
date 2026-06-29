@@ -320,7 +320,10 @@
                   <h2 id="affiliates-title">Affiliates</h2>
                   <p class="muted" data-affiliates-count>Loading affiliates...</p>
                 </div>
-                <button class="button button-primary" type="button" data-admin-action="affiliate">New Affiliate</button>
+                <div class="toolbar-actions">
+                  <button class="button button-primary" type="button" data-admin-action="affiliate">New Affiliate</button>
+                  <button class="button button-secondary" type="button" data-import-action="affiliate" data-role-scope="admin">Import CSV</button>
+                </div>
                 <label class="search-field">
                   <span>Search affiliates</span>
                   <input type="search" placeholder="Search by name, username, brand, country, staff" data-affiliate-search>
@@ -407,6 +410,7 @@
                       <th>Last_Contact_Date</th>
                       <th>Next_Followup_Date</th>
                       <th>Active</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody data-affiliates-body></tbody>
@@ -435,7 +439,10 @@
                   <h2 id="followups-title">Follow-ups</h2>
                   <p class="muted" data-followups-count>Loading follow-ups...</p>
                 </div>
-                <button class="button button-primary" type="button" data-followup-add>Add New Follow-up</button>
+                <div class="toolbar-actions">
+                  <button class="button button-primary" type="button" data-followup-add>Add New Follow-up</button>
+                  <button class="button button-secondary" type="button" data-import-action="followup" data-role-scope="admin">Import CSV</button>
+                </div>
               </div>
 
               <div class="followup-summary-grid" aria-label="Follow-up queue summary">
@@ -589,7 +596,10 @@
                   <h2 id="interactions-title">Interactions</h2>
                   <p class="muted" data-module-count>Loading interaction records...</p>
                 </div>
-                <button class="button button-secondary" type="button" data-module-action="interaction">Add Interaction</button>
+                <div class="toolbar-actions">
+                  <button class="button button-secondary" type="button" data-module-action="interaction">Add Interaction</button>
+                  <button class="button button-secondary" type="button" data-import-action="interaction" data-role-scope="admin">Import CSV</button>
+                </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">
@@ -614,7 +624,10 @@
                   <h2 id="tasks-title">Tasks</h2>
                   <p class="muted" data-module-count>Loading task records...</p>
                 </div>
-                <button class="button button-secondary" type="button" data-admin-action="task">Add Task</button>
+                <div class="toolbar-actions">
+                  <button class="button button-secondary" type="button" data-admin-action="task">Add Task</button>
+                  <button class="button button-secondary" type="button" data-import-action="task" data-role-scope="admin">Import CSV</button>
+                </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">
@@ -632,7 +645,10 @@
             <div class="data-panel glass-panel module-workspace" data-module-workspace="issues">
               <div class="data-toolbar">
                 <div><p class="eyebrow">Resolution tracking</p><h2 id="issues-title">Issues</h2><p class="muted" data-module-count>Loading issue records...</p></div>
-                <button class="button button-secondary" type="button" data-admin-action="issue">Add Issue</button>
+                <div class="toolbar-actions">
+                  <button class="button button-secondary" type="button" data-admin-action="issue">Add Issue</button>
+                  <button class="button button-secondary" type="button" data-import-action="issue" data-role-scope="admin">Import CSV</button>
+                </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">
@@ -687,7 +703,7 @@
 
           <section class="page-section" data-section="staff" aria-labelledby="staff-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="staff">
-              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div><button class="button button-secondary" type="button" data-admin-action="staff">New Staff</button></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Team directory</p><h2 id="staff-title">Staff</h2><p class="muted" data-module-count>Loading staff records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="staff">New Staff</button><button class="button button-secondary" type="button" data-import-action="staff" data-role-scope="admin">Import CSV</button></div></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search staff</span><input type="search" placeholder="Search name, role, team, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live staff...</p></div>
@@ -699,7 +715,7 @@
 
           <section class="page-section" data-section="brands" aria-labelledby="brands-title">
             <div class="data-panel glass-panel module-workspace" data-module-workspace="brands">
-              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div><button class="button button-secondary" type="button" data-admin-action="brand">New Brand</button></div>
+              <div class="data-toolbar"><div><p class="eyebrow">Brand reference</p><h2 id="brands-title">Brands</h2><p class="muted" data-module-count>Loading brand records...</p></div><div class="toolbar-actions"><button class="button button-secondary" type="button" data-admin-action="brand">New Brand</button><button class="button button-secondary" type="button" data-import-action="brand" data-role-scope="admin">Import CSV</button></div></div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar"><label class="search-field"><span>Search brands</span><input type="search" placeholder="Search brand, market, owner, status" data-module-search></label><div class="filter-grid module-filter-grid" data-module-filters></div></div>
               <div class="table-state" data-module-loading><div class="empty-icon" aria-hidden="true"></div><p class="muted">Loading live brands...</p></div>
@@ -740,15 +756,15 @@
         <form class="form-stack" data-followup-form>
           <input type="hidden" name="Queue_ID" data-followup-queue-id>
           <label class="field">
-            <span>Affiliate_ID</span>
+            <span>Affiliate ID</span>
             <input type="text" name="Affiliate_ID" required>
           </label>
           <label class="field">
-            <span>Assigned_Staff</span>
+            <span>Assigned staff</span>
             <input type="text" name="Assigned_Staff" required>
           </label>
           <label class="field">
-            <span>Followup_Date</span>
+            <span>Follow-up date</span>
             <input type="date" name="Followup_Date" required>
           </label>
           <label class="field">
@@ -765,13 +781,15 @@
             <select name="Status" required>
               <option value="Open">Open</option>
               <option value="Pending">Pending</option>
-              <option value="Overdue">Overdue</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Responding">Not Responding</option>
               <option value="Rescheduled">Rescheduled</option>
               <option value="Completed">Completed</option>
             </select>
           </label>
           <label class="field">
-            <span>Generated_From</span>
+            <span>Generated from</span>
             <input type="text" name="Generated_From" required>
           </label>
           <p class="form-note" data-followup-form-message></p>
@@ -800,11 +818,39 @@
       </section>
     </div>
 
-    <script src="js/config.js?v=4a"></script>
-    <script src="js/utils.js?v=4a"></script>
-    <script src="js/api.js?v=4a"></script>
-    <script src="js/auth.js?v=4a"></script>
-    <script src="js/router.js?v=4a"></script>
-    <script src="js/app.js?v=4a"></script>
+    <div class="modal-backdrop" data-import-modal hidden>
+      <section class="modal-card modal-card-wide glass-panel" aria-labelledby="import-modal-title">
+        <div class="drawer-header">
+          <div>
+            <p class="eyebrow">CSV import</p>
+            <h2 id="import-modal-title" data-import-modal-title>Import CSV</h2>
+            <p class="muted" data-import-guide>Paste CSV rows to preview before committing.</p>
+          </div>
+          <button class="icon-button" type="button" data-import-modal-close aria-label="Close import modal">
+            <span aria-hidden="true">x</span>
+          </button>
+        </div>
+        <div class="import-actions">
+          <button class="button button-secondary button-small" type="button" data-import-sample>Download sample CSV</button>
+        </div>
+        <label class="field">
+          <span>CSV content</span>
+          <textarea rows="8" data-import-csv placeholder="Paste CSV content here"></textarea>
+        </label>
+        <div class="import-preview" data-import-preview hidden></div>
+        <p class="form-note" data-import-message></p>
+        <div class="modal-footer">
+          <button class="button button-secondary" type="button" data-import-preview-button>Preview CSV</button>
+          <button class="button button-primary" type="button" data-import-commit disabled>Commit valid rows</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="js/config.js?v=4d-ops"></script>
+    <script src="js/utils.js?v=4d-ops"></script>
+    <script src="js/api.js?v=4d-ops"></script>
+    <script src="js/auth.js?v=4d-ops"></script>
+    <script src="js/router.js?v=4d-ops"></script>
+    <script src="js/app.js?v=4d-ops"></script>
   </body>
 </html>

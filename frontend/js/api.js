@@ -124,6 +124,18 @@
     }
   }
 
+  function write(action, data) {
+    var payload = data || {};
+    var token = getSessionToken();
+    if (token && !payload.sessionToken) {
+      payload.sessionToken = token;
+    }
+
+    return get(action, {
+      payload: JSON.stringify(payload)
+    });
+  }
+
   function post(action, data) {
     var payload = data || {};
     var token = getSessionToken();
@@ -201,52 +213,61 @@
       return request('settings');
     },
     createFollowup: function (data) {
-      return post('createFollowup', data);
+      return write('createFollowup', data);
     },
     updateFollowup: function (data) {
-      return post('updateFollowup', data);
+      return write('updateFollowup', data);
     },
     completeFollowup: function (data) {
-      return post('completeFollowup', data);
+      return write('completeFollowup', data);
     },
     createAffiliate: function (data) {
-      return post('createAffiliate', data);
+      return write('createAffiliate', data);
     },
     updateAffiliate: function (data) {
-      return post('updateAffiliate', data);
+      return write('updateAffiliate', data);
     },
     createTask: function (data) {
-      return post('createTask', data);
+      return write('createTask', data);
     },
     updateTask: function (data) {
-      return post('updateTask', data);
+      return write('updateTask', data);
     },
     completeTask: function (data) {
-      return post('completeTask', data);
+      return write('completeTask', data);
     },
     createIssue: function (data) {
-      return post('createIssue', data);
+      return write('createIssue', data);
     },
     updateIssue: function (data) {
-      return post('updateIssue', data);
+      return write('updateIssue', data);
     },
     resolveIssue: function (data) {
-      return post('resolveIssue', data);
+      return write('resolveIssue', data);
+    },
+    closeIssue: function (data) {
+      return write('closeIssue', data);
     },
     createInteraction: function (data) {
-      return post('createInteraction', data);
+      return write('createInteraction', data);
     },
     createBrand: function (data) {
-      return post('createBrand', data);
+      return write('createBrand', data);
     },
     updateBrand: function (data) {
-      return post('updateBrand', data);
+      return write('updateBrand', data);
     },
     createStaff: function (data) {
-      return post('createStaff', data);
+      return write('createStaff', data);
     },
     updateStaff: function (data) {
-      return post('updateStaff', data);
+      return write('updateStaff', data);
+    },
+    importCsvPreview: function (data) {
+      return write('importCsvPreview', data);
+    },
+    importCsvCommit: function (data) {
+      return write('importCsvCommit', data);
     }
   });
 })(window);

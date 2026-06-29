@@ -86,3 +86,11 @@ Use clear, conventional commit messages:
 - Test write APIs with clearly marked test records only, then report any live sheet mutations.
 - Confirm successful writes append to `Activity_Log` when that tab and headers exist.
 - Confirm no console errors and no mobile overflow beyond data tables.
+
+## Operations Dashboard Verification
+
+- Frontend writes should use the central API wrapper, which sends encoded GET payloads for GitHub Pages compatibility while backend POST support remains available.
+- Keep user-facing forms friendly: labels should read like product UI, not raw sheet headers.
+- Admin CSV import must always run `importCsvPreview` before `importCsvCommit`; do not auto-commit pasted CSV.
+- Staff users should not see admin-only imports, New Affiliate, New Staff, or global management actions.
+- Preserve `frontend/` as source and sync changed static files to `docs/` before pushing Pages changes.

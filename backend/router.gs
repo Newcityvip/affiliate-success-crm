@@ -39,11 +39,14 @@ function handleRequest(e, method) {
     'createissue',
     'updateissue',
     'resolveissue',
+    'closeissue',
     'createinteraction',
     'createbrand',
     'updatebrand',
     'createstaff',
-    'updatestaff'
+    'updatestaff',
+    'importcsvpreview',
+    'importcsvcommit'
   ];
   const writeActions = [
     'createfollowup',
@@ -57,11 +60,14 @@ function handleRequest(e, method) {
     'createissue',
     'updateissue',
     'resolveissue',
+    'closeissue',
     'createinteraction',
     'createbrand',
     'updatebrand',
     'createstaff',
-    'updatestaff'
+    'updatestaff',
+    'importcsvpreview',
+    'importcsvcommit'
   ];
   var user = null;
 
@@ -112,12 +118,6 @@ function handleRequest(e, method) {
     }
 
     user = requireAuth(e);
-
-    if (writeActions.indexOf(action) !== -1 && method !== 'POST') {
-      return errorResponse('This action requires POST.', 'METHOD_NOT_ALLOWED', {
-        method: method
-      });
-    }
 
     if (writeActions.indexOf(action) === -1 && method !== 'GET') {
       return errorResponse('Only GET requests are supported for this endpoint.', 'METHOD_NOT_ALLOWED', {
@@ -195,6 +195,10 @@ function handleRequest(e, method) {
       return successResponse(resolveIssue(getRequestPayload(e), user), 'Issue resolved.');
     }
 
+    if (action === 'closeissue') {
+      return successResponse(closeIssue(getRequestPayload(e), user), 'Issue closed.');
+    }
+
     if (action === 'createinteraction') {
       return successResponse(createInteraction(getRequestPayload(e), user), 'Interaction created.');
     }
@@ -213,6 +217,14 @@ function handleRequest(e, method) {
 
     if (action === 'updatestaff') {
       return successResponse(updateStaff(getRequestPayload(e), user), 'Staff updated.');
+    }
+
+    if (action === 'importcsvpreview') {
+      return successResponse(importCsvPreview(getRequestPayload(e), user), 'CSV preview generated.');
+    }
+
+    if (action === 'importcsvcommit') {
+      return successResponse(importCsvCommit(getRequestPayload(e), user), 'CSV import committed.');
     }
 
     if (action === 'tasks') {
@@ -286,6 +298,14 @@ function getRequestPayload(e) {
   const params = (e && e.parameter) || {};
   const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
   const contentType = safeString(e && e.postData && e.postData.type).toLowerCase();
+
+  if (params.payload) {
+    try {
+      return JSON.parse(params.payload);
+    } catch (error) {
+      return params;
+    }
+  }
 
   if (contents) {
     if (contentType.indexOf('application/x-www-form-urlencoded') !== -1) {
