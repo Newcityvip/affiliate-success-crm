@@ -4,6 +4,13 @@
   var config = window.AffiliateSuccessConfig || {};
   var SESSION_KEY = 'affiliateSuccessSession';
   var PUBLIC_ACTIONS = ['health', 'meta', 'login', 'authlogin', 'authdebug', 'debugsheets'];
+  var lastDebug = {
+    action: '',
+    method: '',
+    responseCode: '',
+    responseMessage: '',
+    payloadKeys: []
+  };
 
   function getSessionToken() {
     try {
@@ -54,6 +61,41 @@
     return normalized;
   }
 
+  function getActionFromUrl(url, fallback) {
+    try {
+      return new URL(url, window.location.href).searchParams.get('action') || fallback || '';
+    } catch (error) {
+      return fallback || '';
+    }
+  }
+
+  function getPayloadKeysFromUrl(url) {
+    try {
+      var payload = new URL(url, window.location.href).searchParams.get('payload');
+      return payload ? Object.keys(JSON.parse(payload)) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function setLastDebug(details) {
+    lastDebug = {
+      action: details.action || '',
+      method: details.method || '',
+      responseCode: details.responseCode || '',
+      responseMessage: details.responseMessage || '',
+      payloadKeys: details.payloadKeys || []
+    };
+
+    try {
+      window.dispatchEvent(new CustomEvent('affiliate-success-api-debug', {
+        detail: lastDebug
+      }));
+    } catch (error) {
+      // Debug dispatch is optional.
+    }
+  }
+
   function handleUnauthorized(payload) {
     if (!payload || payload.code !== 'UNAUTHORIZED') {
       return;
@@ -72,8 +114,18 @@
 
   async function request(action, options) {
     var url = action.indexOf('http') === 0 ? action : buildUrl(action);
+    var requestAction = getActionFromUrl(url, action);
+    var requestMethod = options && options.method ? options.method : 'GET';
+    var payloadKeys = getPayloadKeysFromUrl(url);
 
     if (!url) {
+      setLastDebug({
+        action: action,
+        method: requestMethod,
+        responseCode: 'API_NOT_CONFIGURED',
+        responseMessage: 'API base URL is not configured.',
+        payloadKeys: payloadKeys
+      });
       return {
         ok: false,
         success: false,
@@ -90,6 +142,13 @@
       var response = await fetch(url, options || {});
       var payload = normalizePayload(await response.json());
       handleUnauthorized(payload);
+      setLastDebug({
+        action: requestAction,
+        method: requestMethod,
+        responseCode: payload.code || response.status,
+        responseMessage: payload.message || '',
+        payloadKeys: payloadKeys
+      });
 
       if (!response.ok) {
         return {
@@ -109,6 +168,13 @@
 
       return payload;
     } catch (error) {
+      setLastDebug({
+        action: requestAction,
+        method: requestMethod,
+        responseCode: 'NETWORK_ERROR',
+        responseMessage: error && error.message ? error.message : String(error),
+        payloadKeys: payloadKeys
+      });
       return {
         ok: false,
         success: false,
@@ -158,6 +224,9 @@
 
   window.AffiliateSuccessApi = Object.freeze({
     request: request,
+    getLastDebug: function () {
+      return lastDebug;
+    },
     health: function () {
       return request('health');
     },

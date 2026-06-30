@@ -13,6 +13,8 @@ function handleRequest(e, method) {
     'authdebug',
     'debugactions',
     'debugsheets',
+    'debugdashboard',
+    'debugperformancewrite',
     'getsession',
     'logout',
     'validatesheets',
@@ -150,6 +152,16 @@ function handleRequest(e, method) {
     if (action === 'validatesheets') {
       requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
       return successResponse(validateRequiredSheets(), 'Required sheets validated.');
+    }
+
+    if (action === 'debugdashboard') {
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+      return successResponse(getDebugDashboard(user), 'Dashboard debug loaded.');
+    }
+
+    if (action === 'debugperformancewrite') {
+      requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+      return successResponse(getDebugPerformanceWrite(getRequestPayload(e), action, user), 'Performance write debug loaded.');
     }
 
     if (action === 'dashboard') {

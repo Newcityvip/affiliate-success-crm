@@ -40,6 +40,56 @@ function importPerformanceCsvCommit(payload, user) {
   return importCsvCommit(mergePayload(payload, { entity: 'performance' }), user);
 }
 
+function getDebugDashboard(user) {
+  const sheet = getSheetByNameSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const headers = sheet ? getSheetHeadersSafe(SHEET_NAMES.MONTHLY_PERFORMANCE) : [];
+  const rows = normalizePerformanceRows(safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE));
+  const scopedRows = filterPerformanceForUser(rows, user);
+  const performanceSummary = buildPerformanceSummary(scopedRows);
+  const dashboard = getDashboardSummary(user);
+
+  return {
+    monthlyPerformanceSheetFound: Boolean(sheet),
+    headersFound: headers,
+    rowCount: rows.length,
+    scopedRowCount: scopedRows.length,
+    parsedFirst3Rows: scopedRows.slice(0, 3),
+    computedPerformanceSummary: performanceSummary,
+    dashboardKeysReturned: Object.keys(dashboard || {}),
+    dashboardPerformanceKeys: {
+      thisMonthFtd: dashboard.thisMonthFtd,
+      activePlayers: dashboard.activePlayers,
+      revenueNgr: dashboard.revenueNgr,
+      commission: dashboard.commission,
+      depositAmount: dashboard.depositAmount,
+      growth: dashboard.growth,
+      performanceSummary: dashboard.performanceSummary
+    }
+  };
+}
+
+function getDebugPerformanceWrite(payload, parsedAction, user) {
+  const source = payload || {};
+  const target = findPerformanceWriteTarget(source);
+  const missing = getMissingPerformancePayloadFields(source, getSheetHeadersSafe(SHEET_NAMES.MONTHLY_PERFORMANCE));
+  const normalizedMonth = derivePerformanceMonth(getFirstValue(source, ['Month', 'Date', 'Performance_Month', 'Period']));
+
+  return {
+    parsedAction: parsedAction,
+    targetRowMatchMethod: target.method,
+    matchedRowNumber: target.rowNumber,
+    payloadKeys: Object.keys(source),
+    missingRequiredFields: missing,
+    normalized: {
+      Month: normalizedMonth,
+      Date: normalizeDateValue(getFirstValue(source, ['Date', 'Month'])),
+      Affiliate_ID: safeString(source.Affiliate_ID),
+      Brand: safeString(source.Brand)
+    },
+    canWriteForUser: canDebugPerformanceWrite(source, user)
+  };
+}
+
 function savePerformanceRow(payload, user, isCreate) {
   const headers = getSheetHeadersSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
   const source = payload || {};
@@ -203,6 +253,66 @@ function updatePerformanceSheetRowByComposite(source, data, headers) {
   throwCodedError('NOT_FOUND', 'Performance row was not found.');
 }
 
+function findPerformanceWriteTarget(source) {
+  const id = safeString(source && source.Performance_ID);
+  const month = derivePerformanceMonth(getFirstValue(source || {}, ['Month', 'Date', 'Performance_Month', 'Period']));
+  const affiliateId = safeString(source && source.Affiliate_ID);
+  const brand = safeString(source && source.Brand);
+  const sheet = getSheetByNameSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const rows = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  var rowIndex;
+  var row;
+
+  if (!sheet) {
+    return {
+      method: 'sheet-missing',
+      rowNumber: ''
+    };
+  }
+
+  if (id) {
+    for (rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      row = rows[rowIndex];
+      if (safeString(row.Performance_ID) === id) {
+        return {
+          method: 'Performance_ID',
+          rowNumber: rowIndex + 2
+        };
+      }
+    }
+  }
+
+  if (month && affiliateId && brand) {
+    for (rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      row = rows[rowIndex];
+      if (
+        derivePerformanceMonth(getFirstValue(row, ['Month', 'Date', 'Performance_Month', 'Period'])) === month &&
+        safeString(row.Affiliate_ID) === affiliateId &&
+        safeString(row.Brand).toLowerCase() === brand.toLowerCase()
+      ) {
+        return {
+          method: 'Month+Affiliate_ID+Brand',
+          rowNumber: rowIndex + 2
+        };
+      }
+    }
+  }
+
+  return {
+    method: 'none',
+    rowNumber: ''
+  };
+}
+
+function canDebugPerformanceWrite(payload, user) {
+  try {
+    requirePerformanceWrite(payload, user);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function getAffiliateForPerformance(affiliateId) {
   return safeReadSheetObjects(SHEET_NAMES.AFFILIATES).filter(function (affiliate) {
     return safeString(affiliate.Affiliate_ID) === safeString(affiliateId);
@@ -255,6 +365,30 @@ function getMissingPerformanceRequiredHeaders(headers) {
   if (headers.indexOf('Revenue_NGR') === -1 && headers.indexOf('NGR') === -1) {
     missing.push('Revenue_NGR or NGR');
   }
+  return missing;
+}
+
+function getMissingPerformancePayloadFields(data, headers) {
+  const source = data || {};
+  const missing = [];
+  const sheetHeaders = headers || [];
+  const hasMonthOrDate = sheetHeaders.indexOf('Month') === -1 && sheetHeaders.indexOf('Date') === -1 ? true : Boolean(safeString(source.Month) || safeString(source.Date));
+  const hasRevenue = sheetHeaders.indexOf('Revenue_NGR') === -1 && sheetHeaders.indexOf('NGR') === -1 ? true : Boolean(safeString(source.Revenue_NGR) || safeString(source.NGR));
+
+  if (!hasMonthOrDate) {
+    missing.push(sheetHeaders.indexOf('Month') !== -1 ? 'Month' : 'Date');
+  }
+
+  PERFORMANCE_REQUIRED_HEADERS.forEach(function (field) {
+    if (sheetHeaders.indexOf(field) !== -1 && !safeString(source[field])) {
+      missing.push(field);
+    }
+  });
+
+  if (!hasRevenue) {
+    missing.push(sheetHeaders.indexOf('NGR') !== -1 ? 'NGR' : 'Revenue_NGR');
+  }
+
   return missing;
 }
 

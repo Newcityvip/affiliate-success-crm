@@ -1266,6 +1266,48 @@
   color: #c0cad8;
 }
 
+.debug-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: 45vh;
+  overflow: auto;
+  padding: 0.9rem;
+  border: 1px solid rgba(93, 228, 199, 0.24);
+  border-radius: 8px;
+  background: rgba(9, 13, 23, 0.92);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.debug-panel h2 {
+  margin: 0 0 0.6rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.debug-panel dl {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 0.35rem 0.55rem;
+  margin: 0;
+}
+
+.debug-panel dt {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.debug-panel dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 720px) {
   .topbar-quick-actions {
     flex: 0 1 auto;

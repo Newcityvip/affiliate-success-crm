@@ -5,7 +5,10 @@
   var api = window.AffiliateSuccessApi;
   var router = window.AffiliateSuccessRouter;
   var auth = window.AffiliateSuccessAuth;
+  var appConfig = window.AffiliateSuccessConfig || {};
+  var DEBUG_CACHE_MARKER = 'dashboard-debug-fix';
   var currentUser = null;
+  var latestApiDebug = null;
   var staffAllowedRoutes = ['dashboard', 'affiliates', 'followups', 'interactions', 'tasks', 'issues', 'performance', 'brands', 'settings'];
 
   var dashboardMetricLabels = {
@@ -549,6 +552,99 @@
     return auth && auth.isAdmin ? auth.isAdmin(currentUser) : false;
   }
 
+  function getScriptCacheVersion(fileName) {
+    var script = Array.prototype.slice.call(document.scripts || []).filter(function (item) {
+      return item.src && item.src.indexOf(fileName) !== -1;
+    })[0];
+
+    if (!script) {
+      return '';
+    }
+
+    try {
+      return new URL(script.src).searchParams.get('v') || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function ensureDebugPanel() {
+    var panel = utils.qs('[data-debug-panel]');
+
+    if (!isAdminUser()) {
+      if (panel) {
+        panel.remove();
+      }
+      return null;
+    }
+
+    if (panel) {
+      return panel;
+    }
+
+    panel = document.createElement('aside');
+    panel.className = 'debug-panel';
+    panel.setAttribute('data-debug-panel', '');
+    panel.innerHTML = '<h2>Admin Debug</h2><dl data-debug-panel-list></dl>';
+    document.body.appendChild(panel);
+    return panel;
+  }
+
+  function renderDebugPanel(extra) {
+    var panel = ensureDebugPanel();
+    var list;
+    var debug = extra || latestApiDebug || (api && api.getLastDebug ? api.getLastDebug() : {}) || {};
+    var rows;
+
+    if (!panel) {
+      return;
+    }
+
+    list = panel.querySelector('[data-debug-panel-list]');
+    if (!list) {
+      return;
+    }
+
+    rows = [
+      ['API_BASE_URL', appConfig.API_BASE_URL || ''],
+      ['cache config.js', getScriptCacheVersion('config.js')],
+      ['cache app.js', getScriptCacheVersion('app.js') || DEBUG_CACHE_MARKER],
+      ['session user', getUserName()],
+      ['session role', getRoleLabel()],
+      ['last action', debug.action || ''],
+      ['last method', debug.method || ''],
+      ['last response', [debug.responseCode || '', debug.responseMessage || ''].join(' ').trim()],
+      ['last payload keys', (debug.payloadKeys || []).join(', ')]
+    ];
+
+    list.innerHTML = rows.map(function (row) {
+      return '<dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1]) + '</dd>';
+    }).join('');
+  }
+
+  function updateDebugBeforeRequest(action, method, payload) {
+    var debug = {
+      action: action,
+      method: method,
+      responseCode: 'pending',
+      responseMessage: 'Request queued',
+      payloadKeys: Object.keys(payload || {})
+    };
+
+    latestApiDebug = debug;
+    renderDebugPanel(debug);
+    if (window.console && console.log) {
+      console.log('[Affiliate Success Debug]', debug, payload || {});
+    }
+  }
+
+  function bindApiDebugPanel() {
+    window.addEventListener('affiliate-success-api-debug', function (event) {
+      latestApiDebug = event.detail || {};
+      renderDebugPanel(latestApiDebug);
+    });
+  }
+
   function canAccessRoute(routeKey) {
     if (isAdminUser()) {
       return true;
@@ -685,6 +781,18 @@
     }
 
     return String(value);
+  }
+
+  function escapeHtml(value) {
+    return displayPlainValue(value).replace(/[&<>"']/g, function (character) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character];
+    });
   }
 
   function isSuccessfulResult(result) {
@@ -897,6 +1005,8 @@
       setStaffEmptyCopy();
       renderStaffSopPanel();
     }
+
+    renderDebugPanel();
   }
 
   function hideStaffAdminRoutes() {
@@ -3575,6 +3685,7 @@
     if (recordState.type === 'affiliate' && !isEdit) {
       result = await api.createAffiliate(payload);
     } else if (recordState.type === 'performance') {
+      updateDebugBeforeRequest(isEdit ? 'updatePerformance' : 'createPerformance', 'GET', payload);
       result = await (isEdit ? api.updatePerformance(payload) : api.createPerformance(payload));
     } else {
       result = await api[isEdit ? config.updateApi : config.api](payload);
@@ -4129,6 +4240,7 @@
     bindRecordModal();
     bindImportModal();
     bindLogout();
+    bindApiDebugPanel();
     updatePage(router.routeFromHash());
     loadDashboard();
   }
