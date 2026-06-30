@@ -242,8 +242,8 @@
     },
     performance: {
       title: 'Import Performance',
-      required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR'],
-      optional: ['Affiliate_Name', 'Assigned_Staff', 'Commission', 'Status', 'Notes']
+      required: ['Month', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'NGR'],
+      optional: ['Date', 'Affiliate_Name', 'Assigned_Staff', 'Revenue_NGR', 'Commission', 'Status', 'Notes', 'Remarks']
     },
     staff: {
       title: 'Import Staff',
@@ -350,7 +350,7 @@
     performance: {
       api: 'performance',
       itemName: 'performance rows',
-      search: ['Date', 'Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue_NGR', 'Revenue', 'NGR', 'Commission', 'Status'],
+      search: ['Date', 'Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue_NGR', 'Revenue', 'NGR', 'Commission', 'Status', 'Remarks'],
       filters: [
         { label: 'Month', key: 'Month', fallback: ['Performance_Month', 'Period'] },
         { label: 'Brand', key: 'Brand' },
@@ -367,14 +367,14 @@
       ],
       columns: [
         { label: 'Date', keys: ['Date'], format: 'date' },
-        { label: 'Month', keys: ['Month', 'Performance_Month', 'Period'] },
+        { label: 'Month', keys: ['Month', 'Performance_Month', 'Period'], format: 'month' },
         { label: 'Brand', keys: ['Brand'] },
         { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
         { label: 'FTD', keys: ['FTD', 'FTDs'] },
         { label: 'Active Players', keys: ['Active_Players', 'Active Players'] },
         { label: 'Deposits', keys: ['Deposit_Amount', 'Deposit Amount'] },
-        { label: 'Revenue/NGR', keys: ['Revenue_NGR', 'Revenue', 'NGR'] },
-        { label: 'Conversion', keys: ['Conversion_Rate'] },
+        { label: 'Revenue/NGR', keys: ['Revenue_NGR', 'NGR', 'Revenue'] },
+        { label: 'Conversion/Growth', keys: ['Conversion_Rate', 'Growth_Percent'] },
         { label: 'Status', keys: ['Status'], badge: 'Status' },
         { label: 'Updated', keys: ['Updated_At'], format: 'date' }
       ],
@@ -1817,6 +1817,14 @@
   }
 
   function averagePerformanceConversion(items) {
+    var explicit = items.map(function (item) {
+      return Number(getModuleValue(item, ['Conversion_Rate', 'Growth_Percent']) || '');
+    }).filter(function (value) {
+      return !isNaN(value) && value > 0;
+    });
+    if (explicit.length) {
+      return explicit.reduce(function (sum, value) { return sum + value; }, 0) / explicit.length;
+    }
     var active = sumModuleValues(items, ['Active_Players', 'Active Players']);
     var ftd = sumModuleValues(items, ['FTD', 'FTDs']);
     return active ? ftd / active : '';
@@ -1958,7 +1966,21 @@
       parent.appendChild(createBadge(column.badge, value || 'N/A'));
       return;
     }
-    parent.textContent = column.format === 'date' ? formatDate(value) : displayPlainValue(value);
+    if (column.format === 'date') {
+      parent.textContent = formatDate(value);
+    } else if (column.format === 'month') {
+      parent.textContent = formatMonthValue(value);
+    } else {
+      parent.textContent = displayPlainValue(value);
+    }
+  }
+
+  function formatMonthValue(value) {
+    var raw = String(value || '');
+    if (/^\d{4}-\d{2}/.test(raw)) {
+      return raw.slice(0, 7);
+    }
+    return displayPlainValue(raw);
   }
 
   function renderModuleCards(config, items) {
@@ -3449,6 +3471,9 @@
   }
 
   function isRecordEdit(config, context) {
+    if (recordState.type === 'performance') {
+      return !!(context && (context.Performance_ID || (context.Affiliate_ID && context.Month)));
+    }
     return !!(config && config.updateApi && config.idKey && context && context[config.idKey]);
   }
 
@@ -3507,6 +3532,7 @@
     var result;
 
     event.preventDefault();
+    utils.setText(message, '');
 
     if (!config || !api[config.api] || (isRecordEdit(config, recordState.context) && !api[config.updateApi])) {
       utils.setText(message, 'This action is not available.');
@@ -3530,6 +3556,8 @@
     isEdit = isRecordEdit(config, recordState.context);
     if (recordState.type === 'affiliate' && !isEdit) {
       result = await api.createAffiliate(payload);
+    } else if (recordState.type === 'performance') {
+      result = await (isEdit ? api.updatePerformance(payload) : api.createPerformance(payload));
     } else {
       result = await api[isEdit ? config.updateApi : config.api](payload);
     }

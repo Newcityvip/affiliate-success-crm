@@ -532,7 +532,7 @@ function getImportConfig(entityKey) {
       prefix: ENTITY_CONFIG.performance.prefix,
       width: ENTITY_CONFIG.performance.width,
       type: ENTITY_CONFIG.performance.type,
-      required: PERFORMANCE_REQUIRED_HEADERS
+      required: ['Month', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'NGR']
     };
   }
 

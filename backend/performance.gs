@@ -1,5 +1,5 @@
-const PERFORMANCE_REQUIRED_HEADERS = Object.freeze(['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR']);
-const PERFORMANCE_OPTIONAL_HEADERS = Object.freeze(['Performance_ID', 'Month', 'Affiliate_Name', 'Assigned_Staff', 'Commission', 'Conversion_Rate', 'Status', 'Notes', 'Updated_By', 'Updated_At']);
+const PERFORMANCE_REQUIRED_HEADERS = Object.freeze(['Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount']);
+const PERFORMANCE_OPTIONAL_HEADERS = Object.freeze(['Performance_ID', 'Date', 'Month', 'Affiliate_Name', 'Assigned_Staff', 'Registrations', 'Deposits', 'Turnover', 'Revenue_NGR', 'NGR', 'Commission', 'Conversion_Rate', 'Growth_Percent', 'Status', 'Notes', 'Remarks', 'Updated_By', 'Updated_At']);
 
 function getPerformance(user) {
   const items = normalizePerformanceRows(filterPerformanceForUser(safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE), user));
@@ -19,12 +19,14 @@ function createPerformance(payload, user) {
 }
 
 function updatePerformance(payload, user) {
-  const id = safeString(payload && payload.Performance_ID);
+  const id = getPerformanceUpdateKey(payload);
+  const existing = getExistingPerformanceForUpdate(payload);
+
   if (!id) {
-    throwCodedError('VALIDATION_ERROR', 'Performance ID is required.');
+    throwCodedError('VALIDATION_ERROR', 'Performance row key is required.');
   }
 
-  requireExistingPerformanceWrite(id, user);
+  requirePerformanceWrite(existing, user);
   return {
     item: savePerformanceRow(payload, user, false)
   };
@@ -49,15 +51,18 @@ function savePerformanceRow(payload, user, isCreate) {
   }
 
   headers.forEach(function (header) {
-    if (source[header] !== undefined) {
-      data[header] = source[header];
+    const value = getPerformanceSourceValue(source, header);
+    if (value !== undefined) {
+      data[header] = value;
     }
   });
 
   autofillPerformanceFromAffiliate(data, source, user, headers);
-  setIfHeaderExists(data, headers, ['Performance_ID'], safeString(source.Performance_ID) || nextSheetId(SHEET_NAMES.MONTHLY_PERFORMANCE, 'Performance_ID', 'PERF', 4), isCreate);
+  if (headers.indexOf('Performance_ID') !== -1 && isCreate) {
+    setIfHeaderExists(data, headers, ['Performance_ID'], safeString(source.Performance_ID) || nextSheetId(SHEET_NAMES.MONTHLY_PERFORMANCE, 'Performance_ID', 'PERF', 4), true);
+  }
   setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(data.Date || source.Date || source.Month), true);
-  setIfHeaderExists(data, headers, ['Conversion_Rate'], calculateConversionRate(data.FTD || source.FTD, data.Active_Players || source.Active_Players), true);
+  setIfHeaderExists(data, headers, ['Conversion_Rate', 'Growth_Percent'], calculateConversionRate(data.FTD || source.FTD, data.Active_Players || source.Active_Players), false);
   setIfHeaderExists(data, headers, ['Updated_By'], getUserDisplayName(user), true);
   setIfHeaderExists(data, headers, ['Updated_At'], getTimestamp(), true);
 
@@ -67,11 +72,36 @@ function savePerformanceRow(payload, user, isCreate) {
     appendSheetObject(SHEET_NAMES.MONTHLY_PERFORMANCE, data);
     saved = data;
   } else {
-    saved = updateSheetObjectByKey(SHEET_NAMES.MONTHLY_PERFORMANCE, 'Performance_ID', safeString(source.Performance_ID), data);
+    saved = updatePerformanceSheetRow(source, data, headers);
   }
 
   logActivity(user, isCreate ? 'create' : 'update', 'Performance', safeString(saved.Performance_ID), buildActivitySummary('Performance', saved, isCreate ? 'created' : 'updated'));
   return saved;
+}
+
+function getPerformanceSourceValue(source, header) {
+  const aliases = {
+    Date: ['Date'],
+    Month: ['Month', 'Date'],
+    Revenue_NGR: ['Revenue_NGR', 'NGR', 'Revenue'],
+    NGR: ['NGR', 'Revenue_NGR', 'Revenue'],
+    Notes: ['Notes', 'Remarks'],
+    Remarks: ['Remarks', 'Notes'],
+    Conversion_Rate: ['Conversion_Rate', 'Growth_Percent'],
+    Growth_Percent: ['Growth_Percent', 'Conversion_Rate'],
+    Deposit_Amount: ['Deposit_Amount', 'Deposits'],
+    Deposits: ['Deposits', 'Deposit_Amount']
+  };
+  const keys = aliases[header] || [header];
+  var index;
+
+  for (index = 0; index < keys.length; index += 1) {
+    if (source[keys[index]] !== undefined) {
+      return source[keys[index]];
+    }
+  }
+
+  return undefined;
 }
 
 function autofillPerformanceFromAffiliate(data, source, user, headers) {
@@ -99,16 +129,78 @@ function requirePerformanceWrite(payload, user) {
   throwCodedError('FORBIDDEN', 'You can only update performance for assigned affiliates.');
 }
 
-function requireExistingPerformanceWrite(performanceId, user) {
+function getPerformanceUpdateKey(payload) {
+  return safeString(payload && payload.Performance_ID) || [
+    safeString(payload && (payload.Month || derivePerformanceMonth(payload.Date))),
+    safeString(payload && payload.Affiliate_ID),
+    safeString(payload && payload.Brand)
+  ].join('|');
+}
+
+function getExistingPerformanceForUpdate(payload) {
+  const id = safeString(payload && payload.Performance_ID);
+  const month = safeString(payload && (payload.Month || derivePerformanceMonth(payload.Date)));
+  const affiliateId = safeString(payload && payload.Affiliate_ID);
+  const brand = safeString(payload && payload.Brand);
   const row = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE).filter(function (item) {
-    return safeString(item.Performance_ID) === safeString(performanceId);
+    if (id && safeString(item.Performance_ID) === id) {
+      return true;
+    }
+    return month && affiliateId && safeString(item.Affiliate_ID) === affiliateId && safeString(item.Month || derivePerformanceMonth(item.Date)) === month && (!brand || safeString(item.Brand) === brand);
   })[0];
 
   if (!row) {
     throwCodedError('NOT_FOUND', 'Performance row was not found.');
   }
 
-  requirePerformanceWrite(row, user);
+  return row;
+}
+
+function updatePerformanceSheetRow(source, data, headers) {
+  if (headers.indexOf('Performance_ID') !== -1 && safeString(source.Performance_ID)) {
+    return updateSheetObjectByKey(SHEET_NAMES.MONTHLY_PERFORMANCE, 'Performance_ID', safeString(source.Performance_ID), data);
+  }
+
+  return updatePerformanceSheetRowByComposite(source, data, headers);
+}
+
+function updatePerformanceSheetRowByComposite(source, data, headers) {
+  const sheet = getSheetByName(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const values = sheet.getDataRange().getValues();
+  const headerMap = {};
+  const month = safeString(source.Month || derivePerformanceMonth(source.Date));
+  const affiliateId = safeString(source.Affiliate_ID);
+  const brand = safeString(source.Brand);
+  var rowIndex;
+
+  headers.forEach(function (header, index) {
+    headerMap[header] = index;
+  });
+
+  if (!month || !affiliateId) {
+    throwCodedError('VALIDATION_ERROR', 'Month and Affiliate ID are required for performance update.');
+  }
+
+  for (rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+    const row = values[rowIndex];
+    const rowMonth = normalizeSheetValue(row[headerMap.Month]) || derivePerformanceMonth(normalizeSheetValue(row[headerMap.Date]));
+    const rowAffiliate = normalizeSheetValue(row[headerMap.Affiliate_ID]);
+    const rowBrand = normalizeSheetValue(row[headerMap.Brand]);
+
+    if (safeString(rowMonth) === month && safeString(rowAffiliate) === affiliateId && (!brand || safeString(rowBrand) === brand)) {
+      headers.forEach(function (header, columnIndex) {
+        if (header && data[header] !== undefined) {
+          sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(data[header]);
+        }
+      });
+
+      return readSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE).filter(function (item) {
+        return safeString(item.Affiliate_ID) === affiliateId && safeString(item.Month || derivePerformanceMonth(item.Date)) === month && (!brand || safeString(item.Brand) === brand);
+      })[0] || data;
+    }
+  }
+
+  throwCodedError('NOT_FOUND', 'Performance row was not found.');
 }
 
 function getAffiliateForPerformance(affiliateId) {
@@ -119,6 +211,17 @@ function getAffiliateForPerformance(affiliateId) {
 
 function validatePerformancePayload(data, headers) {
   const missing = [];
+  const hasMonthOrDate = headers.indexOf('Month') === -1 && headers.indexOf('Date') === -1 ? true : Boolean(safeString(data.Month) || safeString(data.Date));
+  const hasRevenue = headers.indexOf('Revenue_NGR') === -1 && headers.indexOf('NGR') === -1 ? true : Boolean(safeString(data.Revenue_NGR) || safeString(data.NGR));
+
+  if (!hasMonthOrDate) {
+    missing.push(headers.indexOf('Month') !== -1 ? 'Month' : 'Date');
+  }
+
+  if (!hasRevenue) {
+    missing.push(headers.indexOf('NGR') !== -1 ? 'NGR' : 'Revenue_NGR');
+  }
+
   PERFORMANCE_REQUIRED_HEADERS.forEach(function (field) {
     if (headers.indexOf(field) !== -1 && !safeString(data[field])) {
       missing.push(field);
@@ -136,12 +239,23 @@ function getPerformanceHeaderStatus() {
   return {
     found: headers.length > 0,
     headers: headers,
-    requiredHeaders: PERFORMANCE_REQUIRED_HEADERS,
+    requiredHeaders: ['Month or Date'].concat(PERFORMANCE_REQUIRED_HEADERS).concat(['Revenue_NGR or NGR']),
     optionalHeaders: PERFORMANCE_OPTIONAL_HEADERS,
-    missingRequiredHeaders: PERFORMANCE_REQUIRED_HEADERS.filter(function (header) { return headers.indexOf(header) === -1; }),
+    missingRequiredHeaders: getMissingPerformanceRequiredHeaders(headers),
     missingOptionalHeaders: PERFORMANCE_OPTIONAL_HEADERS.filter(function (header) { return headers.indexOf(header) === -1; }),
     supportedHeaders: expected.filter(function (header) { return headers.indexOf(header) !== -1; })
   };
+}
+
+function getMissingPerformanceRequiredHeaders(headers) {
+  const missing = PERFORMANCE_REQUIRED_HEADERS.filter(function (header) { return headers.indexOf(header) === -1; });
+  if (headers.indexOf('Month') === -1 && headers.indexOf('Date') === -1) {
+    missing.push('Month or Date');
+  }
+  if (headers.indexOf('Revenue_NGR') === -1 && headers.indexOf('NGR') === -1) {
+    missing.push('Revenue_NGR or NGR');
+  }
+  return missing;
 }
 
 function normalizePerformanceRows(rows) {
@@ -149,10 +263,14 @@ function normalizePerformanceRows(rows) {
     const item = copyRow(row);
     if (!safeString(item.Month)) {
       item.Month = derivePerformanceMonth(item.Date || item.Performance_Month || item.Period);
+    } else {
+      item.Month = derivePerformanceMonth(item.Month);
     }
     if (!safeString(item.Conversion_Rate)) {
-      item.Conversion_Rate = calculateConversionRate(item.FTD, item.Active_Players);
+      item.Conversion_Rate = item.Growth_Percent || calculateConversionRate(item.FTD, item.Active_Players);
     }
+    item.Revenue_NGR = firstDefinedPerformance(item.Revenue_NGR, item.NGR, item.Revenue);
+    item.Notes = firstDefinedPerformance(item.Notes, item.Remarks);
     return item;
   });
 }
@@ -170,9 +288,19 @@ function buildPerformanceSummary(rows) {
     totalFtd: ftd,
     activePlayers: activePlayers,
     depositAmount: sumPerformanceNumber(source, ['Deposit_Amount', 'Deposit Amount']),
-    revenueNgr: sumPerformanceNumber(source, ['Revenue_NGR', 'Revenue', 'NGR', 'Net_Gaming_Revenue']),
+    revenueNgr: sumPerformanceNumber(source, ['Revenue_NGR', 'NGR', 'Revenue', 'Net_Gaming_Revenue']),
     averageConversion: activePlayers ? roundNumber(ftd / activePlayers, 4) : ''
   };
+}
+
+function firstDefinedPerformance() {
+  var index;
+  for (index = 0; index < arguments.length; index += 1) {
+    if (safeString(arguments[index])) {
+      return arguments[index];
+    }
+  }
+  return '';
 }
 
 function sumPerformanceNumber(rows, keys) {
@@ -193,6 +321,9 @@ function calculateConversionRate(ftdValue, activeValue) {
 
 function derivePerformanceMonth(value) {
   const raw = safeString(value);
+  if (/^\d{4}-\d{2}/.test(raw)) {
+    return raw.slice(0, 7);
+  }
   const date = raw ? new Date(raw) : new Date();
   if (!isNaN(date.getTime())) {
     return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2);

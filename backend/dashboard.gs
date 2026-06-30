@@ -367,27 +367,27 @@ function normalizeTaskRow(row) {
 function buildMonthlyPerformance(rows) {
   return rows.slice(0).sort(newestFirst).slice(0, 8).map(function (row) {
     return {
-      month: safeString(getFirstValue(row, ['Month', 'Performance_Month', 'Period'])),
+      month: derivePerformanceMonth(getFirstValue(row, ['Month', 'Date', 'Performance_Month', 'Period'])),
       brand: safeString(getFirstValue(row, ['Brand', 'Brand_Name', 'Brand Name'])),
       affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID'])),
       ftd: getOptionalNumber(row, ['FTD', 'FTDs', 'First_Time_Depositors']),
       activePlayers: getOptionalNumber(row, ['Active_Players', 'Active Players']),
       deposits: getOptionalNumber(row, ['Deposit_Amount', 'Deposit Amount']),
-      revenue: getOptionalNumber(row, ['Revenue_NGR', 'Revenue', 'NGR', 'Net_Gaming_Revenue', 'Commission']),
-      growth: safeString(getFirstValue(row, ['Growth', 'Growth_Rate', 'MoM_Growth']))
+      revenue: getOptionalNumber(row, ['Revenue_NGR', 'NGR', 'Revenue', 'Net_Gaming_Revenue', 'Commission']),
+      growth: safeString(getFirstValue(row, ['Growth_Percent', 'Conversion_Rate', 'Growth', 'Growth_Rate', 'MoM_Growth']))
     };
   });
 }
 
 function buildTopPerformanceAffiliates(rows) {
   return rows.slice(0).sort(function (a, b) {
-    return Number(getFirstValue(b, ['Revenue_NGR', 'Revenue', 'NGR']) || 0) - Number(getFirstValue(a, ['Revenue_NGR', 'Revenue', 'NGR']) || 0);
+    return Number(getFirstValue(b, ['Revenue_NGR', 'NGR', 'Revenue']) || 0) - Number(getFirstValue(a, ['Revenue_NGR', 'NGR', 'Revenue']) || 0);
   }).slice(0, 5).map(function (row) {
     return {
       affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate_ID'])),
       brand: safeString(getFirstValue(row, ['Brand'])),
       ftd: getOptionalNumber(row, ['FTD']),
-      revenue: getOptionalNumber(row, ['Revenue_NGR', 'Revenue', 'NGR'])
+      revenue: getOptionalNumber(row, ['Revenue_NGR', 'NGR', 'Revenue'])
     };
   });
 }
@@ -428,7 +428,7 @@ function buildStaffPerformanceSummary(rows) {
     map[staff].rows += 1;
     map[staff].ftd += Number(getFirstValue(row, ['FTD']) || 0) || 0;
     map[staff].activePlayers += Number(getFirstValue(row, ['Active_Players', 'Active Players']) || 0) || 0;
-    map[staff].revenue += Number(getFirstValue(row, ['Revenue_NGR', 'Revenue', 'NGR']) || 0) || 0;
+    map[staff].revenue += Number(getFirstValue(row, ['Revenue_NGR', 'NGR', 'Revenue']) || 0) || 0;
   });
   return objectValues(map).sort(function (a, b) {
     return b.revenue - a.revenue;
