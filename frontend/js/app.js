@@ -1027,11 +1027,29 @@
   }
 
   function metricValue(data, key) {
+    var summaryFallbacks = {
+      thisMonthFtd: ['totalFtd', 'ftd'],
+      activePlayers: ['activePlayers'],
+      revenueNgr: ['revenueNgr', 'revenue', 'ngr'],
+      depositAmount: ['depositAmount'],
+      commission: ['commission'],
+      growth: ['growth', 'averageConversion']
+    };
+    var fallbackKeys;
+    var index;
+
     if (data && data[key] !== null && data[key] !== undefined && data[key] !== '') {
       return data[key];
     }
 
-    return 'N/A';
+    fallbackKeys = summaryFallbacks[key] || [];
+    for (index = 0; index < fallbackKeys.length; index += 1) {
+      if (data && data.performanceSummary && data.performanceSummary[fallbackKeys[index]] !== null && data.performanceSummary[fallbackKeys[index]] !== undefined && data.performanceSummary[fallbackKeys[index]] !== '') {
+        return data.performanceSummary[fallbackKeys[index]];
+      }
+    }
+
+    return 0;
   }
 
   function renderDashboard(data) {

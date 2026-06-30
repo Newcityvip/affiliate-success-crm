@@ -278,17 +278,20 @@ function normalizePerformanceRows(rows) {
 function buildPerformanceSummary(rows) {
   const monthKey = currentMonthKey();
   const thisMonth = (rows || []).filter(function (row) {
-    return safeString(row.Month || derivePerformanceMonth(row.Date)) === monthKey;
+    return derivePerformanceMonth(getFirstValue(row, ['Month', 'Date', 'Performance_Month', 'Period'])) === monthKey;
   });
   const source = thisMonth.length ? thisMonth : (rows || []);
   const activePlayers = sumPerformanceNumber(source, ['Active_Players', 'Active Players']);
   const ftd = sumPerformanceNumber(source, ['FTD', 'FTDs']);
+  const growthValues = getPerformanceNumberValues(source, ['Growth_Percent', 'Conversion_Rate', 'Growth', 'Growth_Rate', 'MoM_Growth']);
   return {
     month: monthKey,
     totalFtd: ftd,
     activePlayers: activePlayers,
     depositAmount: sumPerformanceNumber(source, ['Deposit_Amount', 'Deposit Amount']),
     revenueNgr: sumPerformanceNumber(source, ['Revenue_NGR', 'NGR', 'Revenue', 'Net_Gaming_Revenue']),
+    commission: sumPerformanceNumber(source, ['Commission']),
+    growth: growthValues.length ? roundNumber(sumArray(growthValues) / growthValues.length, 4) : '',
     averageConversion: activePlayers ? roundNumber(ftd / activePlayers, 4) : ''
   };
 }
@@ -305,8 +308,31 @@ function firstDefinedPerformance() {
 
 function sumPerformanceNumber(rows, keys) {
   return (rows || []).reduce(function (sum, row) {
-    const value = Number(getFirstValue(row, keys) || 0);
+    const value = parsePerformanceNumber(getFirstValue(row, keys));
     return sum + (isNaN(value) ? 0 : value);
+  }, 0);
+}
+
+function getPerformanceNumberValues(rows, keys) {
+  return (rows || []).map(function (row) {
+    return parsePerformanceNumber(getFirstValue(row, keys));
+  }).filter(function (value) {
+    return !isNaN(value);
+  });
+}
+
+function parsePerformanceNumber(value) {
+  const raw = safeString(value);
+  const cleaned = raw.replace(/[$,%\s,]/g, '');
+  if (!cleaned) {
+    return NaN;
+  }
+  return Number(cleaned);
+}
+
+function sumArray(values) {
+  return (values || []).reduce(function (sum, value) {
+    return sum + value;
   }, 0);
 }
 

@@ -12,7 +12,7 @@ function getDashboardSummary(user) {
   const rawStaff = safeReadSheetObjects(SHEET_NAMES.STAFF_LIST);
   const rawActivity = safeReadSheetObjects(SHEET_NAMES.ACTIVITY_LOG);
   const rawInteractions = safeReadSheetObjects(SHEET_NAMES.INTERACTION_LOG);
-  const rawPerformance = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const rawPerformance = normalizePerformanceRows(safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE));
   const affiliates = filterAffiliatesForUser(rawAffiliates, user);
   const followups = enrichDashboardFollowups(filterRowsForUser(rawFollowups, user), rawAffiliates);
   const tasks = filterRowsForUser(rawTasks, user);
@@ -56,7 +56,9 @@ function getDashboardSummary(user) {
   summary.thisMonthFtd = performanceSummary.totalFtd;
   summary.activePlayers = performanceSummary.activePlayers;
   summary.revenueNgr = performanceSummary.revenueNgr;
+  summary.commission = performanceSummary.commission;
   summary.depositAmount = performanceSummary.depositAmount;
+  summary.growth = performanceSummary.growth;
 
   summary.todayWorkspace = {
     dueToday: summary.todayFollowups,
