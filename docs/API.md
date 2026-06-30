@@ -73,6 +73,7 @@ interactions
 tasks
 issues
 performance
+getPerformance
 leaderboard
 reports
 staff
@@ -98,6 +99,10 @@ createBrand
 updateBrand
 createStaff
 updateStaff
+createPerformance
+updatePerformance
+importPerformanceCsvPreview
+importPerformanceCsvCommit
 validateSheets
 ```
 
@@ -287,9 +292,67 @@ Reads rows from `Issue_Log`.
 
 Reads rows from `Interaction_Log`.
 
-### `?action=performance`
+### `?action=performance` / `?action=getPerformance`
 
-Reads rows from `Monthly_Performance`.
+Reads scoped rows from `Monthly_Performance`. Admin and Super Admin receive all rows; Staff receive only assigned performance rows where staff ownership columns allow matching. The response includes `items`, `count`, `summary`, and `headerStatus`.
+
+Supported `Monthly_Performance` headers:
+
+```text
+Performance_ID
+Date
+Month
+Brand
+Affiliate_ID
+Affiliate_Name
+Assigned_Staff
+FTD
+Active_Players
+Deposit_Amount
+Revenue_NGR
+Commission
+Conversion_Rate
+Status
+Notes
+Updated_By
+Updated_At
+```
+
+The backend reads old or partial headers safely and writes only matching headers.
+
+### `?action=createPerformance`
+
+Creates one performance row in `Monthly_Performance`. Required fields when matching headers exist:
+
+```text
+Date, Brand, Affiliate_ID, FTD, Active_Players, Deposit_Amount, Revenue_NGR
+```
+
+`Performance_ID`, `Month`, `Conversion_Rate`, `Updated_By`, and `Updated_At` are generated or calculated when those headers exist.
+
+### `?action=updatePerformance`
+
+Updates one performance row by `Performance_ID`. Staff can update only rows assigned to them or assigned affiliates.
+
+### `?action=importPerformanceCsvPreview`
+
+Admin/Super Admin only. Validates performance CSV rows without writing to Sheets.
+
+Required CSV headers:
+
+```text
+Date, Brand, Affiliate_ID, FTD, Active_Players, Deposit_Amount, Revenue_NGR
+```
+
+Optional CSV headers:
+
+```text
+Affiliate_Name, Assigned_Staff, Commission, Status, Notes
+```
+
+### `?action=importPerformanceCsvCommit`
+
+Admin/Super Admin only. Commits valid rows from a previewable performance CSV. Invalid rows are skipped.
 
 ### `?action=reports`
 
@@ -407,6 +470,10 @@ Admin, Super Admin, and scoped Staff users can write daily workspace records:
 ?action=rescheduleFollowup
 ?action=importCsvPreview
 ?action=importCsvCommit
+?action=createPerformance
+?action=updatePerformance
+?action=importPerformanceCsvPreview
+?action=importPerformanceCsvCommit
 ```
 
 Staff writes are allowed only for their assigned workspace or assigned affiliates. Staff cannot create global affiliates, brands, or staff records.

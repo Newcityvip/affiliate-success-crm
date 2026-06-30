@@ -197,6 +197,9 @@
     performance: function () {
       return request('performance');
     },
+    getPerformance: function () {
+      return request('getPerformance');
+    },
     staff: function () {
       return request('staff');
     },
@@ -280,6 +283,18 @@
     },
     importCsvCommit: function (data) {
       return write('importCsvCommit', data);
+    },
+    createPerformance: function (data) {
+      return write('createPerformance', data);
+    },
+    updatePerformance: function (data) {
+      return write('updatePerformance', data);
+    },
+    importPerformanceCsvPreview: function (data) {
+      return write('importPerformanceCsvPreview', data);
+    },
+    importPerformanceCsvCommit: function (data) {
+      return write('importPerformanceCsvCommit', data);
     }
   });
 })(window);

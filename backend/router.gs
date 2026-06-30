@@ -25,6 +25,7 @@ function handleRequest(e, method) {
     'issues',
     'interactions',
     'performance',
+    'getperformance',
     'reports',
     'leaderboard',
     'settings',
@@ -51,7 +52,11 @@ function handleRequest(e, method) {
     'createstaff',
     'updatestaff',
     'importcsvpreview',
-    'importcsvcommit'
+    'importcsvcommit',
+    'createperformance',
+    'updateperformance',
+    'importperformancecsvpreview',
+    'importperformancecsvcommit'
   ];
   const writeActions = [
     'createfollowup',
@@ -76,7 +81,11 @@ function handleRequest(e, method) {
     'createstaff',
     'updatestaff',
     'importcsvpreview',
-    'importcsvcommit'
+    'importcsvcommit',
+    'createperformance',
+    'updateperformance',
+    'importperformancecsvpreview',
+    'importperformancecsvcommit'
   ];
   var user = null;
 
@@ -252,6 +261,22 @@ function handleRequest(e, method) {
       return successResponse(importCsvCommit(getRequestPayload(e), user), 'CSV import committed.');
     }
 
+    if (action === 'createperformance') {
+      return successResponse(createPerformance(getRequestPayload(e), user), 'Performance row saved.');
+    }
+
+    if (action === 'updateperformance') {
+      return successResponse(updatePerformance(getRequestPayload(e), user), 'Performance row updated.');
+    }
+
+    if (action === 'importperformancecsvpreview') {
+      return successResponse(importPerformanceCsvPreview(getRequestPayload(e), user), 'Performance CSV preview generated.');
+    }
+
+    if (action === 'importperformancecsvcommit') {
+      return successResponse(importPerformanceCsvCommit(getRequestPayload(e), user), 'Performance CSV import committed.');
+    }
+
     if (action === 'tasks') {
       return successResponse(getTasks(user), 'Tasks loaded.');
     }
@@ -264,7 +289,7 @@ function handleRequest(e, method) {
       return successResponse(getInteractions(user), 'Interactions loaded.');
     }
 
-    if (action === 'performance') {
+    if (action === 'performance' || action === 'getperformance') {
       return successResponse(getPerformance(user), 'Performance loaded.');
     }
 

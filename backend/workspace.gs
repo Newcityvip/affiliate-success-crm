@@ -60,6 +60,7 @@ function getSettingsSummary(user) {
   }
 
   const validation = safeValidateRequiredSheets();
+  const performanceHeaders = getPerformanceHeaderStatus();
   return {
     profile: sanitizeUser(user || {}),
     apiStatus: 'Connected',
@@ -69,6 +70,7 @@ function getSettingsSummary(user) {
     secretsVisible: false,
     editableSettings: false,
     sheetHealth: validation,
+    performanceHeaderStatus: performanceHeaders,
     items: [
       {
         label: 'API status',
@@ -85,6 +87,10 @@ function getSettingsSummary(user) {
       {
         label: 'Sheet health',
         value: validation.valid ? 'All required sheets found' : 'Missing sheets: ' + validation.missing.join(', ')
+      },
+      {
+        label: 'Performance headers',
+        value: performanceHeaders.missingRequiredHeaders.length ? 'Missing required headers: ' + performanceHeaders.missingRequiredHeaders.join(', ') : 'Required performance headers ready'
       },
       {
         label: 'Editable settings',

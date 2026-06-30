@@ -99,6 +99,14 @@ This repository currently contains the Sprint 0 foundation, Sprint 1 frontend UI
 - Admin CSV import foundation is available for Affiliates, Follow-ups, Tasks, Issues, Interactions, Staff, and Brands with sample CSV download, preview validation, and commit confirmation.
 - Staff users keep a scoped daily workspace with admin-only actions and imports hidden.
 
+## Performance Tracking Notes
+
+- `Monthly_Performance` now supports read/write performance tracking for FTD, active players, deposits, Revenue/NGR, commission, conversion, status, and notes.
+- Staff users can create or update performance only for affiliates assigned to them unless their role can view all records.
+- Admin and Super Admin users can create/update all performance rows and import performance CSV files with preview validation before commit.
+- The frontend Performance page includes KPI cards, filters, a performance table, manual update workflow, and admin-only `Bulk Performance` import.
+- The app writes only headers that already exist in `Monthly_Performance`; missing optional headers are skipped safely and missing required headers are reported through Settings/debug responses.
+
 ## Deployment Plan
 
 1. Deploy the Apps Script backend as a web app.
@@ -134,6 +142,7 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 - `?action=issues`
 - `?action=interactions`
 - `?action=performance`
+- `?action=getPerformance`
 - `?action=staff`
 - `?action=brands`
 - `?action=reports`
@@ -161,5 +170,9 @@ GitHub Pages should serve `docs/index.html`. The copied frontend uses relative p
 - `?action=updateStaff`
 - `?action=importCsvPreview`
 - `?action=importCsvCommit`
+- `?action=createPerformance`
+- `?action=updatePerformance`
+- `?action=importPerformanceCsvPreview`
+- `?action=importPerformanceCsvCommit`
 
 See [docs/API.md](docs/API.md) for the response shape and foundation endpoint details.

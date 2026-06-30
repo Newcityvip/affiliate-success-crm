@@ -29,6 +29,7 @@ function getDashboardSummary(user) {
   const openTasks = filterOpenRows(tasks);
   const openIssues = filterOpenRows(issues);
   const recentActivity = buildRecentActivity(activity, interactions);
+  const performanceSummary = buildPerformanceSummary(performance);
   const summary = {
     currentUser: sanitizeUser(user || {}),
     workspaceMode: isAdminUser(user) ? 'admin' : 'staff',
@@ -51,6 +52,12 @@ function getDashboardSummary(user) {
     recentInteractions: recentActivity.length
   };
 
+  summary.performanceSummary = performanceSummary;
+  summary.thisMonthFtd = performanceSummary.totalFtd;
+  summary.activePlayers = performanceSummary.activePlayers;
+  summary.revenueNgr = performanceSummary.revenueNgr;
+  summary.depositAmount = performanceSummary.depositAmount;
+
   summary.todayWorkspace = {
     dueToday: summary.todayFollowups,
     overdue: summary.overdueFollowups,
@@ -71,6 +78,9 @@ function getDashboardSummary(user) {
   summary.priorityDistribution = priorityDistribution;
   summary.brandSummary = buildBrandSummary(brands, affiliates, followups);
   summary.staffWorkload = buildStaffWorkload(staff, followups, tasks, issues);
+  summary.staffPerformance = buildStaffPerformanceSummary(performance);
+  summary.topAffiliates = buildTopPerformanceAffiliates(performance);
+  summary.lowPerformanceAffiliates = buildLowPerformanceAffiliates(affiliates, performance);
   summary.recentActivity = recentActivity.slice(0, 8);
   summary.upcomingFollowupsList = topRows(followupGroups.upcoming, 8, followupSort);
   summary.openIssuesList = topRows(openIssues.map(normalizeIssueRow), 8, newestFirst);
@@ -361,10 +371,68 @@ function buildMonthlyPerformance(rows) {
       brand: safeString(getFirstValue(row, ['Brand', 'Brand_Name', 'Brand Name'])),
       affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID'])),
       ftd: getOptionalNumber(row, ['FTD', 'FTDs', 'First_Time_Depositors']),
-      revenue: getOptionalNumber(row, ['Revenue', 'NGR', 'Net_Gaming_Revenue', 'Commission']),
+      activePlayers: getOptionalNumber(row, ['Active_Players', 'Active Players']),
+      deposits: getOptionalNumber(row, ['Deposit_Amount', 'Deposit Amount']),
+      revenue: getOptionalNumber(row, ['Revenue_NGR', 'Revenue', 'NGR', 'Net_Gaming_Revenue', 'Commission']),
       growth: safeString(getFirstValue(row, ['Growth', 'Growth_Rate', 'MoM_Growth']))
     };
   });
+}
+
+function buildTopPerformanceAffiliates(rows) {
+  return rows.slice(0).sort(function (a, b) {
+    return Number(getFirstValue(b, ['Revenue_NGR', 'Revenue', 'NGR']) || 0) - Number(getFirstValue(a, ['Revenue_NGR', 'Revenue', 'NGR']) || 0);
+  }).slice(0, 5).map(function (row) {
+    return {
+      affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate_ID'])),
+      brand: safeString(getFirstValue(row, ['Brand'])),
+      ftd: getOptionalNumber(row, ['FTD']),
+      revenue: getOptionalNumber(row, ['Revenue_NGR', 'Revenue', 'NGR'])
+    };
+  });
+}
+
+function buildLowPerformanceAffiliates(affiliates, performance) {
+  const seen = {};
+  performance.forEach(function (row) {
+    const id = safeString(row.Affiliate_ID);
+    if (id) {
+      seen[id] = true;
+    }
+  });
+  return affiliates.filter(function (affiliate) {
+    const id = safeString(affiliate.Affiliate_ID);
+    return id && !seen[id];
+  }).slice(0, 8).map(function (affiliate) {
+    return {
+      affiliate: safeString(getFirstValue(affiliate, ['Affiliate_Name', 'Affiliate_ID'])),
+      brand: safeString(getFirstValue(affiliate, ['Brand'])),
+      assignedStaff: safeString(getAssignedStaff(affiliate))
+    };
+  });
+}
+
+function buildStaffPerformanceSummary(rows) {
+  const map = {};
+  rows.forEach(function (row) {
+    const staff = safeString(getAssignedStaff(row)) || 'Unassigned';
+    if (!map[staff]) {
+      map[staff] = {
+        staff: staff,
+        ftd: 0,
+        activePlayers: 0,
+        revenue: 0,
+        rows: 0
+      };
+    }
+    map[staff].rows += 1;
+    map[staff].ftd += Number(getFirstValue(row, ['FTD']) || 0) || 0;
+    map[staff].activePlayers += Number(getFirstValue(row, ['Active_Players', 'Active Players']) || 0) || 0;
+    map[staff].revenue += Number(getFirstValue(row, ['Revenue_NGR', 'Revenue', 'NGR']) || 0) || 0;
+  });
+  return objectValues(map).sort(function (a, b) {
+    return b.revenue - a.revenue;
+  }).slice(0, 8);
 }
 
 function buildWorkspaceWarnings(summary) {

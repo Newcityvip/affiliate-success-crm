@@ -18,7 +18,10 @@
     completedFollowups: 'Live API data',
     upcomingFollowups: 'Live API data',
     activeBrands: 'Live API data',
-    staffMembers: 'Live API data'
+    staffMembers: 'Live API data',
+    thisMonthFtd: 'Live performance data',
+    activePlayers: 'Live performance data',
+    revenueNgr: 'Live performance data'
   };
 
   var affiliateColumns = [
@@ -147,6 +150,19 @@
       },
       fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Market_Channel', 'Interaction_Type', 'Notes', 'Status']
     },
+    performance: {
+      title: 'Update Performance',
+      api: 'createPerformance',
+      updateApi: 'updatePerformance',
+      idKey: 'Performance_ID',
+      required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR'],
+      sections: {
+        'Affiliate': ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff'],
+        'Monthly Metrics': ['Date', 'Month', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission'],
+        'Status & Notes': ['Status', 'Notes']
+      },
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Date', 'Month', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission', 'Status', 'Notes']
+    },
     brand: {
       title: 'New Brand',
       api: 'createBrand',
@@ -194,7 +210,14 @@
     Permission_Level: 'Permission level',
     Can_View_All: 'Can view all',
     Brand_Name: 'Brand name',
-    Interaction_Type: 'Interaction type'
+    Interaction_Type: 'Interaction type',
+    Performance_ID: 'Performance ID',
+    Active_Players: 'Active players',
+    Deposit_Amount: 'Deposit amount',
+    Revenue_NGR: 'Revenue/NGR',
+    Conversion_Rate: 'Conversion rate',
+    Updated_By: 'Updated by',
+    Updated_At: 'Updated at'
   };
   var csvConfigs = {
     affiliate: {
@@ -216,6 +239,11 @@
     interaction: {
       title: 'Import Interactions',
       required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
+    },
+    performance: {
+      title: 'Import Performance',
+      required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR'],
+      optional: ['Affiliate_Name', 'Assigned_Staff', 'Commission', 'Status', 'Notes']
     },
     staff: {
       title: 'Import Staff',
@@ -322,24 +350,36 @@
     performance: {
       api: 'performance',
       itemName: 'performance rows',
-      search: ['Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue', 'NGR', 'Commission'],
+      search: ['Date', 'Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue_NGR', 'Revenue', 'NGR', 'Commission', 'Status'],
       filters: [
         { label: 'Month', key: 'Month', fallback: ['Performance_Month', 'Period'] },
         { label: 'Brand', key: 'Brand' },
-        { label: 'Staff', key: 'Assigned_Staff', fallback: ['Staff'] }
+        { label: 'Staff', key: 'Assigned_Staff', fallback: ['Staff'] },
+        { label: 'Affiliate', key: 'Affiliate_ID', fallback: ['Affiliate_Name'] },
+        { label: 'Status', key: 'Status' }
       ],
       stats: [
-        { label: 'Rows', type: 'total' },
-        { label: 'Brands', type: 'unique', keys: ['Brand'] },
-        { label: 'Affiliates', type: 'unique', keys: ['Affiliate_Name', 'Affiliate_ID'] }
+        { label: 'Total FTD', type: 'sum', keys: ['FTD', 'FTDs'] },
+        { label: 'Active Players', type: 'sum', keys: ['Active_Players', 'Active Players'] },
+        { label: 'Deposit Amount', type: 'sum', keys: ['Deposit_Amount', 'Deposit Amount'] },
+        { label: 'Revenue/NGR', type: 'sum', keys: ['Revenue_NGR', 'Revenue', 'NGR'] },
+        { label: 'Avg Conversion', type: 'avgConversion' }
       ],
       columns: [
+        { label: 'Date', keys: ['Date'], format: 'date' },
         { label: 'Month', keys: ['Month', 'Performance_Month', 'Period'] },
         { label: 'Brand', keys: ['Brand'] },
         { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
         { label: 'FTD', keys: ['FTD', 'FTDs'] },
-        { label: 'Revenue/NGR', keys: ['Revenue', 'NGR', 'Commission'] },
-        { label: 'Growth', keys: ['Growth', 'Growth_Rate'] }
+        { label: 'Active Players', keys: ['Active_Players', 'Active Players'] },
+        { label: 'Deposits', keys: ['Deposit_Amount', 'Deposit Amount'] },
+        { label: 'Revenue/NGR', keys: ['Revenue_NGR', 'Revenue', 'NGR'] },
+        { label: 'Conversion', keys: ['Conversion_Rate'] },
+        { label: 'Status', keys: ['Status'], badge: 'Status' },
+        { label: 'Updated', keys: ['Updated_At'], format: 'date' }
+      ],
+      actions: [
+        { label: 'Update', form: 'performance' }
       ]
     },
     staff: {
@@ -806,7 +846,7 @@
 
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
       var action = button.dataset.quickAction;
-      if (!isAdminUser() && ['affiliate', 'task', 'issue'].indexOf(action) !== -1) {
+      if (!isAdminUser() && ['affiliate', 'task'].indexOf(action) !== -1) {
         button.hidden = true;
         return;
       }
@@ -815,6 +855,12 @@
       }
       if (!isAdminUser() && action === 'interaction') {
         button.textContent = 'Log Interaction';
+      }
+      if (!isAdminUser() && action === 'performance') {
+        button.textContent = 'Update Performance';
+      }
+      if (!isAdminUser() && action === 'issue') {
+        button.textContent = 'Report Issue';
       }
     });
 
@@ -829,6 +875,9 @@
       var action = button.dataset.moduleAction;
       if (!isAdminUser() && action === 'interaction') {
         button.textContent = 'Log Interaction';
+      }
+      if (!isAdminUser() && action === 'performance') {
+        button.textContent = 'Update Performance';
       }
     });
 
@@ -846,6 +895,7 @@
         footer.textContent = 'My assigned affiliate work, follow-ups, tasks, and issues.';
       }
       setStaffEmptyCopy();
+      renderStaffSopPanel();
     }
   }
 
@@ -866,6 +916,30 @@
     utils.setText(followupEmpty, 'No assigned follow-ups. Check My Affiliates or wait for admin assignment.');
     utils.setText(taskEmpty, 'No assigned tasks.');
     utils.setText(issueEmpty, 'No assigned issues.');
+  }
+
+  function renderStaffSopPanel() {
+    var workspace = utils.qs('[data-section="dashboard"] .dashboard-grid');
+    var existing = utils.qs('[data-staff-sop-panel]');
+    var panel;
+    var heading;
+    var text;
+
+    if (!workspace || existing) {
+      return;
+    }
+
+    panel = document.createElement('article');
+    heading = document.createElement('h2');
+    text = document.createElement('p');
+    panel.className = 'dashboard-panel glass-panel is-wide';
+    panel.dataset.staffSopPanel = 'true';
+    heading.textContent = 'Staff SOP';
+    text.className = 'muted';
+    text.textContent = 'Contact affiliate -> log interaction -> update follow-up/task -> update performance -> report issue if needed.';
+    panel.appendChild(heading);
+    panel.appendChild(text);
+    workspace.insertBefore(panel, workspace.firstChild);
   }
 
   function setNavLabel(routeKey, label) {
@@ -997,6 +1071,9 @@
     setMetricLabel('openTasks', isStaffMode ? 'My Open Tasks' : 'Open Tasks');
     setMetricLabel('openIssues', isStaffMode ? 'My Open Issues' : 'Open Issues');
     setMetricLabel('completedFollowups', isStaffMode ? 'My Completed Follow-ups' : 'Completed Follow-ups');
+    setMetricLabel('thisMonthFtd', isStaffMode ? 'My Month FTD' : 'This Month FTD');
+    setMetricLabel('activePlayers', isStaffMode ? 'My Active Players' : 'Active Players');
+    setMetricLabel('revenueNgr', isStaffMode ? 'My Revenue/NGR' : 'Revenue/NGR');
   }
 
   function setMetricLabel(metricKey, label) {
@@ -1723,7 +1800,41 @@
     if (stat.type === 'unique') {
       return uniqueByKeys(items, stat.keys || []).length;
     }
+    if (stat.type === 'sum') {
+      return formatNumber(sumModuleValues(items, stat.keys || []));
+    }
+    if (stat.type === 'avgConversion') {
+      return formatPercent(averagePerformanceConversion(items));
+    }
     return 'N/A';
+  }
+
+  function sumModuleValues(items, keys) {
+    return items.reduce(function (sum, item) {
+      var value = Number(getModuleValue(item, keys) || 0);
+      return sum + (isNaN(value) ? 0 : value);
+    }, 0);
+  }
+
+  function averagePerformanceConversion(items) {
+    var active = sumModuleValues(items, ['Active_Players', 'Active Players']);
+    var ftd = sumModuleValues(items, ['FTD', 'FTDs']);
+    return active ? ftd / active : '';
+  }
+
+  function formatNumber(value) {
+    var number = Number(value || 0);
+    if (isNaN(number)) {
+      return '0';
+    }
+    return number.toLocaleString();
+  }
+
+  function formatPercent(value) {
+    if (value === '' || value === null || value === undefined || isNaN(Number(value))) {
+      return 'N/A';
+    }
+    return Math.round(Number(value) * 1000) / 10 + '%';
   }
 
   function renderModuleTable(config, items) {
@@ -2364,11 +2475,13 @@
     var actions = isAdminUser() ? [
       { label: 'Add interaction', type: 'interaction' },
       { label: 'Add follow-up', type: 'followup' },
+      { label: 'Update performance', type: 'performance' },
       { label: 'Create task', type: 'task' },
       { label: 'Create issue', type: 'issue' }
     ] : [
       { label: 'Log Interaction', type: 'interaction' },
       { label: 'Log Follow-up', type: 'followup' },
+      { label: 'Update Performance', type: 'performance' },
       { label: 'Report Issue', type: 'issue' }
     ];
 
@@ -3000,7 +3113,7 @@
   async function preloadRecordReferences(type) {
     var requests = [];
 
-    if (!affiliateState.loaded && ['affiliate', 'task', 'issue', 'interaction'].indexOf(type) !== -1) {
+    if (!affiliateState.loaded && ['affiliate', 'task', 'issue', 'interaction', 'performance'].indexOf(type) !== -1) {
       requests.push(api.affiliates().then(function (result) {
         if (isSuccessfulResult(result)) {
           affiliateState.all = asArray(result.data && result.data.items);
@@ -3010,7 +3123,7 @@
       }));
     }
 
-    if (isAdminUser() && moduleState.brands && !moduleState.brands.loaded && ['affiliate', 'issue', 'interaction', 'brand'].indexOf(type) !== -1) {
+    if (isAdminUser() && moduleState.brands && !moduleState.brands.loaded && ['affiliate', 'issue', 'interaction', 'performance', 'brand'].indexOf(type) !== -1) {
       requests.push(api.brands().then(function (result) {
         if (isSuccessfulResult(result)) {
           moduleState.brands.all = normalizeModuleItems('brands', result.data || {});
@@ -3020,7 +3133,7 @@
       }));
     }
 
-    if (isAdminUser() && moduleState.staff && !moduleState.staff.loaded && ['affiliate', 'task', 'issue', 'interaction', 'staff'].indexOf(type) !== -1) {
+    if (isAdminUser() && moduleState.staff && !moduleState.staff.loaded && ['affiliate', 'task', 'issue', 'interaction', 'performance', 'staff'].indexOf(type) !== -1) {
       requests.push(api.staff().then(function (result) {
         if (isSuccessfulResult(result)) {
           moduleState.staff.all = normalizeModuleItems('staff', result.data || {});
@@ -3094,9 +3207,17 @@
     if (field === 'Notes' || field === 'Issue' || field === 'Task') {
       input = document.createElement('textarea');
       input.rows = 3;
-    } else if (field.indexOf('Date') !== -1) {
+    } else if (field === 'Month') {
+      input = document.createElement('input');
+      input.type = 'month';
+    } else if (field.indexOf('Date') !== -1 || field === 'Date') {
       input = document.createElement('input');
       input.type = 'date';
+    } else if (['FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission'].indexOf(field) !== -1) {
+      input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.step = 'any';
     } else if (shouldUseSelect(field)) {
       input = document.createElement('select');
       getRecordOptions(field, config).forEach(function (optionValue) {
@@ -3117,7 +3238,13 @@
 
     input.name = field;
     input.required = required;
-    input.value = input.type === 'date' ? getDateOnly(value || getDefaultRecordValue(field)) : value || getDefaultRecordValue(field);
+    if (input.type === 'date') {
+      input.value = getDateOnly(value || getDefaultRecordValue(field));
+    } else if (input.type === 'month') {
+      input.value = String(value || getDefaultRecordValue(field)).slice(0, 7);
+    } else {
+      input.value = value || getDefaultRecordValue(field);
+    }
     if (field === 'Affiliate_ID') {
       input.addEventListener('change', function () {
         applyAffiliateSelection(input.value);
@@ -3196,7 +3323,10 @@
       return ['Open', 'Pending', 'Escalated', 'Resolved', 'Closed'];
     }
     if (title.indexOf('interaction') !== -1) {
-      return ['Open', 'Contacted', 'Interested', 'Not Responding', 'Completed'];
+      return ['Open', 'Contacted', 'Interested', 'Not Responding', 'No Response', 'Needs Help', 'Completed'];
+    }
+    if (title.indexOf('performance') !== -1) {
+      return ['Draft', 'Submitted', 'Reviewed', 'Needs Review', 'Approved'];
     }
 
     return ['Open', 'Active', 'Pending', 'Paused', 'Closed', 'Completed', 'Resolved', 'Rescheduled'];
@@ -3217,6 +3347,12 @@
     }
     if (field === 'Generated_From') {
       return 'Manual';
+    }
+    if (field === 'Date') {
+      return getDateOnly(new Date().toISOString());
+    }
+    if (field === 'Month') {
+      return getDateOnly(new Date().toISOString()).slice(0, 7);
     }
     return '';
   }
@@ -3426,10 +3562,14 @@
       loadFollowups(true);
     }
 
-    if (type === 'task' || type === 'issue' || type === 'interaction' || type === 'brand' || type === 'staff') {
+    if (type === 'task' || type === 'issue' || type === 'interaction' || type === 'brand' || type === 'staff' || type === 'performance') {
       if (moduleState[type + 's']) {
         moduleState[type + 's'].loaded = false;
         loadModule(type + 's', true);
+      }
+      if (type === 'performance' && moduleState.performance) {
+        moduleState.performance.loaded = false;
+        loadModule('performance', true);
       }
       if (type === 'brand' && moduleState.brands) {
         moduleState.brands.loaded = false;
@@ -3534,20 +3674,22 @@
 
   function buildSampleCsv(type) {
     var config = csvConfigs[type];
+    var headers = asArray(config && config.required).concat(asArray(config && config.optional));
     var sample = {};
 
-    asArray(config && config.required).forEach(function (field) {
+    headers.forEach(function (field) {
       sample[field] = getDefaultRecordValue(field) || friendlyFieldLabel(field);
     });
 
-    return config.required.join(',') + '\n' + config.required.map(function (field) {
+    return headers.join(',') + '\n' + headers.map(function (field) {
       return csvEscape(sample[field]);
     }).join(',');
   }
 
   function formatCsvHeaderGuide(config) {
     var headers = asArray(config && config.required);
-    return 'Required CSV headers, in any order: ' + headers.join(', ') + '. Use these names exactly; preview will show row errors before import.';
+    var optional = asArray(config && config.optional);
+    return 'Required CSV headers, in any order: ' + headers.join(', ') + '. ' + (optional.length ? 'Optional: ' + optional.join(', ') + '. ' : '') + 'Use these names exactly; preview will show row errors before import.';
   }
 
   function csvEscape(value) {
@@ -3574,7 +3716,7 @@
       button.disabled = true;
     }
     utils.setText(message, 'Checking CSV rows...');
-    result = await api.importCsvPreview({
+    result = await (importState.type === 'performance' ? api.importPerformanceCsvPreview : api.importCsvPreview)({
       entity: importState.type,
       csv: textarea.value
     });
@@ -3662,7 +3804,7 @@
       button.disabled = true;
     }
     utils.setText(message, 'Committing valid rows...');
-    result = await api.importCsvCommit({
+    result = await (importState.type === 'performance' ? api.importPerformanceCsvCommit : api.importCsvCommit)({
       entity: importState.type,
       csv: textarea ? textarea.value : ''
     });

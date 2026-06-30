@@ -230,7 +230,8 @@ function getDebugSheets() {
     SHEET_NAMES.AFFILIATES,
     SHEET_NAMES.STAFF_LIST,
     SHEET_NAMES.BRAND_LIST,
-    SHEET_NAMES.FOLLOWUP_QUEUE
+    SHEET_NAMES.FOLLOWUP_QUEUE,
+    SHEET_NAMES.MONTHLY_PERFORMANCE
   ];
   const status = {};
   var spreadsheet = null;

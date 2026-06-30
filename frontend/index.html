@@ -64,6 +64,7 @@
             <div class="quick-actions topbar-quick-actions" aria-label="Quick actions">
               <button class="button button-primary" type="button" data-quick-action="followup">New Follow-up</button>
               <button class="button button-secondary" type="button" data-quick-action="interaction">Add Interaction</button>
+              <button class="button button-secondary" type="button" data-quick-action="performance">Update Performance</button>
               <button class="button button-secondary" type="button" data-quick-action="affiliate">New Affiliate</button>
               <button class="button button-secondary" type="button" data-quick-action="task">New Task</button>
               <button class="button button-secondary" type="button" data-quick-action="issue">New Issue</button>
@@ -169,6 +170,21 @@
               <article class="metric-card glass-panel">
                 <span>Staff Members</span>
                 <strong data-metric="staffMembers">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>This Month FTD</span>
+                <strong data-metric="thisMonthFtd">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Active Players</span>
+                <strong data-metric="activePlayers">...</strong>
+                <small data-metric-status>Loading live data</small>
+              </article>
+              <article class="metric-card glass-panel">
+                <span>Revenue/NGR</span>
+                <strong data-metric="revenueNgr">...</strong>
                 <small data-metric-status>Loading live data</small>
               </article>
             </div>
@@ -669,6 +685,10 @@
             <div class="data-panel glass-panel module-workspace" data-module-workspace="performance">
               <div class="data-toolbar">
                 <div><p class="eyebrow">Monthly view</p><h2 id="performance-title">Performance</h2><p class="muted" data-module-count>Loading performance rows...</p></div>
+                <div class="toolbar-actions">
+                  <button class="button button-primary" type="button" data-module-action="performance">Update Performance</button>
+                  <button class="button button-secondary" type="button" data-import-action="performance" data-role-scope="admin">Bulk Performance</button>
+                </div>
               </div>
               <div class="module-stat-grid" data-module-stats></div>
               <div class="data-toolbar module-toolbar">

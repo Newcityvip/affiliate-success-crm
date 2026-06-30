@@ -36,6 +36,14 @@ const ENTITY_CONFIG = Object.freeze({
     type: 'Interaction',
     required: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Interaction_Type', 'Notes', 'Status']
   },
+  performance: {
+    sheet: SHEET_NAMES.MONTHLY_PERFORMANCE,
+    idKey: 'Performance_ID',
+    prefix: 'PERF',
+    width: 4,
+    type: 'Performance',
+    required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR']
+  },
   brand: {
     sheet: SHEET_NAMES.BRAND_LIST,
     idKey: 'Brand_ID',
@@ -446,6 +454,8 @@ function importCsvCommit(payload, user) {
   }).forEach(function (row) {
     if (entityKey === 'followup') {
       committed.push(createFollowup(row.item, user).item);
+    } else if (entityKey === 'performance') {
+      committed.push(createPerformance(row.item, user).item);
     } else {
       committed.push(createEntity(entityKey, row.item, user).item);
     }
@@ -472,6 +482,9 @@ function normalizeImportEntity(value) {
     issue: 'issue',
     interactions: 'interaction',
     interaction: 'interaction',
+    performance: 'performance',
+    performances: 'performance',
+    monthlyperformance: 'performance',
     staff: 'staff',
     brands: 'brand',
     brand: 'brand'
@@ -512,6 +525,17 @@ function getImportConfig(entityKey) {
     };
   }
 
+  if (entityKey === 'performance') {
+    return {
+      sheet: ENTITY_CONFIG.performance.sheet,
+      idKey: ENTITY_CONFIG.performance.idKey,
+      prefix: ENTITY_CONFIG.performance.prefix,
+      width: ENTITY_CONFIG.performance.width,
+      type: ENTITY_CONFIG.performance.type,
+      required: PERFORMANCE_REQUIRED_HEADERS
+    };
+  }
+
   if (entityKey === 'brand') {
     return {
       sheet: ENTITY_CONFIG.brand.sheet,
@@ -538,7 +562,7 @@ function getImportConfig(entityKey) {
 }
 
 function requireImportPermission(entityKey, user) {
-  if (['affiliate', 'followup', 'interaction', 'task', 'issue', 'brand', 'staff'].indexOf(entityKey) !== -1) {
+  if (['affiliate', 'followup', 'interaction', 'task', 'issue', 'brand', 'staff', 'performance'].indexOf(entityKey) !== -1) {
     requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
   }
 
