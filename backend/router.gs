@@ -112,7 +112,7 @@ function handleRequest(e, method) {
     }
 
     if (action === 'login' || action === 'authlogin') {
-      return successResponse(loginStaff(getRequestLoginId(e)), 'Login successful.');
+      return successResponse(loginStaff(getRequestLoginId(e), e), 'Login successful.');
     }
 
     if (action === 'authdebug') {
@@ -128,7 +128,7 @@ function handleRequest(e, method) {
     }
 
     if (action === 'getsession') {
-      return successResponse(getSession(getSessionTokenFromRequest(e)), 'Session loaded.');
+      return successResponse(getSession(getSessionTokenFromRequest(e), e), 'Session loaded.');
     }
 
     if (action === 'logout') {

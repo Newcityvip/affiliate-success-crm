@@ -4,7 +4,7 @@
  * added in a later security sprint without exposing secrets to the frontend.
  */
 
-function loginStaff(loginId) {
+function loginStaff(loginId, e) {
   const normalizedLogin = normalizeAuthValue(loginId);
   const staffResult = getStaffRowsForAuth();
   const staffRows = staffResult.rows;
@@ -32,12 +32,15 @@ function loginStaff(loginId) {
     throwCodedError('AUTH_INACTIVE_USER', 'This staff account is inactive.');
   }
 
+  enforceAllowedIp(user, e);
+
   return createSession(user);
 }
 
-function getSession(sessionToken) {
+function getSession(sessionToken, e) {
   const token = safeString(sessionToken);
   const stored = token ? readSessionData(token) : null;
+  var user;
 
   if (!stored) {
     return {
@@ -54,11 +57,14 @@ function getSession(sessionToken) {
     };
   }
 
+  user = sanitizeUser(stored.user || {});
+  enforceAllowedIp(user, e);
+
   return {
     valid: true,
     sessionToken: token,
     expiresAt: stored.expiresAt,
-    user: sanitizeUser(stored.user || {})
+    user: user
   };
 }
 
@@ -111,7 +117,7 @@ function destroySession(sessionToken) {
 
 function getCurrentUserFromRequest(e) {
   const sessionToken = getSessionTokenFromRequest(e);
-  const session = getSession(sessionToken);
+  const session = getSession(sessionToken, e);
   return session.valid ? session.user : null;
 }
 
@@ -245,7 +251,87 @@ function buildLimitedSettingsSummary(user) {
 
 function getClientIp(e) {
   const headers = (e && e.headers) || {};
-  return safeString(headers['X-Forwarded-For'] || headers['x-forwarded-for'] || headers['X-Real-IP'] || headers['x-real-ip']);
+  const params = (e && e.parameter) || {};
+  const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
+  var body = {};
+  var raw;
+
+  if (contents) {
+    try {
+      body = JSON.parse(contents);
+    } catch (error) {
+      body = {};
+    }
+  }
+
+  raw = safeString(headers['X-Forwarded-For'] || headers['x-forwarded-for'] || headers['Forwarded'] || headers['forwarded'] || headers['X-Real-IP'] || headers['x-real-ip'] || params.forwardedFor || params.userIp || params.ip || body.forwardedFor || body.userIp || body.ip);
+  return normalizeClientIp(raw);
+}
+
+function normalizeClientIp(value) {
+  const first = safeString(value).split(',')[0].trim();
+  const forwardedMatch = first.match(/for="?([^";,\s]+)"?/i);
+  return safeString(forwardedMatch ? forwardedMatch[1] : first).replace(/^"|"$/g, '');
+}
+
+function enforceAllowedIp(user, e) {
+  const allowedIps = getAllowedIpsForUser(user);
+  const clientIp = getClientIp(e);
+
+  if (!allowedIps.length) {
+    return true;
+  }
+
+  if (!clientIp) {
+    throwCodedError('AUTH_IP_UNKNOWN', 'Could not verify your IP. Please contact admin.');
+  }
+
+  if (allowedIps.indexOf(clientIp) === -1) {
+    throwCodedError('AUTH_IP_NOT_ALLOWED', 'This login is not allowed from your current IP.');
+  }
+
+  return true;
+}
+
+function getAllowedIpsForUser(user) {
+  const raw = user && user.raw ? user.raw : getStaffRowForUser(user);
+  const allowed = safeString(getFirstValue(raw, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
+
+  if (!allowed) {
+    return [];
+  }
+
+  return allowed.split(/[,;\n\r]+/).map(function (ip) {
+    return safeString(ip);
+  }).filter(function (ip, index, values) {
+    return ip && values.indexOf(ip) === index;
+  });
+}
+
+function getStaffRowForUser(user) {
+  const rows = getStaffRowsForAuth().rows || [];
+  const identifiers = getUserIdentifiers(user || {});
+  var match = {};
+
+  rows.some(function (row) {
+    const candidates = [
+      getFirstValue(row, ['Login_ID', 'Login ID', 'LoginID', 'loginId', 'login_id']),
+      getFirstValue(row, ['Staff_ID', 'Staff ID', 'StaffID', 'staffId', 'staff_id']),
+      getFirstValue(row, ['Email']),
+      getFirstValue(row, ['Staff_Name', 'Staff Name', 'Name'])
+    ].map(function (value) {
+      return safeString(value).toLowerCase();
+    });
+
+    if (candidates.some(function (candidate) { return candidate && identifiers.indexOf(candidate) !== -1; })) {
+      match = row;
+      return true;
+    }
+
+    return false;
+  });
+
+  return match;
 }
 
 function getSessionTokenFromRequest(e) {

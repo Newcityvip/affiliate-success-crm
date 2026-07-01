@@ -6,9 +6,10 @@
   var router = window.AffiliateSuccessRouter;
   var auth = window.AffiliateSuccessAuth;
   var appConfig = window.AffiliateSuccessConfig || {};
-  var DEBUG_CACHE_MARKER = 'performance-v2';
+  var DEBUG_CACHE_MARKER = 'live-trial-stabilization';
   var currentUser = null;
   var latestApiDebug = null;
+  var debugPanelVisible = false;
   var staffAllowedRoutes = ['dashboard', 'affiliates', 'followups', 'interactions', 'tasks', 'issues', 'performance', 'brands', 'settings'];
 
   var dashboardMetricLabels = {
@@ -163,10 +164,10 @@
       sections: {
         'Affiliate': ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff'],
         'Performance period': ['Period_Type', 'Month', 'Week_Start', 'Week_End'],
-        'Performance metrics': ['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission', 'Growth_Percent'],
+        'Performance metrics': ['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission'],
         'Status & Notes': ['Status', 'Remarks']
       },
-      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Period_Type', 'Month', 'Week_Start', 'Week_End', 'Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission', 'Growth_Percent', 'Status', 'Remarks']
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Period_Type', 'Month', 'Week_Start', 'Week_End', 'Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission', 'Status', 'Remarks']
     },
     brand: {
       title: 'New Brand',
@@ -569,6 +570,10 @@
     return auth && auth.isAdmin ? auth.isAdmin(currentUser) : false;
   }
 
+  function isSuperAdminUser() {
+    return String(currentUser && currentUser.role || '').toUpperCase() === 'SUPER_ADMIN';
+  }
+
   function getScriptCacheVersion(fileName) {
     var script = Array.prototype.slice.call(document.scripts || []).filter(function (item) {
       return item.src && item.src.indexOf(fileName) !== -1;
@@ -588,7 +593,7 @@
   function ensureDebugPanel() {
     var panel = utils.qs('[data-debug-panel]');
 
-    if (!isAdminUser()) {
+    if (!isSuperAdminUser()) {
       if (panel) {
         panel.remove();
       }
@@ -602,21 +607,28 @@
     panel = document.createElement('aside');
     panel.className = 'debug-panel';
     panel.setAttribute('data-debug-panel', '');
+    panel.hidden = !debugPanelVisible;
     panel.innerHTML = '<h2>Admin Debug</h2><dl data-debug-panel-list></dl>';
     document.body.appendChild(panel);
     return panel;
   }
 
   function renderDebugPanel(extra) {
-    var panel = ensureDebugPanel();
+    var panel;
     var list;
     var debug = extra || latestApiDebug || (api && api.getLastDebug ? api.getLastDebug() : {}) || {};
     var rows;
 
+    if (!debugPanelVisible) {
+      return;
+    }
+
+    panel = ensureDebugPanel();
     if (!panel) {
       return;
     }
 
+    panel.hidden = false;
     list = panel.querySelector('[data-debug-panel-list]');
     if (!list) {
       return;
@@ -659,6 +671,25 @@
     window.addEventListener('affiliate-success-api-debug', function (event) {
       latestApiDebug = event.detail || {};
       renderDebugPanel(latestApiDebug);
+    });
+  }
+
+  function bindDebugToggle() {
+    var button = utils.qs('[data-debug-toggle]');
+    if (!button) {
+      return;
+    }
+
+    button.addEventListener('click', function () {
+      var panel;
+      debugPanelVisible = !debugPanelVisible;
+      panel = ensureDebugPanel();
+      if (panel) {
+        panel.hidden = !debugPanelVisible;
+      }
+      if (debugPanelVisible) {
+        renderDebugPanel();
+      }
     });
   }
 
@@ -967,6 +998,10 @@
 
     document.querySelectorAll('[data-role-scope="admin"]').forEach(function (item) {
       item.hidden = !isAdminUser();
+    });
+
+    document.querySelectorAll('[data-debug-toggle]').forEach(function (button) {
+      button.hidden = !isSuperAdminUser();
     });
 
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
@@ -3390,7 +3425,7 @@
     } else if (field.indexOf('Date') !== -1 || field === 'Date' || field === 'Week_Start' || field === 'Week_End') {
       input = document.createElement('input');
       input.type = 'date';
-    } else if (['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'Revenue_NGR', 'NGR', 'Commission', 'Growth_Percent'].indexOf(field) !== -1) {
+    } else if (['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'Revenue_NGR', 'NGR', 'Commission'].indexOf(field) !== -1) {
       input = document.createElement('input');
       input.type = 'number';
       input.min = '0';
@@ -3449,9 +3484,6 @@
     }
     if (field === 'Remarks') {
       return firstDefined(recordState.context.Remarks, recordState.context.Notes);
-    }
-    if (field === 'Growth_Percent') {
-      return firstDefined(recordState.context.Growth_Percent, recordState.context.Conversion_Rate);
     }
     if (field === 'Period_Type') {
       return firstDefined(recordState.context.Period_Type, recordState.context.Week_Start || recordState.context.Week_End ? 'Weekly' : 'Monthly');
@@ -4322,6 +4354,7 @@
     bindImportModal();
     bindLogout();
     bindApiDebugPanel();
+    bindDebugToggle();
     updatePage(router.routeFromHash());
     loadDashboard();
   }

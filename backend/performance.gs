@@ -118,7 +118,7 @@ function savePerformanceRow(payload, user, isCreate) {
   }
   setIfHeaderExists(data, headers, ['Period_Type'], getPerformancePeriodType(source), true);
   setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(data.Date || source.Date || source.Month), true);
-  setIfHeaderExists(data, headers, ['Conversion_Rate', 'Growth_Percent'], calculateConversionRate(data.FTD || source.FTD, data.Active_Players || source.Active_Players), false);
+  setIfHeaderExists(data, headers, ['Growth_Percent', 'Conversion_Rate'], calculatePerformanceGrowth(data, source), true);
   setIfHeaderExists(data, headers, ['Updated_By'], getUserDisplayName(user), true);
   setIfHeaderExists(data, headers, ['Updated_At'], getTimestamp(), true);
 
@@ -588,6 +588,61 @@ function calculateConversionRate(ftdValue, activeValue) {
     return '';
   }
   return roundNumber(ftd / active, 4);
+}
+
+function calculatePerformanceGrowth(data, source) {
+  const current = copyRow(data || {});
+  const currentNgr = parsePerformanceNumber(getFirstValue(current, ['NGR', 'Revenue_NGR', 'Revenue']));
+  const currentTime = getPerformancePeriodTime(current);
+  const affiliateId = safeString(current.Affiliate_ID);
+  const brand = safeString(current.Brand).toLowerCase();
+  var previous = null;
+  var previousTime = 0;
+  var previousNgr;
+
+  if (isNaN(currentNgr) || !affiliateId || !brand || !currentTime) {
+    return 0;
+  }
+
+  normalizePerformanceRows(safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE)).forEach(function (row) {
+    const rowTime = getPerformancePeriodTime(row);
+    const sameAffiliate = safeString(row.Affiliate_ID) === affiliateId;
+    const sameBrand = safeString(row.Brand).toLowerCase() === brand;
+
+    if (!sameAffiliate || !sameBrand || !rowTime || rowTime >= currentTime) {
+      return;
+    }
+
+    if (source && performanceRowsMatch(source, row)) {
+      return;
+    }
+
+    if (!previous || rowTime > previousTime) {
+      previous = row;
+      previousTime = rowTime;
+    }
+  });
+
+  previousNgr = previous ? parsePerformanceNumber(getFirstValue(previous, ['NGR', 'Revenue_NGR', 'Revenue'])) : NaN;
+  if (isNaN(previousNgr) || previousNgr === 0) {
+    return 0;
+  }
+
+  return roundNumber(((currentNgr - previousNgr) / previousNgr) * 100, 2);
+}
+
+function getPerformancePeriodTime(row) {
+  const periodType = getPerformancePeriodType(row || {});
+  const value = periodType === 'Weekly' ? getFirstValue(row, ['Week_Start', 'Week Start']) : getFirstValue(row, ['Month', 'Date', 'Performance_Month', 'Period']);
+  const normalized = safeString(value) ? (periodType === 'Weekly' ? normalizeDateValue(value) : derivePerformanceMonth(value)) : '';
+  var date;
+
+  if (!safeString(normalized)) {
+    return 0;
+  }
+
+  date = new Date(periodType === 'Weekly' ? normalized : normalized + '-01');
+  return isNaN(date.getTime()) ? 0 : date.getTime();
 }
 
 function derivePerformanceMonth(value) {

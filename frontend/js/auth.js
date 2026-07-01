@@ -45,6 +45,7 @@
 
     if (!result.ok) {
       clearSession();
+      result.message = friendlyAuthMessage(result);
       return result;
     }
 
@@ -54,6 +55,17 @@
       data: saveSession(result.data || {}),
       message: result.message || 'Login successful.'
     };
+  }
+
+  function friendlyAuthMessage(result) {
+    var code = result && (result.code || (result.error && result.error.code));
+    if (code === 'AUTH_IP_NOT_ALLOWED') {
+      return 'This login is not allowed from your current IP.';
+    }
+    if (code === 'AUTH_IP_UNKNOWN') {
+      return 'Could not verify your IP. Please contact admin.';
+    }
+    return result && result.message ? result.message : 'Unable to sign in.';
   }
 
   async function refreshSession() {
