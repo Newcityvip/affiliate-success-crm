@@ -117,7 +117,9 @@ function handleRequest(e, method) {
     }
 
     if (action === 'authdebug') {
-      return successResponse(getAuthDebug(getRequestLoginId(e), e), 'Auth debug loaded.');
+      const authDebugData = getAuthDebug(getRequestLoginId(e), e) || {};
+      authDebugData.routeVersion = 'router-v2-auth-debug';
+      return successResponse(authDebugData, 'Auth debug loaded from router-v2.');
     }
 
     if (action === 'debugactions') {
