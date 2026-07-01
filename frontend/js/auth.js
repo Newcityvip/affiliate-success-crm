@@ -39,9 +39,24 @@
   }
 
   async function login(loginId) {
-    var result = await api.login({
+    var clientIp = await detectPublicIp();
+    var payload = {
       loginId: loginId
+    };
+    var result;
+
+    if (clientIp) {
+      payload.userIp = clientIp;
+      payload.ip = clientIp;
+    }
+
+    logLoginDebug({
+      loginId: loginId,
+      userIp: clientIp || '',
+      ipDetected: Boolean(clientIp)
     });
+
+    result = await api.login(payload);
 
     if (!result.ok) {
       clearSession();
@@ -55,6 +70,73 @@
       data: saveSession(result.data || {}),
       message: result.message || 'Login successful.'
     };
+  }
+
+  async function detectPublicIp() {
+    var endpoints = [
+      'https://api.ipify.org?format=json',
+      'https://api64.ipify.org?format=json'
+    ];
+    var index;
+    var ip;
+
+    for (index = 0; index < endpoints.length; index += 1) {
+      ip = await fetchIpWithTimeout(endpoints[index], 3000);
+      if (ip) {
+        return ip;
+      }
+    }
+
+    return '';
+  }
+
+  async function fetchIpWithTimeout(url, timeoutMs) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeout = null;
+
+    try {
+      if (controller) {
+        timeout = window.setTimeout(function () {
+          controller.abort();
+        }, timeoutMs);
+      }
+
+      return await Promise.race([
+        fetch(url, {
+          method: 'GET',
+          signal: controller ? controller.signal : undefined
+        }).then(function (response) {
+          if (!response.ok) {
+            return '';
+          }
+          return response.json();
+        }).then(function (payload) {
+          return payload && payload.ip ? String(payload.ip).trim() : '';
+        }),
+        new Promise(function (resolve) {
+          if (!controller) {
+            window.setTimeout(function () {
+              resolve('');
+            }, timeoutMs);
+          }
+        })
+      ]);
+    } catch (error) {
+      return '';
+    } finally {
+      if (timeout) {
+        window.clearTimeout(timeout);
+      }
+    }
+  }
+
+  function logLoginDebug(details) {
+    var isLocal = /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname);
+    var debugEnabled = isLocal || window.localStorage.getItem('affiliateSuccessDebug') === '1';
+
+    if (debugEnabled && window.console && console.debug) {
+      console.debug('[Affiliate Success Login Debug]', details);
+    }
   }
 
   function friendlyAuthMessage(result) {
