@@ -37,10 +37,9 @@ function loginStaff(loginId, e) {
   return createSession(user);
 }
 
-function getSession(sessionToken, e) {
+function getSession(sessionToken) {
   const token = safeString(sessionToken);
   const stored = token ? readSessionData(token) : null;
-  var user;
 
   if (!stored) {
     return {
@@ -57,14 +56,11 @@ function getSession(sessionToken, e) {
     };
   }
 
-  user = sanitizeUser(stored.user || {});
-  enforceAllowedIp(user, e);
-
   return {
     valid: true,
     sessionToken: token,
     expiresAt: stored.expiresAt,
-    user: user
+    user: sanitizeUser(stored.user || {})
   };
 }
 
@@ -117,7 +113,7 @@ function destroySession(sessionToken) {
 
 function getCurrentUserFromRequest(e) {
   const sessionToken = getSessionTokenFromRequest(e);
-  const session = getSession(sessionToken, e);
+  const session = getSession(sessionToken);
   return session.valid ? session.user : null;
 }
 
@@ -250,11 +246,16 @@ function buildLimitedSettingsSummary(user) {
 }
 
 function getClientIp(e) {
+  return getClientIpInfo(e).ip;
+}
+
+function getClientIpInfo(e) {
   const headers = (e && e.headers) || {};
   const params = (e && e.parameter) || {};
   const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
   var body = {};
-  var raw;
+  var candidates;
+  var index;
 
   if (contents) {
     try {
@@ -264,8 +265,29 @@ function getClientIp(e) {
     }
   }
 
-  raw = safeString(headers['X-Forwarded-For'] || headers['x-forwarded-for'] || headers['Forwarded'] || headers['forwarded'] || headers['X-Real-IP'] || headers['x-real-ip'] || params.forwardedFor || params.userIp || params.ip || body.forwardedFor || body.userIp || body.ip);
-  return normalizeClientIp(raw);
+  candidates = [
+    { source: 'parameter.ip', value: params.ip || body.ip },
+    { source: 'parameter.userIp', value: params.userIp || body.userIp },
+    { source: 'parameter.forwardedFor', value: params.forwardedFor || body.forwardedFor },
+    { source: 'parameter.X-Forwarded-For', value: params['X-Forwarded-For'] || body['X-Forwarded-For'] },
+    { source: 'headers.X-Forwarded-For', value: headers['X-Forwarded-For'] },
+    { source: 'headers.x-forwarded-for', value: headers['x-forwarded-for'] }
+  ];
+
+  for (index = 0; index < candidates.length; index += 1) {
+    const ip = normalizeClientIp(candidates[index].value);
+    if (ip) {
+      return {
+        ip: ip,
+        source: candidates[index].source
+      };
+    }
+  }
+
+  return {
+    ip: '',
+    source: ''
+  };
 }
 
 function normalizeClientIp(value) {
@@ -276,7 +298,7 @@ function normalizeClientIp(value) {
 
 function enforceAllowedIp(user, e) {
   const allowedIps = getAllowedIpsForUser(user);
-  const clientIp = getClientIp(e);
+  const clientIp = getClientIpInfo(e).ip;
 
   if (!allowedIps.length) {
     return true;
@@ -296,12 +318,15 @@ function enforceAllowedIp(user, e) {
 function getAllowedIpsForUser(user) {
   const raw = user && user.raw ? user.raw : getStaffRowForUser(user);
   const allowed = safeString(getFirstValue(raw, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
+  return parseAllowedIps(allowed);
+}
 
+function parseAllowedIps(allowed) {
   if (!allowed) {
     return [];
   }
 
-  return allowed.split(/[,;\n\r]+/).map(function (ip) {
+  return allowed.split(',').map(function (ip) {
     return safeString(ip);
   }).filter(function (ip, index, values) {
     return ip && values.indexOf(ip) === index;
@@ -377,17 +402,24 @@ function getStaffRowsForAuthDirect(originalError) {
   }
 }
 
-function getAuthDebug(loginId) {
+function getAuthDebug(loginId, e) {
   const normalizedLogin = normalizeAuthValue(loginId);
   const result = getStaffRowsForAuth();
   const headers = getSheetHeadersSafe(SHEET_NAMES.STAFF_LIST);
   var match = findStaffUser(normalizedLogin, result.rows);
   var raw = match && match.raw ? match.raw : {};
+  var ipInfo;
+  var allowedIpsRaw;
+  var allowedIpsParsed;
 
   if (!match && result.rows.length) {
     match = findStaffUser(normalizedLogin, result.rows);
     raw = match && match.raw ? match.raw : {};
   }
+
+  ipInfo = getClientIpInfo(e);
+  allowedIpsRaw = safeString(getFirstValue(raw, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
+  allowedIpsParsed = parseAllowedIps(allowedIpsRaw);
 
   return {
     staffSheetFound: headers.length > 0 || result.rows.length > 0,
@@ -403,6 +435,11 @@ function getAuthDebug(loginId) {
     roleRaw: safeString(getFirstValue(raw, ['Role'])),
     permissionRaw: safeString(getFirstValue(raw, ['Permission_Level', 'Permission Level'])),
     normalizedRole: match ? normalizeRole(match.role) : '',
+    detectedIp: ipInfo.ip,
+    ipSource: ipInfo.source,
+    allowedIpsRaw: allowedIpsRaw,
+    allowedIpsParsed: allowedIpsParsed,
+    ipAllowed: allowedIpsParsed.length ? allowedIpsParsed.indexOf(ipInfo.ip) !== -1 : true,
     errorCode: result.error ? 'AUTH_CONFIG_ERROR' : '',
     errorMessage: result.error ? 'Staff_List could not be read.' : ''
   };

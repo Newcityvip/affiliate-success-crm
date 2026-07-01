@@ -116,7 +116,7 @@ function handleRequest(e, method) {
     }
 
     if (action === 'authdebug') {
-      return successResponse(getAuthDebug(getRequestLoginId(e)), 'Auth debug loaded.');
+      return successResponse(getAuthDebug(getRequestLoginId(e), e), 'Auth debug loaded.');
     }
 
     if (action === 'debugactions') {
