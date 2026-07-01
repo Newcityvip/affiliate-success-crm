@@ -373,7 +373,7 @@ function parseAllowedIps(allowed) {
     return [];
   }
 
-  return allowed.split(',').map(function (ip) {
+  return String(allowed).split(/[,|;\n\r]+/).map(function (ip) {
     return safeString(ip);
   }).filter(function (ip, index, values) {
     return ip && values.indexOf(ip) === index;
@@ -465,6 +465,7 @@ function getAuthDebug(loginId, e) {
   policy = getAllowedIpPolicy(raw, e);
 
   return {
+    ipEnforcementVersion: 'strict-login-ip-v3-multi',
     staffSheetFound: headers.length > 0 || result.rows.length > 0,
     sheetFound: headers.length > 0 || result.rows.length > 0,
     headers: headers,
