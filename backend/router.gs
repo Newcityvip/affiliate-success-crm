@@ -4,6 +4,7 @@
 
 function handleRequest(e, method) {
   const params = (e && e.parameter) || {};
+  const requestMethod = method || getRequestMethod(e);
   const action = getRequestAction(e);
   const supportedActions = [
     'health',
@@ -95,7 +96,7 @@ function handleRequest(e, method) {
     if (action === 'health') {
       return successResponse({
         status: 'ok',
-        method: method,
+        method: requestMethod,
         apiVersion: API_VERSION
       }, 'Service is healthy.');
     }
@@ -120,7 +121,7 @@ function handleRequest(e, method) {
     }
 
     if (action === 'debugactions') {
-      return successResponse(getDebugActions(e, method, action, supportedActions, writeActions), 'Action debug loaded.');
+      return successResponse(getDebugActions(e, requestMethod, action, supportedActions, writeActions), 'Action debug loaded.');
     }
 
     if (action === 'debugsheets') {
@@ -132,9 +133,9 @@ function handleRequest(e, method) {
     }
 
     if (action === 'logout') {
-      if (method !== 'POST') {
+      if (requestMethod !== 'POST') {
         return errorResponse('Logout requires POST.', 'METHOD_NOT_ALLOWED', {
-          method: method
+          method: requestMethod
         });
       }
 
@@ -143,9 +144,9 @@ function handleRequest(e, method) {
 
     user = requireAuth(e);
 
-    if (writeActions.indexOf(action) === -1 && method !== 'GET') {
+    if (writeActions.indexOf(action) === -1 && requestMethod !== 'GET') {
       return errorResponse('Only GET requests are supported for this endpoint.', 'METHOD_NOT_ALLOWED', {
-        method: method
+        method: requestMethod
       });
     }
 
@@ -328,6 +329,10 @@ function handleRequest(e, method) {
       message: error && error.message ? error.message : String(error)
     });
   }
+}
+
+function getRequestMethod(e) {
+  return e && e.postData ? 'POST' : 'GET';
 }
 
 function getRequestAction(e) {

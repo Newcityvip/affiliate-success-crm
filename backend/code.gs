@@ -4,9 +4,9 @@
  */
 
 function doGet(e) {
-  return handleRequest(e, 'GET');
+  return handleRequest(e);
 }
 
 function doPost(e) {
-  return handleRequest(e, 'POST');
+  return handleRequest(e);
 }
