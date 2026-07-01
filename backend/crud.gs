@@ -42,7 +42,7 @@ const ENTITY_CONFIG = Object.freeze({
     prefix: 'PERF',
     width: 4,
     type: 'Performance',
-    required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR']
+    required: ['Period_Type', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Turnover', 'NGR']
   },
   brand: {
     sheet: SHEET_NAMES.BRAND_LIST,
@@ -532,7 +532,7 @@ function getImportConfig(entityKey) {
       prefix: ENTITY_CONFIG.performance.prefix,
       width: ENTITY_CONFIG.performance.width,
       type: ENTITY_CONFIG.performance.type,
-      required: ['Month', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'NGR']
+      required: ['Period_Type', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Turnover', 'NGR']
     };
   }
 

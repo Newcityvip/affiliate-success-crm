@@ -6,7 +6,7 @@
   var router = window.AffiliateSuccessRouter;
   var auth = window.AffiliateSuccessAuth;
   var appConfig = window.AffiliateSuccessConfig || {};
-  var DEBUG_CACHE_MARKER = 'dashboard-debug-fix';
+  var DEBUG_CACHE_MARKER = 'performance-v2';
   var currentUser = null;
   var latestApiDebug = null;
   var staffAllowedRoutes = ['dashboard', 'affiliates', 'followups', 'interactions', 'tasks', 'issues', 'performance', 'brands', 'settings'];
@@ -24,6 +24,7 @@
     staffMembers: 'Live API data',
     thisMonthFtd: 'Live performance data',
     activePlayers: 'Live performance data',
+    turnover: 'Live performance data',
     revenueNgr: 'Live performance data'
   };
 
@@ -158,13 +159,14 @@
       api: 'createPerformance',
       updateApi: 'updatePerformance',
       idKey: 'Performance_ID',
-      required: ['Date', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR'],
+      required: ['Period_Type', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'NGR'],
       sections: {
         'Affiliate': ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff'],
-        'Monthly Metrics': ['Date', 'Month', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission'],
-        'Status & Notes': ['Status', 'Notes']
+        'Performance period': ['Period_Type', 'Month', 'Week_Start', 'Week_End'],
+        'Performance metrics': ['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission', 'Growth_Percent'],
+        'Status & Notes': ['Status', 'Remarks']
       },
-      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Date', 'Month', 'FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission', 'Status', 'Notes']
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Period_Type', 'Month', 'Week_Start', 'Week_End', 'Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'NGR', 'Commission', 'Growth_Percent', 'Status', 'Remarks']
     },
     brand: {
       title: 'New Brand',
@@ -215,10 +217,19 @@
     Brand_Name: 'Brand name',
     Interaction_Type: 'Interaction type',
     Performance_ID: 'Performance ID',
+    Period_Type: 'Period type',
+    Week_Start: 'Week start',
+    Week_End: 'Week end',
+    Registrations: 'Registrations',
     Active_Players: 'Active players',
+    Deposits: 'Deposits',
     Deposit_Amount: 'Deposit amount',
+    Turnover: 'Turnover',
+    NGR: 'Revenue/NGR',
     Revenue_NGR: 'Revenue/NGR',
     Conversion_Rate: 'Conversion rate',
+    Growth_Percent: 'Growth percent',
+    Remarks: 'Remarks',
     Updated_By: 'Updated by',
     Updated_At: 'Updated at'
   };
@@ -245,8 +256,8 @@
     },
     performance: {
       title: 'Import Performance',
-      required: ['Month', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'NGR'],
-      optional: ['Date', 'Affiliate_Name', 'Assigned_Staff', 'Revenue_NGR', 'Commission', 'Status', 'Notes', 'Remarks']
+      required: ['Period_Type', 'Brand', 'Affiliate_ID', 'FTD', 'Active_Players', 'Deposit_Amount', 'Turnover', 'NGR'],
+      optional: ['Month', 'Week_Start', 'Week_End', 'Affiliate_Name', 'Assigned_Staff', 'Registrations', 'Deposits', 'Revenue_NGR', 'Commission', 'Growth_Percent', 'Conversion_Rate', 'Status', 'Notes', 'Remarks']
     },
     staff: {
       title: 'Import Staff',
@@ -353,9 +364,11 @@
     performance: {
       api: 'performance',
       itemName: 'performance rows',
-      search: ['Date', 'Month', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue_NGR', 'Revenue', 'NGR', 'Commission', 'Status', 'Remarks'],
+      search: ['Period_Type', 'Date', 'Month', 'Week_Start', 'Week_End', 'Brand', 'Affiliate_Name', 'Affiliate_ID', 'Assigned_Staff', 'Revenue_NGR', 'Revenue', 'NGR', 'Turnover', 'Commission', 'Status', 'Remarks'],
       filters: [
+        { label: 'Period Type', key: 'Period_Type' },
         { label: 'Month', key: 'Month', fallback: ['Performance_Month', 'Period'] },
+        { label: 'Week Start', key: 'Week_Start' },
         { label: 'Brand', key: 'Brand' },
         { label: 'Staff', key: 'Assigned_Staff', fallback: ['Staff'] },
         { label: 'Affiliate', key: 'Affiliate_ID', fallback: ['Affiliate_Name'] },
@@ -365,17 +378,21 @@
         { label: 'Total FTD', type: 'sum', keys: ['FTD', 'FTDs'] },
         { label: 'Active Players', type: 'sum', keys: ['Active_Players', 'Active Players'] },
         { label: 'Deposit Amount', type: 'sum', keys: ['Deposit_Amount', 'Deposit Amount'] },
+        { label: 'Turnover', type: 'sum', keys: ['Turnover'] },
         { label: 'Revenue/NGR', type: 'sum', keys: ['Revenue_NGR', 'Revenue', 'NGR'] },
         { label: 'Avg Conversion', type: 'avgConversion' }
       ],
       columns: [
-        { label: 'Date', keys: ['Date'], format: 'date' },
+        { label: 'Period Type', keys: ['Period_Type'] },
         { label: 'Month', keys: ['Month', 'Performance_Month', 'Period'], format: 'month' },
+        { label: 'Week Start', keys: ['Week_Start'], format: 'date' },
+        { label: 'Week End', keys: ['Week_End'], format: 'date' },
         { label: 'Brand', keys: ['Brand'] },
         { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
         { label: 'FTD', keys: ['FTD', 'FTDs'] },
         { label: 'Active Players', keys: ['Active_Players', 'Active Players'] },
         { label: 'Deposits', keys: ['Deposit_Amount', 'Deposit Amount'] },
+        { label: 'Turnover', keys: ['Turnover'] },
         { label: 'Revenue/NGR', keys: ['Revenue_NGR', 'NGR', 'Revenue'] },
         { label: 'Conversion/Growth', keys: ['Conversion_Rate', 'Growth_Percent'] },
         { label: 'Status', keys: ['Status'], badge: 'Status' },
@@ -1140,6 +1157,7 @@
     var summaryFallbacks = {
       thisMonthFtd: ['totalFtd', 'ftd'],
       activePlayers: ['activePlayers'],
+      turnover: ['turnover'],
       revenueNgr: ['revenueNgr', 'revenue', 'ngr'],
       depositAmount: ['depositAmount'],
       commission: ['commission'],
@@ -1191,7 +1209,7 @@
     var hero = utils.qs('#dashboard-title');
 
     utils.setText(hero, isStaffMode ? 'My Affiliate Workspace' : 'Affiliate manager command center');
-    utils.setText(utils.qs('[data-dashboard-status]'), isStaffMode ? 'Your assigned workspace loaded from the live Apps Script API.' : 'Dashboard statistics loaded from the live Apps Script API.');
+    utils.setText(utils.qs('[data-dashboard-status]'), isStaffMode ? 'Daily process: review assigned follow-ups/tasks -> contact affiliate -> log interaction -> update follow-up/task -> update weekly/monthly performance.' : 'Admin process: assign affiliates/tasks -> review overdue items -> check weekly/monthly performance -> coach staff/affiliate.');
 
     setMetricLabel('totalAffiliates', isStaffMode ? 'My Affiliates' : 'Total Affiliates');
     setMetricLabel('todayFollowups', isStaffMode ? 'My Due Follow-ups' : "Today's Follow-ups");
@@ -1201,6 +1219,7 @@
     setMetricLabel('completedFollowups', isStaffMode ? 'My Completed Follow-ups' : 'Completed Follow-ups');
     setMetricLabel('thisMonthFtd', isStaffMode ? 'My Month FTD' : 'This Month FTD');
     setMetricLabel('activePlayers', isStaffMode ? 'My Active Players' : 'Active Players');
+    setMetricLabel('turnover', isStaffMode ? 'My Turnover' : 'Turnover');
     setMetricLabel('revenueNgr', isStaffMode ? 'My Revenue/NGR' : 'Revenue/NGR');
   }
 
@@ -1512,10 +1531,13 @@
   }
 
   function renderPerformance(items) {
-    renderRecordList('[data-dashboard-performance]', items, 'No monthly performance rows available.', function (item) {
+    renderRecordList('[data-dashboard-performance]', items, 'No weekly or monthly performance rows available.', function (item) {
       var metrics = [];
       if (item.ftd !== '') {
         metrics.push('FTD ' + item.ftd);
+      }
+      if (item.turnover !== '') {
+        metrics.push('Turnover ' + item.turnover);
       }
       if (item.revenue !== '') {
         metrics.push('Revenue ' + item.revenue);
@@ -1524,7 +1546,7 @@
         metrics.push('Growth ' + item.growth);
       }
       return {
-        title: [item.month, item.brand].filter(Boolean).join(' | ') || 'Performance row',
+        title: [item.periodType, item.month || item.weekStart, item.brand].filter(Boolean).join(' | ') || 'Performance row',
         meta: firstDefined(item.affiliate, 'No affiliate') + (metrics.length ? ' | ' + metrics.join(' | ') : ''),
         badges: []
       };
@@ -3258,6 +3280,9 @@
     if (recordState.context && recordState.context.Affiliate_ID) {
       applyAffiliateSelection(recordState.context.Affiliate_ID);
     }
+    if (type === 'performance') {
+      updatePerformancePeriodFields();
+    }
   }
 
   async function preloadRecordReferences(type) {
@@ -3349,6 +3374,8 @@
     var input;
     var required = config && asArray(config.required).indexOf(field) !== -1;
 
+    value = getRecordFieldValue(field, value);
+
     label.className = 'field';
     label.dataset.fieldName = field;
     caption.textContent = friendlyFieldLabel(field) + (required ? ' *' : '');
@@ -3360,10 +3387,10 @@
     } else if (field === 'Month') {
       input = document.createElement('input');
       input.type = 'month';
-    } else if (field.indexOf('Date') !== -1 || field === 'Date') {
+    } else if (field.indexOf('Date') !== -1 || field === 'Date' || field === 'Week_Start' || field === 'Week_End') {
       input = document.createElement('input');
       input.type = 'date';
-    } else if (['FTD', 'Active_Players', 'Deposit_Amount', 'Revenue_NGR', 'Commission'].indexOf(field) !== -1) {
+    } else if (['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'Revenue_NGR', 'NGR', 'Commission', 'Growth_Percent'].indexOf(field) !== -1) {
       input = document.createElement('input');
       input.type = 'number';
       input.min = '0';
@@ -3400,6 +3427,9 @@
         applyAffiliateSelection(input.value);
       });
     }
+    if (field === 'Period_Type') {
+      input.addEventListener('change', updatePerformancePeriodFields);
+    }
     error.className = 'field-error';
     error.dataset.fieldError = field;
     label.appendChild(input);
@@ -3407,12 +3437,57 @@
     return label;
   }
 
+  function getRecordFieldValue(field, value) {
+    if (value !== undefined && value !== null && value !== '') {
+      return value;
+    }
+    if (recordState.type !== 'performance') {
+      return value;
+    }
+    if (field === 'NGR') {
+      return firstDefined(recordState.context.NGR, recordState.context.Revenue_NGR, recordState.context.Revenue);
+    }
+    if (field === 'Remarks') {
+      return firstDefined(recordState.context.Remarks, recordState.context.Notes);
+    }
+    if (field === 'Growth_Percent') {
+      return firstDefined(recordState.context.Growth_Percent, recordState.context.Conversion_Rate);
+    }
+    if (field === 'Period_Type') {
+      return firstDefined(recordState.context.Period_Type, recordState.context.Week_Start || recordState.context.Week_End ? 'Weekly' : 'Monthly');
+    }
+    return value;
+  }
+
+  function updatePerformancePeriodFields() {
+    var form = utils.qs('[data-record-form]');
+    var period = form && form.elements.Period_Type ? form.elements.Period_Type.value : 'Monthly';
+    var isWeekly = safeLower(period) === 'weekly';
+
+    setFieldVisibility('Month', !isWeekly);
+    setFieldVisibility('Week_Start', isWeekly);
+    setFieldVisibility('Week_End', isWeekly);
+  }
+
+  function setFieldVisibility(field, isVisible) {
+    var form = utils.qs('[data-record-form]');
+    var fieldNode = form ? form.querySelector('[data-field-name="' + field + '"]') : null;
+    var input = form && form.elements[field] ? form.elements[field] : null;
+
+    if (fieldNode) {
+      fieldNode.hidden = !isVisible;
+    }
+    if (input) {
+      input.required = isVisible && recordForms.performance.required.indexOf(field) !== -1;
+    }
+  }
+
   function friendlyFieldLabel(field) {
     return fieldLabels[field] || String(field || '').replace(/_/g, ' ');
   }
 
   function shouldUseSelect(field) {
-    return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type'].indexOf(field) !== -1;
+    return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type', 'Period_Type'].indexOf(field) !== -1;
   }
 
   function getRecordOptions(field, config) {
@@ -3432,6 +3507,9 @@
     }
     if (field === 'Priority') {
       return ['Low', 'Medium', 'High', 'Critical'];
+    }
+    if (field === 'Period_Type') {
+      return ['Monthly', 'Weekly'];
     }
     if (field === 'Health_Status') {
       return ['Healthy', 'Attention', 'Warning', 'Critical'];
@@ -3498,7 +3576,10 @@
     if (field === 'Generated_From') {
       return 'Manual';
     }
-    if (field === 'Date') {
+    if (field === 'Period_Type') {
+      return 'Monthly';
+    }
+    if (field === 'Date' || field === 'Week_Start' || field === 'Week_End') {
       return getDateOnly(new Date().toISOString());
     }
     if (field === 'Month') {
@@ -3600,7 +3681,7 @@
 
   function isRecordEdit(config, context) {
     if (recordState.type === 'performance') {
-      return !!(context && (context.Performance_ID || (context.Affiliate_ID && context.Month)));
+      return !!(context && (context.Performance_ID || (context.Affiliate_ID && context.Brand && (context.Month || (context.Week_Start && context.Week_End)))));
     }
     return !!(config && config.updateApi && config.idKey && context && context[config.idKey]);
   }

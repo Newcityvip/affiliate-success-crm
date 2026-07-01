@@ -58,6 +58,7 @@ function getDashboardSummary(user) {
   summary.revenueNgr = performanceSummary.revenueNgr;
   summary.commission = performanceSummary.commission;
   summary.depositAmount = performanceSummary.depositAmount;
+  summary.turnover = performanceSummary.turnover;
   summary.growth = performanceSummary.growth;
 
   summary.todayWorkspace = {
@@ -369,12 +370,16 @@ function normalizeTaskRow(row) {
 function buildMonthlyPerformance(rows) {
   return rows.slice(0).sort(newestFirst).slice(0, 8).map(function (row) {
     return {
+      periodType: getPerformancePeriodType(row),
       month: derivePerformanceMonth(getFirstValue(row, ['Month', 'Date', 'Performance_Month', 'Period'])),
+      weekStart: normalizeDateValue(getFirstValue(row, ['Week_Start', 'Week Start'])),
+      weekEnd: normalizeDateValue(getFirstValue(row, ['Week_End', 'Week End'])),
       brand: safeString(getFirstValue(row, ['Brand', 'Brand_Name', 'Brand Name'])),
       affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID'])),
       ftd: getOptionalNumber(row, ['FTD', 'FTDs', 'First_Time_Depositors']),
       activePlayers: getOptionalNumber(row, ['Active_Players', 'Active Players']),
       deposits: getOptionalNumber(row, ['Deposit_Amount', 'Deposit Amount']),
+      turnover: getOptionalNumber(row, ['Turnover']),
       revenue: getOptionalNumber(row, ['Revenue_NGR', 'NGR', 'Revenue', 'Net_Gaming_Revenue', 'Commission']),
       growth: safeString(getFirstValue(row, ['Growth_Percent', 'Conversion_Rate', 'Growth', 'Growth_Rate', 'MoM_Growth']))
     };
@@ -423,6 +428,7 @@ function buildStaffPerformanceSummary(rows) {
         staff: staff,
         ftd: 0,
         activePlayers: 0,
+        turnover: 0,
         revenue: 0,
         rows: 0
       };
@@ -430,6 +436,7 @@ function buildStaffPerformanceSummary(rows) {
     map[staff].rows += 1;
     map[staff].ftd += Number(getFirstValue(row, ['FTD']) || 0) || 0;
     map[staff].activePlayers += Number(getFirstValue(row, ['Active_Players', 'Active Players']) || 0) || 0;
+    map[staff].turnover += Number(getFirstValue(row, ['Turnover']) || 0) || 0;
     map[staff].revenue += Number(getFirstValue(row, ['Revenue_NGR', 'NGR', 'Revenue']) || 0) || 0;
   });
   return objectValues(map).sort(function (a, b) {
