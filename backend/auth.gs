@@ -32,7 +32,7 @@ function loginStaff(loginId, e) {
     throwCodedError('AUTH_INACTIVE_USER', 'This staff account is inactive.');
   }
 
-  enforceAllowedIp(user, e);
+  enforceAllowedIpForRow(user.raw || {}, e);
 
   return createSession(user);
 }
@@ -252,22 +252,15 @@ function getClientIp(e) {
 function getClientIpInfo(e) {
   const headers = (e && e.headers) || {};
   const params = (e && e.parameter) || {};
-  const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
-  var body = {};
+  const body = getAuthRequestPayload(e);
   var candidates;
   var index;
 
-  if (contents) {
-    try {
-      body = JSON.parse(contents);
-    } catch (error) {
-      body = {};
-    }
-  }
-
   candidates = [
-    { source: 'parameter.ip', value: params.ip || body.ip },
-    { source: 'parameter.userIp', value: params.userIp || body.userIp },
+    { source: 'payload.userIp', value: body.userIp },
+    { source: 'payload.ip', value: body.ip },
+    { source: 'parameter.userIp', value: params.userIp },
+    { source: 'parameter.ip', value: params.ip },
     { source: 'parameter.forwardedFor', value: params.forwardedFor || body.forwardedFor },
     { source: 'parameter.X-Forwarded-For', value: params['X-Forwarded-For'] || body['X-Forwarded-For'] },
     { source: 'headers.X-Forwarded-For', value: headers['X-Forwarded-For'] },
@@ -297,18 +290,21 @@ function normalizeClientIp(value) {
 }
 
 function enforceAllowedIp(user, e) {
-  const allowedIps = getAllowedIpsForUser(user);
-  const clientIp = getClientIpInfo(e).ip;
+  return enforceAllowedIpForRow(user && user.raw ? user.raw : getStaffRowForUser(user), e);
+}
 
-  if (!allowedIps.length) {
+function enforceAllowedIpForRow(row, e) {
+  const policy = getAllowedIpPolicy(row, e);
+
+  if (!policy.allowedIpsParsed.length) {
     return true;
   }
 
-  if (!clientIp) {
+  if (policy.blockReason === 'AUTH_IP_UNKNOWN') {
     throwCodedError('AUTH_IP_UNKNOWN', 'Could not verify your IP. Please contact admin.');
   }
 
-  if (allowedIps.indexOf(clientIp) === -1) {
+  if (policy.blockReason === 'AUTH_IP_NOT_ALLOWED') {
     throwCodedError('AUTH_IP_NOT_ALLOWED', 'This login is not allowed from your current IP.');
   }
 
@@ -317,8 +313,59 @@ function enforceAllowedIp(user, e) {
 
 function getAllowedIpsForUser(user) {
   const raw = user && user.raw ? user.raw : getStaffRowForUser(user);
-  const allowed = safeString(getFirstValue(raw, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
+  return getAllowedIpsForRow(raw);
+}
+
+function getAllowedIpsForRow(row) {
+  const allowed = safeString(getFirstValue(row || {}, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
   return parseAllowedIps(allowed);
+}
+
+function getAllowedIpPolicy(row, e) {
+  const ipInfo = getClientIpInfo(e);
+  const allowedIpsRaw = safeString(getFirstValue(row || {}, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
+  const allowedIpsParsed = parseAllowedIps(allowedIpsRaw);
+  const ipAllowed = allowedIpsParsed.length ? allowedIpsParsed.indexOf(ipInfo.ip) !== -1 : true;
+  var blockReason = '';
+
+  if (allowedIpsParsed.length && !ipInfo.ip) {
+    blockReason = 'AUTH_IP_UNKNOWN';
+  } else if (allowedIpsParsed.length && !ipAllowed) {
+    blockReason = 'AUTH_IP_NOT_ALLOWED';
+  }
+
+  return {
+    detectedIp: ipInfo.ip,
+    ipSource: ipInfo.source,
+    allowedIpsRaw: allowedIpsRaw,
+    allowedIpsParsed: allowedIpsParsed,
+    ipAllowed: ipAllowed,
+    blockReason: blockReason
+  };
+}
+
+function getAuthRequestPayload(e) {
+  const params = (e && e.parameter) || {};
+  const contents = e && e.postData && e.postData.contents ? e.postData.contents : '';
+  var body = {};
+
+  if (params.payload) {
+    try {
+      body = JSON.parse(params.payload);
+    } catch (error) {
+      body = {};
+    }
+  }
+
+  if (contents) {
+    try {
+      body = JSON.parse(contents);
+    } catch (error) {
+      // Keep query payload if POST body is not JSON.
+    }
+  }
+
+  return body || {};
 }
 
 function parseAllowedIps(allowed) {
@@ -408,18 +455,14 @@ function getAuthDebug(loginId, e) {
   const headers = getSheetHeadersSafe(SHEET_NAMES.STAFF_LIST);
   var match = findStaffUser(normalizedLogin, result.rows);
   var raw = match && match.raw ? match.raw : {};
-  var ipInfo;
-  var allowedIpsRaw;
-  var allowedIpsParsed;
+  var policy;
 
   if (!match && result.rows.length) {
     match = findStaffUser(normalizedLogin, result.rows);
     raw = match && match.raw ? match.raw : {};
   }
 
-  ipInfo = getClientIpInfo(e);
-  allowedIpsRaw = safeString(getFirstValue(raw, ['Allowed_IPs', 'Allowed IPs', 'Allowed_IP', 'Allowed IP']));
-  allowedIpsParsed = parseAllowedIps(allowedIpsRaw);
+  policy = getAllowedIpPolicy(raw, e);
 
   return {
     staffSheetFound: headers.length > 0 || result.rows.length > 0,
@@ -435,11 +478,12 @@ function getAuthDebug(loginId, e) {
     roleRaw: safeString(getFirstValue(raw, ['Role'])),
     permissionRaw: safeString(getFirstValue(raw, ['Permission_Level', 'Permission Level'])),
     normalizedRole: match ? normalizeRole(match.role) : '',
-    detectedIp: ipInfo.ip,
-    ipSource: ipInfo.source,
-    allowedIpsRaw: allowedIpsRaw,
-    allowedIpsParsed: allowedIpsParsed,
-    ipAllowed: allowedIpsParsed.length ? allowedIpsParsed.indexOf(ipInfo.ip) !== -1 : true,
+    detectedIp: policy.detectedIp,
+    ipSource: policy.ipSource,
+    allowedIpsRaw: policy.allowedIpsRaw,
+    allowedIpsParsed: policy.allowedIpsParsed,
+    ipAllowed: policy.ipAllowed,
+    blockReason: policy.blockReason,
     errorCode: result.error ? 'AUTH_CONFIG_ERROR' : '',
     errorMessage: result.error ? 'Staff_List could not be read.' : ''
   };
