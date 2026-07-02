@@ -108,14 +108,15 @@
       updateApi: 'updateAffiliate',
       idKey: 'Affiliate_ID',
       adminOnly: true,
-      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Active'],
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active'],
       sections: {
         'Basic Info': ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language'],
+        'Contact Details': ['Telegram', 'WhatsApp', 'Email'],
         Assignment: ['Assigned_Staff'],
         'Status & Priority': ['Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Active'],
         'Follow-up Plan': ['Next_Followup_Date']
       },
-      fields: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
+      fields: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
     },
     task: {
       title: 'Create Task',
@@ -947,7 +948,9 @@
       event.preventDefault();
 
       if (!loginId) {
-        utils.setText(message, 'Enter your Login ID.');
+        renderLoginMessage(message, {
+          message: 'Enter your Login ID.'
+        });
         return;
       }
 
@@ -955,17 +958,23 @@
         submit.disabled = true;
         submit.textContent = 'Signing in...';
       }
-      utils.setText(message, 'Checking staff access...');
+      renderLoginMessage(message, {
+        message: 'Checking staff access.'
+      });
 
       auth.login(loginId).then(function (result) {
         if (!isSuccessfulResult(result)) {
-          utils.setText(message, result && result.message ? result.message : 'Unable to sign in.');
+          renderLoginMessage(message, result || {
+            message: 'Unable to sign in.'
+          });
           return;
         }
 
         window.location.href = 'index.html#dashboard';
       }).catch(function () {
-        utils.setText(message, 'Unable to sign in. Check the Apps Script deployment.');
+        renderLoginMessage(message, {
+          message: 'Unable to sign in. Check the Apps Script deployment.'
+        });
       }).finally(function () {
         if (submit) {
           submit.disabled = false;
@@ -973,6 +982,87 @@
         }
       });
     });
+  }
+
+  function renderLoginMessage(container, result) {
+    var code = getLoginErrorCode(result);
+    var ip;
+
+    if (!container) {
+      return;
+    }
+
+    container.classList.remove('login-denied');
+    container.innerHTML = '';
+
+    if (code !== 'AUTH_IP_NOT_ALLOWED') {
+      container.textContent = result && result.message ? result.message : '';
+      return;
+    }
+
+    ip = getLoginDeniedIp(result);
+    container.classList.add('login-denied');
+    container.appendChild(createLoginDeniedMessage(ip));
+  }
+
+  function getLoginErrorCode(result) {
+    var errorText = typeof (result && result.error) === 'string' ? result.error : '';
+    var message = result && result.message ? result.message : '';
+
+    if (result && result.code) {
+      return result.code;
+    }
+    if (result && result.error && result.error.code) {
+      return result.error.code;
+    }
+    if (/AUTH_IP_NOT_ALLOWED|not authorized for this account|not allowed from your current IP/i.test(errorText || message)) {
+      return 'AUTH_IP_NOT_ALLOWED';
+    }
+
+    return '';
+  }
+
+  function getLoginDeniedIp(result) {
+    var details = result && result.details ? result.details : {};
+    var errorDetails = result && result.error && result.error.details ? result.error.details : {};
+    var data = result && result.data ? result.data : {};
+    var ip = data.detectedIp || data.ip || details.detectedIp || details.ip || errorDetails.detectedIp || errorDetails.ip || result.clientIp;
+    return ip ? String(ip).trim() : 'Unable to detect IP';
+  }
+
+  function createLoginDeniedMessage(ip) {
+    var wrap = document.createElement('span');
+    var title = document.createElement('strong');
+    var body = document.createElement('span');
+    var ipRow = document.createElement('span');
+    var ipLabel = document.createElement('span');
+    var ipValue = document.createElement('strong');
+    var copyButton = document.createElement('button');
+    var help = document.createElement('span');
+
+    wrap.className = 'login-denied-content';
+    title.textContent = 'Access Denied';
+    body.textContent = 'Your current IP address is not authorized for this account.';
+    ipRow.className = 'login-denied-ip';
+    ipLabel.textContent = 'Current IP:';
+    ipValue.textContent = ip;
+    copyButton.className = 'copy-button';
+    copyButton.type = 'button';
+    copyButton.textContent = 'Copy IP';
+    copyButton.disabled = ip === 'Unable to detect IP';
+    copyButton.addEventListener('click', function () {
+      copyTextToClipboard(ip, 'Current IP', copyButton);
+    });
+    help.textContent = 'If you believe this is incorrect, please contact your administrator to whitelist this IP address.';
+
+    ipRow.appendChild(ipLabel);
+    ipRow.appendChild(ipValue);
+    ipRow.appendChild(copyButton);
+    wrap.appendChild(title);
+    wrap.appendChild(body);
+    wrap.appendChild(ipRow);
+    wrap.appendChild(help);
+    return wrap;
   }
 
   function ensureSession() {
@@ -3604,6 +3694,9 @@
     }
     if (field === 'Priority') {
       return 'Medium';
+    }
+    if (field === 'Health_Status') {
+      return 'Healthy';
     }
     if (field === 'Generated_From') {
       return 'Manual';

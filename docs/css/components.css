@@ -727,6 +727,37 @@
   white-space: pre-line;
 }
 
+[data-login-message].login-denied {
+  display: block;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 107, 122, 0.38);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 107, 122, 0.08);
+  color: var(--text);
+  white-space: normal;
+}
+
+.login-denied-content {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.login-denied-content > strong {
+  color: #ffb3bd;
+  font-size: 0.92rem;
+}
+
+.login-denied-ip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.login-denied-ip strong {
+  color: var(--text);
+}
+
 .field-error {
   min-height: 1rem;
   color: var(--danger);
