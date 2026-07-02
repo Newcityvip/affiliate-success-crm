@@ -60,7 +60,8 @@
 
     if (!result.ok) {
       clearSession();
-      result.message = friendlyAuthMessage(result);
+      result.clientIp = clientIp || '';
+      result.message = friendlyAuthMessage(result, clientIp);
       return result;
     }
 
@@ -139,15 +140,32 @@
     }
   }
 
-  function friendlyAuthMessage(result) {
+  function friendlyAuthMessage(result, fallbackIp) {
     var code = result && (result.code || (result.error && result.error.code));
     if (code === 'AUTH_IP_NOT_ALLOWED') {
-      return 'This login is not allowed from your current IP.';
+      return [
+        'Access Denied',
+        '',
+        'Your current IP address is not authorized for this account.',
+        '',
+        'Current IP:',
+        getDeniedIp(result, fallbackIp),
+        '',
+        'If you believe this is incorrect, please contact your administrator to whitelist this IP address.'
+      ].join('\n');
     }
     if (code === 'AUTH_IP_UNKNOWN') {
       return 'Could not verify your IP. Please contact admin.';
     }
     return result && result.message ? result.message : 'Unable to sign in.';
+  }
+
+  function getDeniedIp(result, fallbackIp) {
+    var details = result && result.details ? result.details : {};
+    var errorDetails = result && result.error && result.error.details ? result.error.details : {};
+    var data = result && result.data ? result.data : {};
+    var ip = data.detectedIp || data.ip || details.detectedIp || details.ip || errorDetails.detectedIp || errorDetails.ip || result.clientIp || fallbackIp;
+    return ip ? String(ip).trim() : 'Unable to detect IP';
   }
 
   async function refreshSession() {

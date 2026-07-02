@@ -723,6 +723,10 @@
   font-size: 0.85rem;
 }
 
+[data-login-message] {
+  white-space: pre-line;
+}
+
 .field-error {
   min-height: 1rem;
   color: var(--danger);
