@@ -46,7 +46,8 @@
   function normalizePayload(payload) {
     var normalized = payload || {};
     var ok = normalized.ok;
-    var code = normalized.code || (normalized.error && normalized.error.code) || '';
+    var errorText = typeof normalized.error === 'string' ? normalized.error : '';
+    var code = normalized.code || (normalized.error && normalized.error.code) || detectKnownErrorCode(errorText || normalized.message || '');
     var detailMessage = normalized.details && normalized.details.message ? normalized.details.message : '';
 
     if (ok === undefined) {
@@ -59,6 +60,47 @@
     normalized.message = normalized.message || detailMessage || (typeof normalized.error === 'string' ? normalized.error : 'API response received.');
 
     return normalized;
+  }
+
+  function detectKnownErrorCode(value) {
+    var text = String(value || '');
+
+    if (/AUTH_IP_NOT_ALLOWED|not allowed from your current IP/i.test(text)) {
+      return 'AUTH_IP_NOT_ALLOWED';
+    }
+
+    if (/AUTH_IP_UNKNOWN|Could not verify your IP/i.test(text)) {
+      return 'AUTH_IP_UNKNOWN';
+    }
+
+    return '';
+  }
+
+  function parseApiResponse(text, status) {
+    var raw = String(text || '');
+    var code;
+
+    if (!raw) {
+      return {
+        ok: status >= 200 && status < 300,
+        success: status >= 200 && status < 300,
+        message: ''
+      };
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      code = detectKnownErrorCode(raw);
+      return {
+        ok: false,
+        success: false,
+        message: code === 'AUTH_IP_NOT_ALLOWED' ? 'This login is not allowed from your current IP.' : raw,
+        data: {},
+        error: code || raw,
+        code: code
+      };
+    }
   }
 
   function getActionFromUrl(url, fallback) {
@@ -140,7 +182,7 @@
 
     try {
       var response = await fetch(url, options || {});
-      var payload = normalizePayload(await response.json());
+      var payload = normalizePayload(parseApiResponse(await response.text(), response.status));
       handleUnauthorized(payload);
       setLastDebug({
         action: requestAction,
@@ -238,6 +280,9 @@
     },
     authLogin: function (data) {
       return get('authLogin', data);
+    },
+    authDebug: function (data) {
+      return get('authDebug', data);
     },
     getSession: function () {
       return request('getSession');

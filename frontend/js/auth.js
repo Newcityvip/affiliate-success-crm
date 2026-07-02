@@ -59,6 +59,7 @@
     result = await api.login(payload);
 
     if (!result.ok) {
+      result = await resolveLoginFailure(result, payload);
       clearSession();
       result.clientIp = clientIp || '';
       result.message = friendlyAuthMessage(result, clientIp);
@@ -131,6 +132,38 @@
     }
   }
 
+  async function resolveLoginFailure(result, payload) {
+    var code = getAuthCode(result);
+    var debugResult;
+
+    if (isBlockedIpResult(result) || code !== 'NETWORK_ERROR' || !api.authDebug) {
+      return result;
+    }
+
+    debugResult = await api.authDebug(payload);
+    if (debugResult && debugResult.ok && debugResult.data && debugResult.data.blockReason === 'AUTH_IP_NOT_ALLOWED') {
+      return {
+        ok: false,
+        success: false,
+        code: 'AUTH_IP_NOT_ALLOWED',
+        message: 'This login is not allowed from your current IP.',
+        data: debugResult.data
+      };
+    }
+
+    if (debugResult && debugResult.ok && debugResult.data && debugResult.data.blockReason === 'AUTH_IP_UNKNOWN') {
+      return {
+        ok: false,
+        success: false,
+        code: 'AUTH_IP_UNKNOWN',
+        message: 'Could not verify your IP. Please contact admin.',
+        data: debugResult.data
+      };
+    }
+
+    return result;
+  }
+
   function logLoginDebug(details) {
     var isLocal = /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname);
     var debugEnabled = isLocal || window.localStorage.getItem('affiliateSuccessDebug') === '1';
@@ -141,7 +174,7 @@
   }
 
   function friendlyAuthMessage(result, fallbackIp) {
-    var code = result && (result.code || (result.error && result.error.code));
+    var code = getAuthCode(result);
     if (code === 'AUTH_IP_NOT_ALLOWED') {
       return [
         'Access Denied',
@@ -158,6 +191,33 @@
       return 'Could not verify your IP. Please contact admin.';
     }
     return result && result.message ? result.message : 'Unable to sign in.';
+  }
+
+  function getAuthCode(result) {
+    var errorText = typeof (result && result.error) === 'string' ? result.error : '';
+    var message = result && result.message ? result.message : '';
+
+    if (result && result.code) {
+      return result.code;
+    }
+
+    if (result && result.error && result.error.code) {
+      return result.error.code;
+    }
+
+    if (/AUTH_IP_NOT_ALLOWED|not allowed from your current IP/i.test(errorText || message)) {
+      return 'AUTH_IP_NOT_ALLOWED';
+    }
+
+    if (/AUTH_IP_UNKNOWN|Could not verify your IP/i.test(errorText || message)) {
+      return 'AUTH_IP_UNKNOWN';
+    }
+
+    return '';
+  }
+
+  function isBlockedIpResult(result) {
+    return getAuthCode(result) === 'AUTH_IP_NOT_ALLOWED';
   }
 
   function getDeniedIp(result, fallbackIp) {
