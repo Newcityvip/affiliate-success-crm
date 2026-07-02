@@ -53,7 +53,7 @@
   var affiliateFilterFields = ['Brand', 'Assigned_Staff', 'Health_Status', 'Status', 'Priority', 'Active'];
   var affiliateSearchFields = ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Assigned_Staff'];
   var affiliateBadgeFields = ['Health_Status', 'Status', 'Priority', 'Active'];
-  var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Health_Status', 'Status'];
+  var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Last_Contact_Date', 'Next_Followup_Date', 'Next_Action', 'Notes'];
   var copyableAffiliateFields = ['Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email'];
   var followupColumns = [
     'Queue_ID',
@@ -325,9 +325,9 @@
       ],
       actions: [
         { label: 'Mark In Progress', status: 'In Progress', api: 'updateTask', when: 'open' },
-        { label: 'Complete', api: 'completeTask', tone: 'primary', when: 'open' },
+        { label: 'Complete', api: 'completeTask', tone: 'primary', when: 'open', confirm: 'Mark this task complete?' },
         { label: 'Add note', form: 'interaction', when: 'open' },
-        { label: 'Reopen', api: 'reopenTask', when: 'closed' },
+        { label: 'Reopen', api: 'reopenTask', when: 'closed', confirm: 'Reopen this task?' },
         { label: 'Reschedule', form: 'task', when: 'open' }
       ]
     },
@@ -359,8 +359,8 @@
       actions: [
         { label: 'Add update', form: 'issue' },
         { label: 'Escalate', status: 'Escalated', api: 'updateIssue', when: 'open' },
-        { label: 'Resolve', api: 'closeIssue', tone: 'primary', when: 'open' },
-        { label: 'Reopen', api: 'reopenIssue', when: 'closed' }
+        { label: 'Resolve', api: 'closeIssue', tone: 'primary', when: 'open', confirm: 'Close this issue?' },
+        { label: 'Reopen', api: 'reopenIssue', when: 'closed', confirm: 'Reopen this issue?' }
       ]
     },
     performance: {
@@ -1391,6 +1391,7 @@
     setPanelLoading('[data-dashboard-followups]', 'Loading follow-up queue...');
     setPanelLoading('[data-dashboard-health]', 'Loading health distribution...');
     setPanelLoading('[data-dashboard-priority]', 'Loading priority distribution...');
+    setPanelLoading('[data-dashboard-status]', 'Loading status distribution...');
     setTableLoading('[data-dashboard-brands]', 5);
     setTableLoading('[data-dashboard-staff]', 5);
     setPanelLoading('[data-dashboard-activity]', 'Loading recent activity...');
@@ -1404,6 +1405,7 @@
     setPanelEmpty('[data-dashboard-followups]', message);
     setPanelEmpty('[data-dashboard-health]', message);
     setPanelEmpty('[data-dashboard-priority]', message);
+    setPanelEmpty('[data-dashboard-status]', message);
     setTableEmpty('[data-dashboard-brands]', 5, message);
     setTableEmpty('[data-dashboard-staff]', 5, message);
     setPanelEmpty('[data-dashboard-activity]', message);
@@ -1416,6 +1418,7 @@
     renderFollowupSnapshot(data.followupSnapshot || {});
     renderDistribution('[data-dashboard-health]', asArray(data.affiliateHealth), 'No affiliate health data yet.');
     renderDistribution('[data-dashboard-priority]', asArray(data.priorityDistribution), 'No priority data yet.');
+    renderAffiliateStatusSummary(data);
     renderBrandSummary(asArray(data.brandSummary));
     renderStaffWorkload(asArray(data.staffWorkload));
     renderActivity(asArray(data.recentActivity));
@@ -2217,6 +2220,10 @@
       return;
     }
 
+    if (actionConfig.confirm && !window.confirm(actionConfig.confirm)) {
+      return;
+    }
+
     result = await api[actionConfig.api](payload);
     if (!isSuccessfulResult(result)) {
       showToast(friendlyErrorMessage(result, 'Unable to update record.'));
@@ -2646,6 +2653,21 @@
     renderAffiliates();
   }
 
+  function clearAffiliateFilters() {
+    var search = utils.qs('[data-affiliate-search]');
+
+    if (search) {
+      search.value = '';
+    }
+
+    document.querySelectorAll('[data-affiliate-filter]').forEach(function (filter) {
+      filter.value = '';
+    });
+
+    filterAffiliates();
+    showToast('Affiliate filters cleared.');
+  }
+
   function renderAffiliates() {
     var body = utils.qs('[data-affiliates-body]');
     if (!body) {
@@ -2769,13 +2791,7 @@
 
   function createAffiliateActionBar(row) {
     var bar = document.createElement('div');
-    var actions = isAdminUser() ? [
-      { label: 'Add interaction', type: 'interaction' },
-      { label: 'Add follow-up', type: 'followup' },
-      { label: 'Update performance', type: 'performance' },
-      { label: 'Create task', type: 'task' },
-      { label: 'Create issue', type: 'issue' }
-    ] : [
+    var actions = [
       { label: 'Log Interaction', type: 'interaction' },
       { label: 'Log Follow-up', type: 'followup' },
       { label: 'Update Performance', type: 'performance' },
@@ -2897,6 +2913,9 @@
     affiliateState.loaded = true;
     populateAffiliateFilters(affiliateState.all);
     filterAffiliates();
+    if (dashboardState.loaded && dashboardState.data) {
+      renderAffiliateStatusSummary(dashboardState.data);
+    }
   }
 
   function setFollowupsVisibility(state) {
@@ -3347,6 +3366,7 @@
 
     if (!isSuccessfulResult(result)) {
       utils.setText(message, friendlyErrorMessage(result, 'Unable to save follow-up.'));
+      showToast(friendlyErrorMessage(result, 'Unable to save follow-up.'));
       return;
     }
 
@@ -3408,6 +3428,33 @@
     if (type === 'performance') {
       updatePerformancePeriodFields();
     }
+  }
+
+  function renderAffiliateStatusSummary(data) {
+    var items = asArray(data.affiliateStatus || data.statusDistribution || data.affiliateStatusDistribution);
+
+    if (!items.length && affiliateState.loaded) {
+      items = buildDistributionFromRows(affiliateState.all, 'Status');
+    }
+
+    renderDistribution('[data-dashboard-status]', items, 'Open Affiliates to load status distribution.');
+  }
+
+  function buildDistributionFromRows(rows, key) {
+    var counts = {};
+
+    asArray(rows).forEach(function (row) {
+      var label = valueFor(row, key) || 'N/A';
+      counts[label] = (counts[label] || 0) + 1;
+    });
+
+    return Object.keys(counts).sort().map(function (label) {
+      return {
+        label: label,
+        count: counts[label],
+        tone: badgeTone(key, label)
+      };
+    });
   }
 
   async function preloadRecordReferences(type) {
@@ -3875,6 +3922,7 @@
 
     if (validateRecordForm(config).length) {
       utils.setText(message, 'Please complete the required fields before saving.');
+      showToast('Please complete the required fields before saving.');
       return;
     }
 
@@ -3903,6 +3951,7 @@
 
     if (!isSuccessfulResult(result)) {
       utils.setText(message, friendlyErrorMessage(result, 'Unable to save record.'));
+      showToast(friendlyErrorMessage(result, 'Unable to save record.'));
       return;
     }
 
@@ -4089,6 +4138,7 @@
 
     if (!isSuccessfulResult(result)) {
       utils.setText(message, friendlyErrorMessage(result, 'Unable to preview CSV.'));
+      showToast(friendlyErrorMessage(result, 'Unable to preview CSV.'));
       if (commit) {
         commit.disabled = true;
       }
@@ -4178,6 +4228,7 @@
 
     if (!isSuccessfulResult(result)) {
       utils.setText(message, friendlyErrorMessage(result, 'Unable to commit CSV.'));
+      showToast(friendlyErrorMessage(result, 'Unable to commit CSV.'));
       return;
     }
 
@@ -4216,6 +4267,11 @@
     document.querySelectorAll('[data-affiliate-filter]').forEach(function (filter) {
       filter.addEventListener('change', filterAffiliates);
     });
+
+    var clear = utils.qs('[data-affiliate-clear-filters]');
+    if (clear) {
+      clear.addEventListener('click', clearAffiliateFilters);
+    }
 
     var closeButton = utils.qs('[data-affiliate-drawer-close]');
     if (closeButton) {
