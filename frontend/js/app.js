@@ -238,7 +238,8 @@
   var csvConfigs = {
     affiliate: {
       title: 'Import Affiliates',
-      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
+      required: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active'],
+      optional: ['Affiliate_ID', 'Joined_Date', 'Last_Contact_Date', 'Next_Action', 'Last_Performance_Update', 'Notes']
     },
     followup: {
       title: 'Import Follow-ups',
@@ -3904,6 +3905,22 @@
     return message.replace(/_/g, ' ');
   }
 
+  function csvImportErrorMessage(result, fallback) {
+    var message = friendlyErrorMessage(result, fallback);
+    var details = result && result.error && result.error.details && result.error.details.message;
+    var code = result && result.error && result.error.code;
+
+    if (/Unable to reach the API/i.test(message)) {
+      return fallback + (details ? ' Network detail: ' + details : ' The request could not reach Apps Script.');
+    }
+
+    if (code && message.indexOf(code) === -1) {
+      return message + ' (' + code + ')';
+    }
+
+    return message;
+  }
+
   async function submitRecordForm(event) {
     var config = recordForms[recordState.type];
     var message = utils.qs('[data-record-form-message]');
@@ -4063,7 +4080,11 @@
     importState.preview = null;
     utils.setText(utils.qs('[data-import-modal-title]'), config.title);
     utils.setText(utils.qs('[data-import-guide]'), formatCsvHeaderGuide(config));
-    utils.setText(utils.qs('[data-import-message]'), 'Download the sample or choose a CSV file. Preview validates every row before commit.');
+    utils.setText(
+      utils.qs('[data-import-message]'),
+      'Download the sample or choose a CSV file. Preview validates every row before commit.' +
+        (type === 'affiliate' ? ' Affiliate_ID/export columns are accepted, but this importer creates new rows and does not update existing Affiliate_ID matches.' : '')
+    );
     if (textarea) {
       textarea.value = buildSampleCsv(type);
     }
@@ -4137,8 +4158,8 @@
     }
 
     if (!isSuccessfulResult(result)) {
-      utils.setText(message, friendlyErrorMessage(result, 'Unable to preview CSV.'));
-      showToast(friendlyErrorMessage(result, 'Unable to preview CSV.'));
+      utils.setText(message, csvImportErrorMessage(result, 'Unable to preview CSV.'));
+      showToast(csvImportErrorMessage(result, 'Unable to preview CSV.'));
       if (commit) {
         commit.disabled = true;
       }
@@ -4227,8 +4248,8 @@
     }
 
     if (!isSuccessfulResult(result)) {
-      utils.setText(message, friendlyErrorMessage(result, 'Unable to commit CSV.'));
-      showToast(friendlyErrorMessage(result, 'Unable to commit CSV.'));
+      utils.setText(message, csvImportErrorMessage(result, 'Unable to commit CSV.'));
+      showToast(csvImportErrorMessage(result, 'Unable to commit CSV.'));
       return;
     }
 

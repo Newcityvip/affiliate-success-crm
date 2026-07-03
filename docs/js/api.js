@@ -244,6 +244,23 @@
     });
   }
 
+  function writeLargeSafe(action, data) {
+    var payload = data || {};
+    var serialized = '';
+
+    try {
+      serialized = JSON.stringify(payload);
+    } catch (error) {
+      return post(action, payload);
+    }
+
+    if (serialized.length > 1800) {
+      return post(action, payload);
+    }
+
+    return write(action, payload);
+  }
+
   function post(action, data) {
     var payload = data || {};
     var token = getSessionToken();
@@ -393,10 +410,10 @@
       return write('updateStaff', data);
     },
     importCsvPreview: function (data) {
-      return write('importCsvPreview', data);
+      return writeLargeSafe('importCsvPreview', data);
     },
     importCsvCommit: function (data) {
-      return write('importCsvCommit', data);
+      return writeLargeSafe('importCsvCommit', data);
     },
     createPerformance: function (data) {
       return write('createPerformance', data);
