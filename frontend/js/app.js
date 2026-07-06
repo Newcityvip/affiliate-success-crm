@@ -1095,6 +1095,10 @@
       button.hidden = !isSuperAdminUser();
     });
 
+    document.querySelectorAll('[data-staff-email-action]').forEach(function (button) {
+      button.hidden = isAdminUser();
+    });
+
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
       var action = button.dataset.quickAction;
       if (!isAdminUser() && ['affiliate', 'task'].indexOf(action) !== -1) {
@@ -4033,6 +4037,16 @@
   }
 
   function bindQuickActions() {
+    document.querySelectorAll('[data-staff-email-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        window.open(
+          'https://run.247cs.live/run/6a4b5de24c9b030606b281bf',
+          '_blank',
+          'noopener,noreferrer'
+        );
+      });
+    });
+
     document.querySelectorAll('[data-quick-action]').forEach(function (button) {
       button.addEventListener('click', function () {
         var action = button.dataset.quickAction;
