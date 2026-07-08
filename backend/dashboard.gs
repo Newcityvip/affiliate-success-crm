@@ -14,7 +14,7 @@ function getDashboardSummary(user) {
   const rawInteractions = safeReadSheetObjects(SHEET_NAMES.INTERACTION_LOG);
   const rawPerformance = normalizePerformanceRows(safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE));
   const affiliates = filterAffiliatesForUser(rawAffiliates, user);
-  const followups = enrichDashboardFollowups(filterRowsForUser(rawFollowups, user), rawAffiliates);
+  const followups = enrichDashboardFollowups(getCombinedFollowups(user, rawFollowups, rawAffiliates), rawAffiliates);
   const tasks = filterRowsForUser(rawTasks, user);
   const issues = filterRowsForUser(rawIssues, user);
   const brands = filterBrandsForUser(rawBrands, rawAffiliates, user);
@@ -53,6 +53,7 @@ function getDashboardSummary(user) {
   };
 
   summary.performanceSummary = performanceSummary;
+  summary.followupSourceCounts = getFollowupSourceCounts(followups);
   summary.thisMonthFtd = performanceSummary.totalFtd;
   summary.activePlayers = performanceSummary.activePlayers;
   summary.revenueNgr = performanceSummary.revenueNgr;
@@ -592,6 +593,8 @@ function getRowDate(row) {
     'Due_Date',
     'Due Date',
     'Next_Followup',
+    'Next_Followup_Date',
+    'Next Followup Date',
     'Next Followup',
     'Next Follow-up',
     'Created_Date',
@@ -607,8 +610,8 @@ function getRowDate(row) {
     return null;
   }
 
-  const date = new Date(rawValue);
-  if (isNaN(date.getTime())) {
+  const date = parseFollowupDate(rawValue);
+  if (!date) {
     return null;
   }
 
@@ -674,9 +677,13 @@ function normalizeDateValue(value) {
     return '';
   }
   if (value instanceof Date) {
-    return value.toISOString();
+    return formatDateOnly(value);
   }
   return safeString(value);
+}
+
+function formatDateOnly(date) {
+  return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2);
 }
 
 function objectValues(source) {

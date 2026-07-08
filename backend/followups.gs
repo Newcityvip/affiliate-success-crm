@@ -1,9 +1,117 @@
 function getFollowups(user) {
-  const items = enrichFollowups(filterRowsForUser(safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), user));
+  const items = getCombinedFollowups(user);
   return {
     count: items.length,
-    items: items
+    items: items,
+    followupSourceCounts: getFollowupSourceCounts(items)
   };
+}
+
+function getCombinedFollowups(user, rawFollowups, rawAffiliates) {
+  const affiliates = rawAffiliates || safeReadSheetObjects(SHEET_NAMES.AFFILIATES);
+  const queue = enrichFollowups(filterRowsForUser(rawFollowups || safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), user), affiliates);
+  const derived = buildAffiliateNextFollowups(filterAffiliatesForUser(affiliates, user), queue);
+  return queue.concat(derived);
+}
+
+function buildAffiliateNextFollowups(affiliates, queue) {
+  const queueKeys = {};
+
+  queue.forEach(function (row) {
+    const key = buildFollowupMergeKey(row.Affiliate_ID, row.Followup_Date);
+    if (key) {
+      queueKeys[key] = true;
+    }
+  });
+
+  return (affiliates || []).filter(function (affiliate) {
+    const date = safeString(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date', 'Next_Followup', 'Next Followup']));
+    const active = safeString(getFirstValue(affiliate, ['Active', 'Status'])).toLowerCase();
+    const affiliateId = safeString(affiliate.Affiliate_ID);
+
+    if (!affiliateId || !date) {
+      return false;
+    }
+
+    if (active && ['no', 'false', 'inactive', 'closed'].indexOf(active) !== -1) {
+      return false;
+    }
+
+    return !queueKeys[buildFollowupMergeKey(affiliateId, date)];
+  }).map(function (affiliate) {
+    const date = safeString(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date', 'Next_Followup', 'Next Followup']));
+    return {
+      Queue_ID: '',
+      Affiliate_ID: safeString(affiliate.Affiliate_ID),
+      Affiliate_Name: safeString(affiliate.Affiliate_Name),
+      Brand: safeString(affiliate.Brand),
+      Assigned_Staff: safeString(affiliate.Assigned_Staff),
+      Followup_Date: date,
+      Next_Followup_Date: date,
+      Priority: safeString(affiliate.Priority),
+      Status: 'Pending',
+      Generated_From: 'Affiliate Next Follow-up',
+      Source: 'Affiliate Next Follow-up',
+      Next_Action: safeString(affiliate.Next_Action),
+      Notes: safeString(affiliate.Notes),
+      isAffiliateNextFollowup: true
+    };
+  });
+}
+
+function buildFollowupMergeKey(affiliateId, dateValue) {
+  const date = normalizeFollowupDateKey(dateValue);
+  const id = safeString(affiliateId);
+  return id && date ? id + '|' + date : '';
+}
+
+function normalizeFollowupDateKey(value) {
+  const date = parseFollowupDate(value);
+  return date ? date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2) : '';
+}
+
+function parseFollowupDate(value) {
+  const text = safeString(value);
+  var match;
+  var parsed;
+
+  if (!text) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    return new Date(Number(match[3]), Number(match[1]) - 1, Number(match[2]));
+  }
+
+  match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  parsed = new Date(text);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getFollowupSourceCounts(items) {
+  const counts = {
+    queue: 0,
+    affiliateNextFollowup: 0
+  };
+
+  (items || []).forEach(function (item) {
+    if (item && item.isAffiliateNextFollowup) {
+      counts.affiliateNextFollowup += 1;
+    } else {
+      counts.queue += 1;
+    }
+  });
+
+  return counts;
 }
 
 function createFollowup(payload, user) {
@@ -129,10 +237,10 @@ function getFollowupByQueueId(queueId) {
   return matches[0];
 }
 
-function enrichFollowups(items) {
+function enrichFollowups(items, affiliates) {
   const affiliateMap = {};
 
-  safeReadSheetObjects(SHEET_NAMES.AFFILIATES).forEach(function (affiliate) {
+  (affiliates || safeReadSheetObjects(SHEET_NAMES.AFFILIATES)).forEach(function (affiliate) {
     const affiliateId = safeString(affiliate.Affiliate_ID);
     if (affiliateId) {
       affiliateMap[affiliateId] = affiliate;

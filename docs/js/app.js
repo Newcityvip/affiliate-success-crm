@@ -3137,12 +3137,13 @@
   function appendFollowupActions(parent, row) {
     var actions = document.createElement('div');
     actions.className = 'table-actions';
+    var isAffiliateReminder = valueFor(row, 'isAffiliateNextFollowup') === 'true' || valueFor(row, 'Source') === 'Affiliate Next Follow-up' || !valueFor(row, 'Queue_ID');
 
     var complete = document.createElement('button');
     complete.className = 'button button-secondary button-small';
     complete.type = 'button';
     complete.textContent = isAdminUser() ? 'Mark Complete' : 'Complete';
-    complete.disabled = isCompletedFollowup(row);
+    complete.disabled = isCompletedFollowup(row) || isAffiliateReminder;
     complete.addEventListener('click', function () {
       markFollowupComplete(row);
     });
@@ -3151,9 +3152,21 @@
     reschedule.className = 'button button-secondary button-small';
     reschedule.type = 'button';
     reschedule.textContent = isAdminUser() ? 'Reschedule' : 'Update / Reschedule';
+    reschedule.disabled = isAffiliateReminder;
     reschedule.addEventListener('click', function () {
       openFollowupModal('reschedule', row);
     });
+
+    if (isAffiliateReminder) {
+      var log = document.createElement('button');
+      log.className = 'button button-secondary button-small';
+      log.type = 'button';
+      log.textContent = 'Log Follow-up';
+      log.addEventListener('click', function () {
+        openFollowupModal('create', row);
+      });
+      actions.appendChild(log);
+    }
 
     actions.appendChild(complete);
     actions.appendChild(reschedule);
@@ -3184,16 +3197,40 @@
   }
 
   function getDateOnly(value) {
+    var match;
+    var parsed;
+    var date;
+
     if (!value) {
       return '';
     }
 
-    var date = new Date(value);
-    if (isNaN(date.getTime())) {
+    if (value instanceof Date) {
+      return formatLocalDateOnly(value);
+    }
+
+    value = String(value).trim();
+    match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (match) {
+      return match[3] + '-' + String(match[1]).padStart(2, '0') + '-' + String(match[2]).padStart(2, '0');
+    }
+
+    match = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (match) {
+      return match[1] + '-' + String(match[2]).padStart(2, '0') + '-' + String(match[3]).padStart(2, '0');
+    }
+
+    parsed = new Date(value);
+    if (isNaN(parsed.getTime())) {
       return value.slice(0, 10);
     }
 
-    return date.toISOString().slice(0, 10);
+    date = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    return formatLocalDateOnly(date);
+  }
+
+  function formatLocalDateOnly(date) {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
   }
 
   async function loadFollowups(force) {
