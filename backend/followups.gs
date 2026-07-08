@@ -9,21 +9,26 @@ function getFollowups(user) {
 
 function getCombinedFollowups(user, rawFollowups, rawAffiliates) {
   const affiliates = rawAffiliates || safeReadSheetObjects(SHEET_NAMES.AFFILIATES);
-  const queue = enrichFollowups(filterRowsForUser(rawFollowups || safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE), user), affiliates);
-  const derived = buildAffiliateNextFollowups(filterAffiliatesForUser(affiliates, user), queue);
-  return queue.concat(derived);
-}
+  const derived = buildAffiliateNextFollowups(filterAffiliatesForUser(affiliates, user));
+  const derivedKeys = {};
+  const rawQueue = rawFollowups || safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE);
+  var queue;
 
-function buildAffiliateNextFollowups(affiliates, queue) {
-  const queueKeys = {};
-
-  queue.forEach(function (row) {
+  derived.forEach(function (row) {
     const key = buildFollowupMergeKey(row.Affiliate_ID, row.Followup_Date);
     if (key) {
-      queueKeys[key] = true;
+      derivedKeys[key] = true;
     }
   });
 
+  queue = enrichFollowups(filterRowsForUser(rawQueue, user), affiliates).filter(function (row) {
+    return !derivedKeys[buildFollowupMergeKey(row.Affiliate_ID, row.Followup_Date)];
+  });
+
+  return derived.concat(queue);
+}
+
+function buildAffiliateNextFollowups(affiliates) {
   return (affiliates || []).filter(function (affiliate) {
     const date = safeString(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date', 'Next_Followup', 'Next Followup']));
     const active = safeString(getFirstValue(affiliate, ['Active', 'Status'])).toLowerCase();
@@ -37,7 +42,7 @@ function buildAffiliateNextFollowups(affiliates, queue) {
       return false;
     }
 
-    return !queueKeys[buildFollowupMergeKey(affiliateId, date)];
+    return true;
   }).map(function (affiliate) {
     const date = safeString(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date', 'Next_Followup', 'Next Followup']));
     return {
@@ -67,7 +72,23 @@ function buildFollowupMergeKey(affiliateId, dateValue) {
 
 function normalizeFollowupDateKey(value) {
   const date = parseFollowupDate(value);
-  return date ? date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2) : '';
+  return date ? formatFollowupDateKey(date) : '';
+}
+
+function getFollowupDateKey(value) {
+  return normalizeFollowupDateKey(value);
+}
+
+function getTodayFollowupDateKey() {
+  return formatFollowupDateKey(new Date());
+}
+
+function formatFollowupDateKey(date) {
+  if (typeof Utilities !== 'undefined' && typeof Session !== 'undefined') {
+    return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+
+  return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2);
 }
 
 function parseFollowupDate(value) {

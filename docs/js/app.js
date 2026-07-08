@@ -3179,7 +3179,7 @@
     }
 
     var date = getDateOnly(valueFor(row, 'Followup_Date'));
-    var today = getDateOnly(new Date().toISOString());
+    var today = getDateOnly(new Date());
 
     if (!date || date === today) {
       return 'today';

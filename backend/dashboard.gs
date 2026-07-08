@@ -123,11 +123,13 @@ function groupFollowups(rows) {
 
   rows.forEach(function (row) {
     const item = normalizeFollowupRow(row);
+    const dateKey = getFollowupDateKey(item.Followup_Date);
+    const todayKey = getTodayFollowupDateKey();
     if (isCompletedRow(item)) {
       groups.completed.push(item);
-    } else if (isToday(getRowDate(item))) {
+    } else if (!dateKey || dateKey === todayKey) {
       groups.today.push(item);
-    } else if (isBeforeToday(getRowDate(item))) {
+    } else if (dateKey < todayKey) {
       groups.overdue.push(item);
     } else {
       groups.upcoming.push(item);
