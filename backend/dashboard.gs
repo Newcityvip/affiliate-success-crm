@@ -123,16 +123,30 @@ function groupFollowups(rows) {
 
   rows.forEach(function (row) {
     const item = normalizeFollowupRow(row);
-    const dateKey = getFollowupDateKey(item.Followup_Date);
-    const todayKey = getTodayFollowupDateKey();
-    if (isCompletedRow(item)) {
+    const bucket = safeString(getFirstValue(row, ['bucket', 'Bucket'])).toLowerCase();
+    var dateKey;
+    var todayKey;
+
+    if (bucket === 'completed') {
       groups.completed.push(item);
-    } else if (!dateKey || dateKey === todayKey) {
+    } else if (bucket === 'today') {
       groups.today.push(item);
-    } else if (dateKey < todayKey) {
+    } else if (bucket === 'overdue') {
       groups.overdue.push(item);
-    } else {
+    } else if (bucket === 'upcoming') {
       groups.upcoming.push(item);
+    } else {
+      dateKey = getFollowupDateKey(item.Followup_Date);
+      todayKey = getTodayFollowupDateKey();
+      if (isCompletedRow(item)) {
+        groups.completed.push(item);
+      } else if (!dateKey || dateKey === todayKey) {
+        groups.today.push(item);
+      } else if (dateKey < todayKey) {
+        groups.overdue.push(item);
+      } else {
+        groups.upcoming.push(item);
+      }
     }
   });
 
@@ -149,7 +163,12 @@ function normalizeFollowupRow(row) {
     Followup_Date: normalizeDateValue(getFirstValue(row, ['Followup_Date', 'Followup Date', 'Due_Date', 'Due Date', 'Date'])),
     Priority: safeString(getFirstValue(row, ['Priority'])),
     Status: safeString(getFirstValue(row, ['Status'])),
-    Generated_From: safeString(getFirstValue(row, ['Generated_From', 'Generated From', 'Source']))
+    Generated_From: safeString(getFirstValue(row, ['Generated_From', 'Generated From', 'Source'])),
+    bucket: safeString(getFirstValue(row, ['bucket', 'Bucket'])),
+    followupDateKey: safeString(getFirstValue(row, ['followupDateKey', 'Followup_Date_Key'])),
+    todayKey: safeString(getFirstValue(row, ['todayKey', 'Today_Key'])),
+    timezone: safeString(getFirstValue(row, ['timezone', 'Timezone'])),
+    source: safeString(getFirstValue(row, ['source', 'Source', 'Generated_From', 'Generated From']))
   };
 }
 

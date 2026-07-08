@@ -25,7 +25,7 @@ function getCombinedFollowups(user, rawFollowups, rawAffiliates) {
     return !derivedKeys[buildFollowupMergeKey(row.Affiliate_ID, row.Followup_Date)];
   });
 
-  return derived.concat(queue);
+  return derived.concat(queue).map(decorateFollowupBucket);
 }
 
 function buildAffiliateNextFollowups(affiliates) {
@@ -45,14 +45,15 @@ function buildAffiliateNextFollowups(affiliates) {
     return true;
   }).map(function (affiliate) {
     const date = safeString(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date', 'Next_Followup', 'Next Followup']));
+    const dateKey = getFollowupDateKey(date);
     return {
       Queue_ID: '',
       Affiliate_ID: safeString(affiliate.Affiliate_ID),
       Affiliate_Name: safeString(affiliate.Affiliate_Name),
       Brand: safeString(affiliate.Brand),
       Assigned_Staff: safeString(affiliate.Assigned_Staff),
-      Followup_Date: date,
-      Next_Followup_Date: date,
+      Followup_Date: dateKey || date,
+      Next_Followup_Date: dateKey || date,
       Priority: safeString(affiliate.Priority),
       Status: 'Pending',
       Generated_From: 'Affiliate Next Follow-up',
@@ -83,9 +84,18 @@ function getTodayFollowupDateKey() {
   return formatFollowupDateKey(new Date());
 }
 
+function getFollowupTimezone() {
+  if (typeof Session !== 'undefined' && Session.getScriptTimeZone) {
+    return Session.getScriptTimeZone() || 'Asia/Dhaka';
+  }
+
+  return 'Asia/Dhaka';
+}
+
 function formatFollowupDateKey(date) {
-  if (typeof Utilities !== 'undefined' && typeof Session !== 'undefined') {
-    return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const tz = getFollowupTimezone();
+  if (typeof Utilities !== 'undefined') {
+    return Utilities.formatDate(date, tz, 'yyyy-MM-dd');
   }
 
   return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2);
@@ -116,6 +126,44 @@ function parseFollowupDate(value) {
 
   parsed = new Date(text);
   return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function decorateFollowupBucket(row) {
+  const item = copyRow(row || {});
+  const followupDateKey = getFollowupDateKey(getFirstValue(item, [
+    'Followup_Date',
+    'Followup Date',
+    'Next_Followup_Date',
+    'Next Followup Date',
+    'Due_Date',
+    'Due Date',
+    'Date'
+  ]));
+  const todayKey = getTodayFollowupDateKey();
+  var bucket;
+
+  if (isCompletedFollowupStatus(item)) {
+    bucket = 'completed';
+  } else if (!followupDateKey || followupDateKey === todayKey) {
+    bucket = 'today';
+  } else if (followupDateKey < todayKey) {
+    bucket = 'overdue';
+  } else {
+    bucket = 'upcoming';
+  }
+
+  item.bucket = bucket;
+  item.followupDateKey = followupDateKey;
+  item.todayKey = todayKey;
+  item.timezone = getFollowupTimezone();
+  item.source = safeString(getFirstValue(item, ['source', 'Source', 'Generated_From', 'Generated From'])) || 'Followup_Queue';
+
+  return item;
+}
+
+function isCompletedFollowupStatus(row) {
+  const status = safeString(getFirstValue(row || {}, ['Status', 'Followup_Status', 'Followup Status'])).toLowerCase();
+  return ['done', 'complete', 'completed', 'closed', 'resolved'].indexOf(status) !== -1;
 }
 
 function getFollowupSourceCounts(items) {

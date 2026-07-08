@@ -3174,22 +3174,13 @@
   }
 
   function getFollowupGroup(row) {
-    if (isCompletedFollowup(row)) {
-      return 'completed';
+    var bucket = valueFor(row, 'bucket').toLowerCase();
+
+    if (['today', 'overdue', 'upcoming', 'completed'].indexOf(bucket) !== -1) {
+      return bucket;
     }
 
-    var date = getDateOnly(valueFor(row, 'Followup_Date'));
-    var today = getDateOnly(new Date());
-
-    if (!date || date === today) {
-      return 'today';
-    }
-
-    if (date < today) {
-      return 'overdue';
-    }
-
-    return 'upcoming';
+    return isCompletedFollowup(row) ? 'completed' : 'today';
   }
 
   function isCompletedFollowup(row) {
