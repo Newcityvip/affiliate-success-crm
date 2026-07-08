@@ -118,6 +118,18 @@
       },
       fields: ['Affiliate_Name', 'Affiliate_Username', 'Brand', 'Country', 'Language', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Segment', 'Affiliate_Type', 'Market_Channel', 'Next_Followup_Date', 'Active']
     },
+    affiliateDetails: {
+      title: 'Update Affiliate Details',
+      api: 'updateAffiliate',
+      updateApi: 'updateAffiliate',
+      idKey: 'Affiliate_ID',
+      sections: {
+        'Contact Details': ['Telegram', 'WhatsApp', 'Email'],
+        'Basic Details': ['Country', 'Language'],
+        'Follow-up Notes': ['Next_Followup_Date', 'Next_Action', 'Notes']
+      },
+      fields: ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Notes', 'Next_Followup_Date', 'Next_Action']
+    },
     task: {
       title: 'Create Task',
       api: 'createTask',
@@ -2804,6 +2816,17 @@
     ];
 
     bar.className = 'quick-actions drawer-actions';
+    if (!isAdminUser()) {
+      var updateDetails = document.createElement('button');
+      updateDetails.className = 'button button-secondary button-small';
+      updateDetails.type = 'button';
+      updateDetails.textContent = 'Update Details';
+      updateDetails.addEventListener('click', function () {
+        openRecordModal('affiliateDetails', row);
+      });
+      bar.appendChild(updateDetails);
+    }
+
     actions.forEach(function (action) {
       var button = document.createElement('button');
       button.className = 'button button-secondary button-small';
@@ -3867,6 +3890,8 @@
     var form = utils.qs('[data-record-form]');
     var data = getRecordFormData();
     var missing = [];
+    var email;
+    var emailError;
 
     if (!form) {
       return missing;
@@ -3891,6 +3916,16 @@
         input.removeAttribute('aria-invalid');
       }
     });
+
+    email = form.elements.Email ? String(data.Email || '').trim() : '';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailError = form.querySelector('[data-field-error="Email"]');
+      missing.push('Email');
+      if (emailError) {
+        emailError.textContent = 'Enter a valid email address or leave it blank.';
+      }
+      form.elements.Email.setAttribute('aria-invalid', 'true');
+    }
 
     return missing;
   }
@@ -3959,6 +3994,8 @@
     isEdit = isRecordEdit(config, recordState.context);
     if (recordState.type === 'affiliate' && !isEdit) {
       result = await api.createAffiliate(payload);
+    } else if (recordState.type === 'affiliateDetails') {
+      result = await api.updateAffiliate(payload);
     } else if (recordState.type === 'performance') {
       updateDebugBeforeRequest(isEdit ? 'updatePerformance' : 'createPerformance', 'GET', payload);
       result = await (isEdit ? api.updatePerformance(payload) : api.createPerformance(payload));
@@ -3977,7 +4014,7 @@
     }
 
     closeRecordModal();
-    showToast((isEdit ? 'Update' : config.title) + ' saved.');
+    showToast(recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.');
     refreshAfterRecordSave(recordState.type);
   }
 
@@ -3985,7 +4022,7 @@
     dashboardState.loaded = false;
     loadDashboard();
 
-    if (type === 'affiliate') {
+    if (type === 'affiliate' || type === 'affiliateDetails') {
       affiliateState.loaded = false;
       loadAffiliates(true);
     }

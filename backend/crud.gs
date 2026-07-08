@@ -68,8 +68,52 @@ function createAffiliate(payload, user) {
 }
 
 function updateAffiliate(payload, user) {
-  requireRole(user, [AUTH_ROLES.SUPER_ADMIN, AUTH_ROLES.ADMIN]);
+  if (!isAdminUser(user)) {
+    return updateStaffAffiliateDetails(payload, user);
+  }
+
   return updateEntity('affiliate', payload, user);
+}
+
+function updateStaffAffiliateDetails(payload, user) {
+  const config = ENTITY_CONFIG.affiliate;
+  const headers = getSheetHeadersSafe(config.sheet);
+  const source = payload || {};
+  const affiliateId = safeString(source[config.idKey]);
+  const allowedFields = ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Notes', 'Next_Followup_Date', 'Next_Action'];
+  const data = {};
+  var updated;
+
+  if (!headers.length) {
+    throwCodedError('MISSING_SHEET', config.sheet + ' is missing or has no headers.');
+  }
+
+  if (!affiliateId) {
+    throwCodedError('VALIDATION_ERROR', config.idKey + ' is required.');
+  }
+
+  if (!isAffiliateAssignedToUser(affiliateId, user)) {
+    throwCodedError('FORBIDDEN', 'You can only update affiliates assigned to you.');
+  }
+
+  allowedFields.forEach(function (field) {
+    if (headers.indexOf(field) !== -1 && source[field] !== undefined) {
+      data[field] = source[field];
+    }
+  });
+
+  setIfHeaderExists(data, headers, ['Updated_At', 'Updated At', 'Updated_Date', 'Updated Date', 'Last_Updated'], getTimestamp(), true);
+
+  if (Object.keys(data).length === 0) {
+    throwCodedError('VALIDATION_ERROR', 'No editable affiliate details were provided.');
+  }
+
+  updated = updateSheetObjectByKey(config.sheet, config.idKey, affiliateId, data);
+  logActivity(user, 'update', config.type, affiliateId, 'Affiliate contact details updated.');
+
+  return {
+    item: updated
+  };
 }
 
 function createTask(payload, user) {
