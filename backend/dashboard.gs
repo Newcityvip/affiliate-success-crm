@@ -165,6 +165,8 @@ function normalizeFollowupRow(row) {
     Status: safeString(getFirstValue(row, ['Status'])),
     Generated_From: safeString(getFirstValue(row, ['Generated_From', 'Generated From', 'Source'])),
     bucket: safeString(getFirstValue(row, ['bucket', 'Bucket'])),
+    rawDateType: safeString(getFirstValue(row, ['rawDateType', 'Raw_Date_Type'])),
+    rawDateValue: safeString(getFirstValue(row, ['rawDateValue', 'Raw_Date_Value'])),
     followupDateKey: safeString(getFirstValue(row, ['followupDateKey', 'Followup_Date_Key'])),
     todayKey: safeString(getFirstValue(row, ['todayKey', 'Today_Key'])),
     timezone: safeString(getFirstValue(row, ['timezone', 'Timezone'])),

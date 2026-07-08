@@ -2574,7 +2574,15 @@
   }
 
   function formatDate(value) {
-    var date = new Date(value);
+    var date;
+    var dateOnlyMatch = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (dateOnlyMatch) {
+      date = new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]));
+    } else {
+      date = new Date(value);
+    }
+
     if (isNaN(date.getTime())) {
       return value;
     }

@@ -130,7 +130,7 @@ function parseFollowupDate(value) {
 
 function decorateFollowupBucket(row) {
   const item = copyRow(row || {});
-  const followupDateKey = getFollowupDateKey(getFirstValue(item, [
+  const rawDateValue = getFirstValue(item, [
     'Followup_Date',
     'Followup Date',
     'Next_Followup_Date',
@@ -138,7 +138,8 @@ function decorateFollowupBucket(row) {
     'Due_Date',
     'Due Date',
     'Date'
-  ]));
+  ]);
+  const followupDateKey = getFollowupDateKey(rawDateValue);
   const todayKey = getTodayFollowupDateKey();
   var bucket;
 
@@ -153,12 +154,38 @@ function decorateFollowupBucket(row) {
   }
 
   item.bucket = bucket;
+  item.rawDateType = getFollowupRawDateType(rawDateValue);
+  item.rawDateValue = getFollowupRawDateValue(rawDateValue);
   item.followupDateKey = followupDateKey;
   item.todayKey = todayKey;
   item.timezone = getFollowupTimezone();
   item.source = safeString(getFirstValue(item, ['source', 'Source', 'Generated_From', 'Generated From'])) || 'Followup_Queue';
 
   return item;
+}
+
+function getFollowupRawDateType(value) {
+  if (value instanceof Date) {
+    return 'Date';
+  }
+
+  if (value === null) {
+    return 'null';
+  }
+
+  if (value === undefined) {
+    return 'undefined';
+  }
+
+  return typeof value;
+}
+
+function getFollowupRawDateValue(value) {
+  if (value instanceof Date) {
+    return formatFollowupDateKey(value);
+  }
+
+  return safeString(value);
 }
 
 function isCompletedFollowupStatus(row) {

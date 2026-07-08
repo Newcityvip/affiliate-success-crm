@@ -62,7 +62,8 @@ function normalizeSheetName(name) {
 }
 
 function readSheetObjectsFromSheet(sheet) {
-  const values = sheet.getDataRange().getValues();
+  const range = sheet.getDataRange();
+  const values = range.getValues();
 
   if (!values || values.length === 0) {
     return [];
@@ -298,7 +299,7 @@ function safeValidateRequiredSheets() {
 
 function normalizeSheetValue(value) {
   if (value instanceof Date) {
-    return value.toISOString();
+    return normalizeSheetDateValue(value);
   }
 
   if (value === null || value === undefined) {
@@ -306,4 +307,22 @@ function normalizeSheetValue(value) {
   }
 
   return value;
+}
+
+function normalizeSheetDateValue(dateValue) {
+  const tz = getSheetTimezone();
+
+  if (typeof Utilities !== 'undefined') {
+    return Utilities.formatDate(dateValue, tz, 'yyyy-MM-dd');
+  }
+
+  return dateValue.getFullYear() + '-' + padNumber(dateValue.getMonth() + 1, 2) + '-' + padNumber(dateValue.getDate(), 2);
+}
+
+function getSheetTimezone() {
+  if (typeof Session !== 'undefined' && Session.getScriptTimeZone) {
+    return Session.getScriptTimeZone() || 'Asia/Dhaka';
+  }
+
+  return 'Asia/Dhaka';
 }
