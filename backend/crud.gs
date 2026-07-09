@@ -26,7 +26,7 @@ const ENTITY_CONFIG = Object.freeze({
     prefix: 'ISS',
     width: 4,
     type: 'Issue',
-    required: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
+    required: ['Affiliate_ID', 'Issue_Details', 'Priority', 'Status']
   },
   interaction: {
     sheet: SHEET_NAMES.INTERACTION_LOG,
@@ -135,11 +135,11 @@ function reopenTask(payload, user) {
 
 function createIssue(payload, user) {
   requireScopedWrite(payload, user);
-  return createEntity('issue', payload, user);
+  return createIssueRecord(payload, user);
 }
 
 function updateIssue(payload, user) {
-  return updateEntity('issue', payload, user);
+  return updateIssueRecord(payload, user);
 }
 
 function resolveIssue(payload, user) {
@@ -147,7 +147,7 @@ function resolveIssue(payload, user) {
 }
 
 function closeIssue(payload, user) {
-  return updateIssue(setStatusPayload(payload, 'Closed'), user);
+  return updateIssue(setStatusPayload(payload, 'Resolved'), user);
 }
 
 function reopenIssue(payload, user) {
@@ -239,6 +239,217 @@ function requireExistingEntityWrite(config, entityId, user) {
   }
 
   throwCodedError('FORBIDDEN', 'You can only update records assigned to your workspace.');
+}
+
+function createIssueRecord(payload, user) {
+  const config = ENTITY_CONFIG.issue;
+  const source = payload || {};
+  const headers = ensureIssueLogHeaders();
+  const issueId = headers.indexOf(config.idKey) !== -1 ? nextSheetId(config.sheet, config.idKey, config.prefix, config.width) : '';
+  const affiliateId = safeString(source.Affiliate_ID);
+  const affiliate = findAffiliateById(affiliateId);
+  const staffValue = getUserDisplayName(user);
+  const assignedTo = isAdminUser(user) || userCanViewAll(user)
+    ? safeString(getFirstValue(source, ['Assigned_To', 'Assigned To', 'Assigned_Staff', 'Assigned Staff'])) || staffValue
+    : staffValue;
+  const issueDetails = safeString(getFirstValue(source, ['Issue_Details', 'Issue Details', 'Issue', 'Notes', 'Resolution']));
+  const data = {};
+
+  if (!affiliateId) {
+    throwCodedError('VALIDATION_ERROR', 'Affiliate_ID is required.');
+  }
+
+  if (!issueDetails) {
+    throwCodedError('VALIDATION_ERROR', 'Issue details are required.');
+  }
+
+  setIfHeaderExists(data, headers, ['Issue_ID'], issueId, true);
+  setIfHeaderExists(data, headers, ['Date'], getIssueTimestamp(), true);
+  setIfHeaderExists(data, headers, ['Affiliate_ID'], affiliateId, true);
+  setIfHeaderExists(data, headers, ['Category'], safeString(source.Category) || 'General', true);
+  setIfHeaderExists(data, headers, ['Issue_Details'], issueDetails, true);
+  setIfHeaderExists(data, headers, ['Priority'], safeString(source.Priority) || 'Medium', true);
+  setIfHeaderExists(data, headers, ['Assigned_To'], assignedTo, true);
+  setIfHeaderExists(data, headers, ['Status'], 'Open', true);
+  setIfHeaderExists(data, headers, ['Resolved_Date'], '', true);
+  setIfHeaderExists(data, headers, ['Resolution'], '', true);
+  setIfHeaderExists(data, headers, ['Days_Open'], '0', true);
+  setIfHeaderExists(data, headers, ['Reported_By'], staffValue, true);
+
+  appendSheetObject(config.sheet, data);
+  logActivity(user, 'create', config.type, issueId, 'Issue created: ' + issueDetails);
+  sendIssueTelegramAlert(data, affiliate);
+
+  return {
+    item: data
+  };
+}
+
+function updateIssueRecord(payload, user) {
+  const config = ENTITY_CONFIG.issue;
+  const source = payload || {};
+  const headers = ensureIssueLogHeaders();
+  const issueId = safeString(source.Issue_ID);
+  const existing = issueId ? getEntityById(config, issueId) : {};
+  const data = {};
+  const status = safeString(source.Status || source.Issue_Status);
+
+  if (!issueId) {
+    throwCodedError('VALIDATION_ERROR', 'Issue_ID is required.');
+  }
+
+  requireExistingEntityWrite(config, issueId, user);
+
+  setIfHeaderExists(data, headers, ['Category'], source.Category, false);
+  setIfHeaderExists(data, headers, ['Issue_Details'], getFirstValue(source, ['Issue_Details', 'Issue Details', 'Issue']), false);
+  setIfHeaderExists(data, headers, ['Priority'], source.Priority, false);
+  setIfHeaderExists(data, headers, ['Assigned_To'], isAdminUser(user) || userCanViewAll(user) ? getFirstValue(source, ['Assigned_To', 'Assigned To', 'Assigned_Staff', 'Assigned Staff']) : getAssignedStaff(existing), false);
+  setIfHeaderExists(data, headers, ['Status'], status, false);
+  setIfHeaderExists(data, headers, ['Resolution'], getFirstValue(source, ['Resolution', 'Notes']), false);
+
+  if (isResolvedIssueStatus(status)) {
+    setIfHeaderExists(data, headers, ['Resolved_Date'], getIssueTimestamp(), true);
+    setIfHeaderExists(data, headers, ['Days_Open'], calculateIssueDaysOpen(existing), true);
+  } else if (status) {
+    setIfHeaderExists(data, headers, ['Resolved_Date'], '', true);
+  }
+
+  data[config.idKey] = issueId;
+
+  const updated = updateSheetObjectByKey(config.sheet, config.idKey, issueId, data);
+  logActivity(user, 'update', config.type, issueId, 'Issue updated.');
+
+  return {
+    item: updated
+  };
+}
+
+function ensureIssueLogHeaders() {
+  return ensureSheetHeaders(SHEET_NAMES.ISSUE_LOG, ['Issue_Details', 'Reported_By']).headers;
+}
+
+function findAffiliateById(affiliateId) {
+  const id = safeString(affiliateId);
+  if (!id) {
+    return {};
+  }
+
+  return safeReadSheetObjects(SHEET_NAMES.AFFILIATES).filter(function (affiliate) {
+    return safeString(affiliate.Affiliate_ID) === id;
+  })[0] || {};
+}
+
+function getIssueTimestamp() {
+  const date = new Date();
+  const tz = typeof Session !== 'undefined' && Session.getScriptTimeZone
+    ? Session.getScriptTimeZone() || 'Asia/Dhaka'
+    : 'Asia/Dhaka';
+
+  if (typeof Utilities !== 'undefined') {
+    return Utilities.formatDate(date, tz, 'yyyy-MM-dd HH:mm:ss');
+  }
+
+  return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2) + ' ' + padNumber(date.getHours(), 2) + ':' + padNumber(date.getMinutes(), 2) + ':' + padNumber(date.getSeconds(), 2);
+}
+
+function calculateIssueDaysOpen(issue) {
+  const opened = parseIssueDateValue(getFirstValue(issue || {}, ['Date', 'Created_Date', 'Issue_Date']));
+  const today = new Date();
+
+  if (!opened) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((today.getTime() - opened.getTime()) / 86400000));
+}
+
+function parseIssueDateValue(value) {
+  const text = safeString(value);
+  var match;
+  var parsed;
+
+  if (!text) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    return new Date(Number(match[3]), Number(match[1]) - 1, Number(match[2]));
+  }
+
+  parsed = new Date(text);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isResolvedIssueStatus(status) {
+  return ['resolved', 'closed', 'complete', 'completed'].indexOf(safeString(status).toLowerCase()) !== -1;
+}
+
+function sendIssueTelegramAlert(issue, affiliate) {
+  const token = getDashboardConfigValue('CRM_Issue_TG_Bot_Token');
+  const chatId = getDashboardConfigValue('CRM_Issue_TG_Chat_ID');
+  const text = [
+    '🚨 New CRM Issue Reported',
+    '',
+    'Issue ID: ' + safeString(issue.Issue_ID),
+    'Affiliate: ' + safeString(issue.Affiliate_ID),
+    'Brand: ' + (safeString(getFirstValue(affiliate || {}, ['Brand', 'Brand_Name'])) || 'N/A'),
+    'Reported by: ' + safeString(issue.Reported_By),
+    'Assigned to: ' + safeString(issue.Assigned_To),
+    'Priority: ' + safeString(issue.Priority),
+    'Status: ' + safeString(issue.Status),
+    '',
+    'Issue:',
+    safeString(issue.Issue_Details)
+  ].join('\n');
+
+  if (!token || !chatId || typeof UrlFetchApp === 'undefined') {
+    return false;
+  }
+
+  try {
+    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      muteHttpExceptions: true,
+      payload: {
+        chat_id: chatId,
+        text: text
+      }
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function getDashboardConfigValue(key) {
+  const target = safeString(key);
+  const rows = safeReadSheetObjects(SHEET_NAMES.DASHBOARD_CONFIG);
+  var value = '';
+
+  rows.some(function (row) {
+    const rowKey = safeString(getFirstValue(row, ['Key', 'Config_Key', 'Setting', 'Name']));
+    if (rowKey === target) {
+      value = safeString(getFirstValue(row, ['Value', 'Config_Value', 'Setting_Value']));
+      return true;
+    }
+    if (row[target] !== undefined) {
+      value = safeString(row[target]);
+      return true;
+    }
+    return false;
+  });
+
+  return value;
 }
 
 function getEntityById(config, entityId) {
@@ -498,6 +709,8 @@ function importCsvCommit(payload, user) {
   }).forEach(function (row) {
     if (entityKey === 'followup') {
       committed.push(createFollowup(row.item, user).item);
+    } else if (entityKey === 'issue') {
+      committed.push(createIssue(row.item, user).item);
     } else if (entityKey === 'performance') {
       committed.push(createPerformance(row.item, user).item);
     } else {

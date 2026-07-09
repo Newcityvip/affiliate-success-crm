@@ -146,6 +146,8 @@ function isAssignedToUser(row, user) {
     'Assigned Staff',
     'Assigned_To',
     'Assigned To',
+    'Reported_By',
+    'Reported By',
     'Staff',
     'Owner',
     'Staff_ID',

@@ -370,11 +370,13 @@ function normalizeActivityRow(row, defaultType) {
 function normalizeIssueRow(row) {
   return {
     issueId: safeString(getFirstValue(row, ['Issue_ID', 'Issue ID', 'ID'])),
+    issueDetails: safeString(getFirstValue(row, ['Issue_Details', 'Issue Details', 'Issue', 'Title'])),
     affiliate: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID'])),
     brand: safeString(getFirstValue(row, ['Brand', 'Brand_Name', 'Brand Name'])),
     priority: safeString(getFirstValue(row, ['Priority'])),
     status: safeString(getFirstValue(row, ['Status', 'Issue_Status', 'Issue Status'])),
     assignedStaff: safeString(getAssignedStaff(row)),
+    reportedBy: safeString(getFirstValue(row, ['Reported_By', 'Reported By'])),
     createdDate: normalizeDateValue(getFirstValue(row, ['Created_Date', 'Created Date', 'Date', 'Issue_Date']))
   };
 }

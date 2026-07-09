@@ -156,6 +156,26 @@ function getSheetHeaders(sheetName) {
   });
 }
 
+function ensureSheetHeaders(sheetName, requiredHeaders) {
+  const sheet = getSheetByName(sheetName);
+  var headers = getSheetHeaders(sheetName);
+  var changed = false;
+
+  (requiredHeaders || []).forEach(function (header) {
+    const safeHeader = safeString(header);
+    if (safeHeader && headers.indexOf(safeHeader) === -1) {
+      sheet.getRange(1, headers.length + 1).setValue(safeHeader);
+      headers.push(safeHeader);
+      changed = true;
+    }
+  });
+
+  return {
+    headers: headers,
+    changed: changed
+  };
+}
+
 function appendSheetObject(sheetName, data) {
   const sheet = getSheetByName(sheetName);
   const headers = getSheetHeaders(sheetName);

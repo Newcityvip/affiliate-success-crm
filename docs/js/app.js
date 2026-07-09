@@ -148,13 +148,13 @@
       api: 'createIssue',
       updateApi: 'updateIssue',
       idKey: 'Issue_ID',
-      required: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status'],
+      required: ['Affiliate_ID', 'Issue_Details', 'Priority', 'Status'],
       sections: {
-        'Basic Info': ['Affiliate_ID', 'Issue', 'Brand'],
-        Assignment: ['Assigned_Staff'],
+        'Basic Info': ['Affiliate_ID', 'Category', 'Issue_Details', 'Brand'],
+        Assignment: ['Assigned_To'],
         'Status & Priority': ['Priority', 'Status']
       },
-      fields: ['Affiliate_ID', 'Issue', 'Brand', 'Assigned_Staff', 'Priority', 'Status']
+      fields: ['Affiliate_ID', 'Category', 'Issue_Details', 'Brand', 'Assigned_To', 'Priority', 'Status']
     },
     interaction: {
       title: 'Add Interaction',
@@ -245,7 +245,12 @@
     Growth_Percent: 'Growth percent',
     Remarks: 'Remarks',
     Updated_By: 'Updated by',
-    Updated_At: 'Updated at'
+    Updated_At: 'Updated at',
+    Issue_Details: 'Issue details',
+    Assigned_To: 'Assigned to',
+    Reported_By: 'Reported by',
+    Days_Open: 'Days open',
+    Resolved_Date: 'Resolved date'
   };
   var csvConfigs = {
     affiliate: {
@@ -347,11 +352,11 @@
     issues: {
       api: 'issues',
       itemName: 'issues',
-      search: ['Issue_ID', 'Issue', 'Affiliate_Name', 'Affiliate_ID', 'Brand', 'Assigned_Staff', 'Status', 'Priority'],
+      search: ['Issue_ID', 'Issue_Details', 'Issue', 'Affiliate_Name', 'Affiliate_ID', 'Brand', 'Assigned_To', 'Assigned_Staff', 'Reported_By', 'Status', 'Priority'],
       filters: [
         { label: 'Status', key: 'Status', fallback: ['Issue_Status'] },
         { label: 'Priority', key: 'Priority' },
-        { label: 'Assigned Staff', key: 'Assigned_Staff', fallback: ['Assigned Staff', 'Staff'] },
+        { label: 'Assigned Staff', key: 'Assigned_To', fallback: ['Assigned To', 'Assigned_Staff', 'Assigned Staff', 'Staff'] },
         { label: 'Brand', key: 'Brand' }
       ],
       stats: [
@@ -361,12 +366,13 @@
         { label: 'Resolved', type: 'completed' }
       ],
       columns: [
-        { label: 'Issue', keys: ['Issue_ID', 'Issue', 'Title'] },
+        { label: 'Issue', keys: ['Issue_Details', 'Issue', 'Issue_ID', 'Title'] },
         { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
         { label: 'Brand', keys: ['Brand'] },
         { label: 'Priority', keys: ['Priority'], badge: 'Priority' },
         { label: 'Status', keys: ['Status', 'Issue_Status'], badge: 'Status' },
-        { label: 'Assigned Staff', keys: ['Assigned_Staff', 'Assigned Staff', 'Staff'] },
+        { label: 'Assigned Staff', keys: ['Assigned_To', 'Assigned To', 'Assigned_Staff', 'Assigned Staff', 'Staff'] },
+        { label: 'Reported By', keys: ['Reported_By', 'Reported By'] },
         { label: 'Created', keys: ['Created_Date', 'Date'], format: 'date' }
       ],
       actions: [
@@ -3588,6 +3594,9 @@
       title.textContent = sectionName;
       grid.className = 'form-section-grid';
       sectionFields.forEach(function (field) {
+        if (shouldHideRecordField(field)) {
+          return;
+        }
         used.push(field);
         grid.appendChild(createRecordField(field, recordState.context[field], config));
       });
@@ -3597,10 +3606,14 @@
     });
 
     (config.fields || []).forEach(function (field) {
-      if (used.indexOf(field) === -1) {
+      if (used.indexOf(field) === -1 && !shouldHideRecordField(field)) {
         container.appendChild(createRecordField(field, recordState.context[field], config));
       }
     });
+  }
+
+  function shouldHideRecordField(field) {
+    return recordState.type === 'issue' && !isAdminUser() && field === 'Assigned_To';
   }
 
   function createRecordField(field, value, config) {
@@ -3617,7 +3630,7 @@
     caption.textContent = friendlyFieldLabel(field) + (required ? ' *' : '');
     label.appendChild(caption);
 
-    if (field === 'Notes' || field === 'Issue' || field === 'Task') {
+    if (field === 'Notes' || field === 'Issue' || field === 'Issue_Details' || field === 'Task') {
       input = document.createElement('textarea');
       input.rows = 3;
     } else if (field === 'Month') {
@@ -3720,7 +3733,7 @@
   }
 
   function shouldUseSelect(field) {
-    return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type', 'Period_Type'].indexOf(field) !== -1;
+    return ['Affiliate_ID', 'Brand', 'Assigned_Staff', 'Assigned_To', 'Priority', 'Status', 'Health_Status', 'Active', 'Role', 'Permission_Level', 'Can_View_All', 'Affiliate_Type', 'Market_Channel', 'Interaction_Type', 'Period_Type'].indexOf(field) !== -1;
   }
 
   function getRecordOptions(field, config) {
@@ -3731,6 +3744,10 @@
       return dynamic.length ? dynamic : [''];
     }
     if (field === 'Assigned_Staff') {
+      dynamic = getKnownStaff();
+      return dynamic.length ? dynamic : [getUserName()];
+    }
+    if (field === 'Assigned_To') {
       dynamic = getKnownStaff();
       return dynamic.length ? dynamic : [getUserName()];
     }
@@ -3795,6 +3812,9 @@
 
   function getDefaultRecordValue(field) {
     if (field === 'Assigned_Staff') {
+      return getUserName();
+    }
+    if (field === 'Assigned_To') {
       return getUserName();
     }
     if (field === 'Status') {
@@ -3890,6 +3910,7 @@
     setFormValue(form, 'Affiliate_Name', valueFor(row, 'Affiliate_Name'));
     setFormValue(form, 'Brand', valueFor(row, 'Brand'));
     setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
+    setFormValue(form, 'Assigned_To', valueFor(row, 'Assigned_Staff'));
   }
 
   function setFormValue(form, name, value) {
