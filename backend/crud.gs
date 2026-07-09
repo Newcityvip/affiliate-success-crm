@@ -254,6 +254,7 @@ function createIssueRecord(payload, user) {
     : staffValue;
   const issueDetails = safeString(getFirstValue(source, ['Issue_Details', 'Issue Details', 'Issue', 'Notes', 'Resolution']));
   const data = {};
+  var telegramAlert;
 
   if (!affiliateId) {
     throwCodedError('VALIDATION_ERROR', 'Affiliate_ID is required.');
@@ -278,10 +279,11 @@ function createIssueRecord(payload, user) {
 
   appendSheetObject(config.sheet, data);
   logActivity(user, 'create', config.type, issueId, 'Issue created: ' + issueDetails);
-  sendIssueTelegramAlert(data, affiliate);
+  telegramAlert = sendIssueTelegramAlert(data, affiliate);
 
   return {
-    item: data
+    item: data,
+    telegramAlert: summarizeTelegramAlert(telegramAlert)
   };
 }
 
@@ -450,6 +452,136 @@ function getDashboardConfigValue(key) {
   });
 
   return value;
+}
+
+function sendIssueTelegramAlert(issue, affiliate) {
+  const token = getDashboardConfigValue('CRM_Issue_TG_Bot_Token');
+  const chatId = getDashboardConfigValue('CRM_Issue_TG_Chat_ID');
+  const text = buildIssueTelegramMessage(issue, affiliate);
+  var response;
+  var statusCode = 0;
+  var body = '';
+  var parsed;
+
+  if (!token || !chatId) {
+    return {
+      attempted: false,
+      ok: false,
+      statusCode: 0,
+      error: 'Telegram bot token or chat ID is missing.'
+    };
+  }
+
+  if (typeof UrlFetchApp === 'undefined') {
+    return {
+      attempted: false,
+      ok: false,
+      statusCode: 0,
+      error: 'UrlFetchApp is unavailable in this environment.'
+    };
+  }
+
+  try {
+    response = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      muteHttpExceptions: true,
+      payload: {
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: 'true'
+      }
+    });
+    statusCode = response.getResponseCode();
+    body = response.getContentText();
+    parsed = parseTelegramResponseBody(body);
+
+    return {
+      attempted: true,
+      ok: statusCode >= 200 && statusCode < 300 && (!parsed || parsed.ok !== false),
+      statusCode: statusCode,
+      error: getTelegramError(parsed, body),
+      responseBody: body
+    };
+  } catch (error) {
+    return {
+      attempted: true,
+      ok: false,
+      statusCode: statusCode,
+      error: error && error.message ? error.message : String(error)
+    };
+  }
+}
+
+function buildIssueTelegramMessage(issue, affiliate) {
+  return [
+    '\uD83D\uDEA8 <b>New CRM Issue Reported</b>',
+    '',
+    '<b>Issue ID:</b> ' + escapeTelegramHtml(issue.Issue_ID),
+    '<b>Affiliate:</b> ' + escapeTelegramHtml(issue.Affiliate_ID),
+    '<b>Brand:</b> ' + escapeTelegramHtml(safeString(getFirstValue(affiliate || {}, ['Brand', 'Brand_Name'])) || 'N/A'),
+    '<b>Reported by:</b> ' + escapeTelegramHtml(issue.Reported_By),
+    '<b>Assigned to:</b> ' + escapeTelegramHtml(issue.Assigned_To),
+    '<b>Priority:</b> ' + escapeTelegramHtml(issue.Priority),
+    '<b>Status:</b> ' + escapeTelegramHtml(issue.Status),
+    '',
+    '<b>Issue:</b>',
+    escapeTelegramHtml(issue.Issue_Details)
+  ].join('\n');
+}
+
+function escapeTelegramHtml(value) {
+  return safeString(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function parseTelegramResponseBody(body) {
+  try {
+    return JSON.parse(safeString(body));
+  } catch (error) {
+    return null;
+  }
+}
+
+function getTelegramError(parsed, body) {
+  if (parsed && parsed.ok === false) {
+    return safeString(parsed.description) || 'Telegram API returned ok=false.';
+  }
+
+  if (safeString(body) && parsed === null) {
+    return 'Telegram response was not JSON.';
+  }
+
+  return '';
+}
+
+function summarizeTelegramAlert(result) {
+  return {
+    attempted: !!(result && result.attempted),
+    ok: !!(result && result.ok),
+    statusCode: result && result.statusCode ? result.statusCode : 0,
+    error: safeString(result && result.error).slice(0, 220)
+  };
+}
+
+function testIssueTelegram(payload, user) {
+  const staffValue = getUserDisplayName(user);
+  const issue = {
+    Issue_ID: safeString(payload && payload.Issue_ID) || 'TEST',
+    Affiliate_ID: safeString(payload && payload.Affiliate_ID) || 'TEST',
+    Priority: safeString(payload && payload.Priority) || 'Medium',
+    Status: 'Open',
+    Reported_By: staffValue,
+    Assigned_To: staffValue,
+    Issue_Details: safeString(payload && payload.Issue_Details) || 'Telegram test message from Affiliate Success CRM.'
+  };
+  const affiliate = {
+    Brand: safeString(payload && payload.Brand) || 'Test Brand'
+  };
+
+  return sendIssueTelegramAlert(issue, affiliate);
 }
 
 function getEntityById(config, entityId) {

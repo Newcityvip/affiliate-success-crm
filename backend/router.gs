@@ -48,6 +48,7 @@ function handleRequest(e, method) {
     'resolveissue',
     'closeissue',
     'reopenissue',
+    'testissuetelegram',
     'addinteraction',
     'createinteraction',
     'createbrand',
@@ -77,6 +78,7 @@ function handleRequest(e, method) {
     'resolveissue',
     'closeissue',
     'reopenissue',
+    'testissuetelegram',
     'addinteraction',
     'createinteraction',
     'createbrand',
@@ -246,6 +248,10 @@ function handleRequest(e, method) {
 
     if (action === 'reopenissue') {
       return successResponse(reopenIssue(getRequestPayload(e), user), 'Issue reopened.');
+    }
+
+    if (action === 'testissuetelegram') {
+      return successResponse(testIssueTelegram(getRequestPayload(e), user), 'Issue Telegram test completed.');
     }
 
     if (action === 'addinteraction' || action === 'createinteraction') {
