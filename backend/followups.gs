@@ -211,26 +211,28 @@ function getFollowupSourceCounts(items) {
 }
 
 function createFollowup(payload, user) {
-  const data = normalizeFollowupPayload(payload);
+  return runIdempotentWrite(payload, 'followup', function () {
+    const data = normalizeFollowupPayload(payload);
 
-  requireScopedWrite(data, user);
+    requireScopedWrite(data, user);
 
-  if (!isAdminUser(user)) {
-    data.Assigned_Staff = getUserDisplayName(user);
-  }
+    if (!isAdminUser(user)) {
+      data.Assigned_Staff = getUserDisplayName(user);
+    }
 
-  validateFollowupData(data);
+    validateFollowupData(data);
 
-  if (!data.Queue_ID) {
-    data.Queue_ID = nextSheetId(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', 'Q', 4);
-  }
+    if (!data.Queue_ID) {
+      data.Queue_ID = nextSheetId(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', 'Q', 4);
+    }
 
-  appendSheetObject(SHEET_NAMES.FOLLOWUP_QUEUE, data);
-  logActivity(user, 'create', 'Follow-up', data.Queue_ID, buildActivitySummary('Follow-up', data, 'created'));
+    appendSheetObject(SHEET_NAMES.FOLLOWUP_QUEUE, data);
+    logActivity(user, 'create', 'Follow-up', data.Queue_ID, buildActivitySummary('Follow-up', data, 'created'));
 
-  return {
-    item: data
-  };
+    return {
+      item: data
+    };
+  });
 }
 
 function updateFollowup(payload, user) {

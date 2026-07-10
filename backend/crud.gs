@@ -69,7 +69,9 @@ function createAffiliate(payload, user) {
 
 function updateAffiliate(payload, user) {
   if (!isAdminUser(user)) {
-    return updateStaffAffiliateDetails(payload, user);
+    return runIdempotentWrite(payload, 'affiliateDetails', function () {
+      return updateStaffAffiliateDetails(payload, user);
+    });
   }
 
   return updateEntity('affiliate', payload, user);
@@ -109,6 +111,9 @@ function updateStaffAffiliateDetails(payload, user) {
   }
 
   updated = updateSheetObjectByKey(config.sheet, config.idKey, affiliateId, data);
+  if (source.Next_Followup_Date !== undefined) {
+    syncAffiliateDetailFollowup(updated, source, user);
+  }
   logActivity(user, 'update', config.type, affiliateId, 'Affiliate contact details updated.');
 
   return {
@@ -156,7 +161,338 @@ function reopenIssue(payload, user) {
 
 function createInteraction(payload, user) {
   requireScopedWrite(payload, user);
-  return createEntity('interaction', payload, user);
+  return runIdempotentWrite(payload, 'interaction', function () {
+    const duplicate = findRecentDuplicateInteraction(payload, user);
+    var result;
+    var sync;
+
+    if (duplicate) {
+      return {
+        item: duplicate,
+        duplicate: true,
+        followupSync: {
+          skippedDuplicate: true
+        }
+      };
+    }
+
+    result = createEntity('interaction', normalizeInteractionPayload(payload, user), user);
+    sync = syncInteractionFollowup(payload, user);
+    result.followupSync = sync;
+
+    return result;
+  });
+}
+
+function normalizeInteractionPayload(payload, user) {
+  const source = copyRow(payload || {});
+  const staffValue = safeString(getFirstValue(source, ['Assigned_Staff', 'Assigned Staff', 'Staff'])) || getUserDisplayName(user);
+  const followupDate = getPayloadFollowupDate(source);
+
+  source.Assigned_Staff = staffValue;
+  source.Staff = staffValue;
+  source.Channel = safeString(source.Channel) || safeString(source.Market_Channel);
+  source.Outcome = safeString(source.Outcome) || safeString(source.Status);
+  source.Date_Time = safeString(source.Date_Time) || getCrmTimestamp();
+
+  if (followupDate) {
+    source.Followup_Date = followupDate;
+  }
+
+  return source;
+}
+
+function syncInteractionFollowup(payload, user) {
+  const source = payload || {};
+  const affiliateId = safeString(source.Affiliate_ID);
+  const affiliate = findAffiliateById(affiliateId);
+  const staffValue = safeString(getFirstValue(source, ['Assigned_Staff', 'Assigned Staff', 'Staff'])) || getUserDisplayName(user);
+  const submittedDate = getPayloadFollowupDate(source);
+  const submittedDateKey = getFollowupDateKey(submittedDate);
+  const todayKey = getTodayFollowupDateKey();
+  const headers = getSheetHeadersSafe(SHEET_NAMES.AFFILIATES);
+  const affiliateUpdate = {};
+  var currentDateKey;
+  var completed;
+  var upserted = null;
+  var clearedCurrentDate = false;
+
+  if (!affiliateId) {
+    return {
+      completedCurrent: 0,
+      scheduledNext: false
+    };
+  }
+
+  currentDateKey = getFollowupDateKey(getFirstValue(affiliate, ['Next_Followup_Date', 'Next Followup Date']));
+  setIfHeaderExists(affiliateUpdate, headers, ['Last_Contact_Date', 'Last Contact Date'], getCrmTimestamp(), true);
+  setIfHeaderExists(affiliateUpdate, headers, ['Next_Action', 'Next Action'], getFirstValue(source, ['Next_Action', 'Next Action']), false);
+  setIfHeaderExists(affiliateUpdate, headers, ['Notes'], source.Notes, false);
+
+  if (submittedDateKey) {
+    setIfHeaderExists(affiliateUpdate, headers, ['Next_Followup_Date', 'Next Followup Date'], submittedDateKey, true);
+  } else if (currentDateKey && currentDateKey <= todayKey) {
+    setIfHeaderExists(affiliateUpdate, headers, ['Next_Followup_Date', 'Next Followup Date'], '', true);
+    clearedCurrentDate = true;
+  }
+
+  if (Object.keys(affiliateUpdate).length) {
+    updateSheetObjectByKey(SHEET_NAMES.AFFILIATES, 'Affiliate_ID', affiliateId, affiliateUpdate);
+  }
+
+  completed = completeCurrentFollowupReminders(affiliateId, staffValue, todayKey);
+
+  if (submittedDateKey) {
+    upserted = upsertActiveFollowupReminder({
+      Affiliate_ID: affiliateId,
+      Assigned_Staff: staffValue,
+      Followup_Date: submittedDateKey,
+      Priority: safeString(source.Priority) || safeString(affiliate.Priority) || 'Medium',
+      Status: 'Pending',
+      Generated_From: safeString(source.Generated_From) || 'Manual',
+      Notes: safeString(source.Notes)
+    }, user);
+  }
+
+  return {
+    affiliateId: affiliateId,
+    completedCurrent: completed.length,
+    scheduledNext: !!upserted,
+    nextFollowupDate: submittedDateKey,
+    clearedCurrentDate: clearedCurrentDate,
+    queueItem: upserted
+  };
+}
+
+function syncAffiliateDetailFollowup(updatedAffiliate, source, user) {
+  const affiliateId = safeString(updatedAffiliate && updatedAffiliate.Affiliate_ID);
+  const staffValue = safeString(getFirstValue(updatedAffiliate || {}, ['Assigned_Staff', 'Assigned Staff'])) || getUserDisplayName(user);
+  const dateKey = getFollowupDateKey(source.Next_Followup_Date);
+  var completed;
+
+  if (!affiliateId) {
+    return;
+  }
+
+  if (dateKey) {
+    upsertActiveFollowupReminder({
+      Affiliate_ID: affiliateId,
+      Assigned_Staff: staffValue,
+      Followup_Date: dateKey,
+      Priority: safeString(updatedAffiliate.Priority) || 'Medium',
+      Status: 'Pending',
+      Generated_From: 'Affiliate Next Follow-up',
+      Notes: safeString(updatedAffiliate.Notes)
+    }, user);
+  } else {
+    completed = completeActiveFollowupReminders(affiliateId, staffValue);
+    if (completed.length) {
+      logActivity(user, 'complete', 'Follow-up', affiliateId, 'Active affiliate follow-up reminders completed after clearing next follow-up date.');
+    }
+  }
+}
+
+function completeCurrentFollowupReminders(affiliateId, staffValue, todayKey) {
+  const targetId = safeString(affiliateId);
+  const targetStaff = safeString(staffValue).toLowerCase();
+  return getMatchingFollowupQueueRows(function (row) {
+    const rowDateKey = getFollowupDateKey(row.Followup_Date);
+    return safeString(row.Affiliate_ID) === targetId &&
+      safeString(row.Assigned_Staff).toLowerCase() === targetStaff &&
+      rowDateKey &&
+      rowDateKey <= todayKey &&
+      isActiveFollowupReminder(row);
+  }).map(function (row) {
+    return updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', row.Queue_ID, {
+      Status: 'Completed'
+    });
+  });
+}
+
+function completeActiveFollowupReminders(affiliateId, staffValue) {
+  const targetId = safeString(affiliateId);
+  const targetStaff = safeString(staffValue).toLowerCase();
+  return getMatchingFollowupQueueRows(function (row) {
+    return safeString(row.Affiliate_ID) === targetId &&
+      safeString(row.Assigned_Staff).toLowerCase() === targetStaff &&
+      isActiveFollowupReminder(row);
+  }).map(function (row) {
+    return updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', row.Queue_ID, {
+      Status: 'Completed'
+    });
+  });
+}
+
+function upsertActiveFollowupReminder(data, user) {
+  const targetId = safeString(data.Affiliate_ID);
+  const targetStaff = safeString(data.Assigned_Staff).toLowerCase();
+  const dateKey = getFollowupDateKey(data.Followup_Date);
+  const activeRows = getMatchingFollowupQueueRows(function (row) {
+    return safeString(row.Affiliate_ID) === targetId &&
+      safeString(row.Assigned_Staff).toLowerCase() === targetStaff &&
+      isActiveFollowupReminder(row);
+  });
+  const existing = activeRows.slice().sort(function (a, b) {
+    const aDate = getFollowupDateKey(a.Followup_Date);
+    const bDate = getFollowupDateKey(b.Followup_Date);
+    if (aDate === dateKey) {
+      return -1;
+    }
+    if (bDate === dateKey) {
+      return 1;
+    }
+    return aDate > bDate ? 1 : -1;
+  })[0];
+  const payload = {
+    Affiliate_ID: targetId,
+    Assigned_Staff: safeString(data.Assigned_Staff),
+    Followup_Date: dateKey || safeString(data.Followup_Date),
+    Priority: safeString(data.Priority) || 'Medium',
+    Status: safeString(data.Status) || 'Pending',
+    Generated_From: safeString(data.Generated_From) || 'Affiliate Next Follow-up',
+    Notes: safeString(data.Notes)
+  };
+
+  if (existing && safeString(existing.Queue_ID)) {
+    payload.Queue_ID = existing.Queue_ID;
+    activeRows.forEach(function (row) {
+      if (safeString(row.Queue_ID) !== safeString(existing.Queue_ID)) {
+        updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', row.Queue_ID, {
+          Status: 'Completed'
+        });
+      }
+    });
+    return updateSheetObjectByKey(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', existing.Queue_ID, payload);
+  }
+
+  payload.Queue_ID = nextSheetId(SHEET_NAMES.FOLLOWUP_QUEUE, 'Queue_ID', 'Q', 4);
+  appendSheetObject(SHEET_NAMES.FOLLOWUP_QUEUE, payload);
+  logActivity(user, 'create', 'Follow-up', payload.Queue_ID, 'Follow-up reminder scheduled.');
+  return payload;
+}
+
+function getMatchingFollowupQueueRows(predicate) {
+  return safeReadSheetObjects(SHEET_NAMES.FOLLOWUP_QUEUE).filter(function (row) {
+    return safeString(row.Queue_ID) && predicate(row);
+  });
+}
+
+function isActiveFollowupReminder(row) {
+  const status = safeString(row && row.Status).toLowerCase();
+  return ['completed', 'complete', 'done', 'closed', 'resolved', 'cancelled', 'canceled'].indexOf(status) === -1;
+}
+
+function getPayloadFollowupDate(source) {
+  return safeString(getFirstValue(source || {}, ['Followup_Date', 'Followup Date', 'Next_Followup_Date', 'Next Followup Date']));
+}
+
+function runIdempotentWrite(payload, operation, callback) {
+  const submissionId = safeString(payload && (payload.submissionId || payload.Submission_ID));
+  const key = submissionId ? 'crm_submit_' + safeString(operation) + '_' + submissionId : '';
+  var cache;
+  var cached;
+  var result;
+
+  if (!key || typeof CacheService === 'undefined') {
+    return callback();
+  }
+
+  cache = CacheService.getScriptCache();
+  cached = cache.get(key);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (error) {
+      return {
+        duplicate: true,
+        submissionId: submissionId
+      };
+    }
+  }
+
+  result = callback();
+  result.submissionId = submissionId;
+  try {
+    cache.put(key, JSON.stringify(result), 600);
+  } catch (error) {
+    cache.put(key, JSON.stringify({
+      duplicate: true,
+      submissionId: submissionId
+    }), 600);
+  }
+
+  return result;
+}
+
+function findRecentDuplicateInteraction(payload, user) {
+  const source = normalizeInteractionPayload(payload, user);
+  const now = new Date();
+  const target = buildInteractionDuplicateKey(source);
+  const rows = safeReadSheetObjects(SHEET_NAMES.INTERACTION_LOG);
+  var duplicate = null;
+
+  rows.slice().reverse().some(function (row) {
+    const date = parseInteractionDate(row.Date_Time);
+    if (!date || Math.abs(now.getTime() - date.getTime()) > 60000) {
+      return false;
+    }
+
+    if (buildInteractionDuplicateKey(row) === target) {
+      duplicate = row;
+      return true;
+    }
+
+    return false;
+  });
+
+  return duplicate;
+}
+
+function buildInteractionDuplicateKey(row) {
+  return [
+    safeString(row.Affiliate_ID).toLowerCase(),
+    safeString(getFirstValue(row, ['Staff', 'Assigned_Staff', 'Assigned Staff'])).toLowerCase(),
+    safeString(row.Interaction_Type).toLowerCase(),
+    safeString(getFirstValue(row, ['Channel', 'Market_Channel'])).toLowerCase(),
+    safeString(getFirstValue(row, ['Outcome', 'Status'])).toLowerCase(),
+    safeString(row.Notes).toLowerCase(),
+    getFollowupDateKey(getFirstValue(row, ['Followup_Date', 'Next_Followup_Date']))
+  ].join('|');
+}
+
+function parseInteractionDate(value) {
+  const text = safeString(value);
+  var parsed;
+  var match;
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (!text) {
+    return null;
+  }
+
+  match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2}):(\d{1,2})/);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6]));
+  }
+
+  parsed = new Date(text);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getCrmTimestamp() {
+  const date = new Date();
+  const tz = typeof Session !== 'undefined' && Session.getScriptTimeZone
+    ? Session.getScriptTimeZone() || 'Asia/Dhaka'
+    : 'Asia/Dhaka';
+
+  if (typeof Utilities !== 'undefined') {
+    return Utilities.formatDate(date, tz, 'yyyy-MM-dd HH:mm:ss');
+  }
+
+  return date.getFullYear() + '-' + padNumber(date.getMonth() + 1, 2) + '-' + padNumber(date.getDate(), 2) + ' ' + padNumber(date.getHours(), 2) + ':' + padNumber(date.getMinutes(), 2) + ':' + padNumber(date.getSeconds(), 2);
 }
 
 function createBrand(payload, user) {

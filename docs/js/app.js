@@ -3417,10 +3417,14 @@
     var button = utils.qs('[data-followup-submit]');
     var message = utils.qs('[data-followup-form-message]');
     var payload = followupFormData();
+    var originalButtonText = button ? button.textContent : '';
     var result;
+
+    payload.submissionId = createSubmissionId();
 
     if (button) {
       button.disabled = true;
+      button.textContent = 'Saving...';
     }
     utils.setText(message, 'Saving follow-up...');
 
@@ -3430,11 +3434,11 @@
       result = await api.createFollowup(payload);
     }
 
-    if (button) {
-      button.disabled = false;
-    }
-
     if (!isSuccessfulResult(result)) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalButtonText;
+      }
       utils.setText(message, friendlyErrorMessage(result, 'Unable to save follow-up.'));
       showToast(friendlyErrorMessage(result, 'Unable to save follow-up.'));
       return;
@@ -4017,11 +4021,30 @@
     return message;
   }
 
+  function createSubmissionId() {
+    if (window.crypto && window.crypto.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+
+    return 'submit_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function interactionSavedMessage(result) {
+    var sync = result && result.data && result.data.followupSync ? result.data.followupSync : {};
+
+    if (sync.nextFollowupDate) {
+      return 'Interaction saved. Current follow-up completed and next follow-up scheduled for ' + formatDate(sync.nextFollowupDate) + '.';
+    }
+
+    return 'Interaction saved. Current follow-up completed.';
+  }
+
   async function submitRecordForm(event) {
     var config = recordForms[recordState.type];
     var message = utils.qs('[data-record-form-message]');
     var button = utils.qs('[data-record-submit]');
     var payload = getRecordFormData();
+    var originalButtonText = button ? button.textContent : '';
     var isEdit;
     var result;
 
@@ -4041,11 +4064,15 @@
 
     if (button) {
       button.disabled = true;
+      button.textContent = 'Saving...';
     }
     utils.setText(message, 'Saving...');
 
     if (config.idKey && recordState.context[config.idKey]) {
       payload[config.idKey] = recordState.context[config.idKey];
+    }
+    if (['interaction', 'affiliateDetails'].indexOf(recordState.type) !== -1) {
+      payload.submissionId = createSubmissionId();
     }
 
     isEdit = isRecordEdit(config, recordState.context);
@@ -4060,18 +4087,18 @@
       result = await api[isEdit ? config.updateApi : config.api](payload);
     }
 
-    if (button) {
-      button.disabled = false;
-    }
-
     if (!isSuccessfulResult(result)) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalButtonText;
+      }
       utils.setText(message, friendlyErrorMessage(result, 'Unable to save record.'));
       showToast(friendlyErrorMessage(result, 'Unable to save record.'));
       return;
     }
 
     closeRecordModal();
-    showToast(recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.');
+    showToast(recordState.type === 'interaction' ? interactionSavedMessage(result) : (recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.'));
     refreshAfterRecordSave(recordState.type);
   }
 
