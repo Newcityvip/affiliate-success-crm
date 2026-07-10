@@ -49,6 +49,7 @@ function buildAffiliateNextFollowups(affiliates) {
     return {
       Queue_ID: '',
       Affiliate_ID: safeString(affiliate.Affiliate_ID),
+      Affiliate_Username: safeString(affiliate.Affiliate_Username),
       Affiliate_Name: safeString(affiliate.Affiliate_Name),
       Brand: safeString(affiliate.Brand),
       Assigned_Staff: safeString(affiliate.Assigned_Staff),
@@ -58,6 +59,7 @@ function buildAffiliateNextFollowups(affiliates) {
       Status: 'Pending',
       Generated_From: 'Affiliate Next Follow-up',
       Source: 'Affiliate Next Follow-up',
+      Market_Channel: safeString(affiliate.Market_Channel),
       Next_Action: safeString(affiliate.Next_Action),
       Notes: safeString(affiliate.Notes),
       isAffiliateNextFollowup: true
@@ -347,8 +349,11 @@ function enrichFollowups(items, affiliates) {
 
   return items.map(function (item) {
     const affiliate = affiliateMap[safeString(item.Affiliate_ID)] || {};
-    item.Affiliate_Name = affiliate.Affiliate_Name || '';
-    item.Brand = affiliate.Brand || '';
+    item.Affiliate_Username = affiliate.Affiliate_Username || item.Affiliate_Username || '';
+    item.Affiliate_Name = affiliate.Affiliate_Name || item.Affiliate_Name || '';
+    item.Brand = affiliate.Brand || item.Brand || '';
+    item.Market_Channel = affiliate.Market_Channel || item.Market_Channel || '';
+    item.Next_Action = affiliate.Next_Action || item.Next_Action || '';
     return item;
   });
 }

@@ -49,7 +49,7 @@ function getDashboardSummary(user) {
     upcomingFollowups: followupGroups.upcoming.length,
     activeBrands: countActiveBrands(brands, affiliates),
     staffMembers: countActiveStaff(staff, followups, tasks, issues),
-    recentInteractions: recentActivity.length
+    recentInteractions: interactions.length
   };
 
   summary.performanceSummary = performanceSummary;
@@ -107,8 +107,10 @@ function enrichDashboardFollowups(followups, affiliates) {
   return followups.map(function (row) {
     const item = copyRow(row);
     const affiliate = affiliateMap[safeString(item.Affiliate_ID)] || {};
+    item.Affiliate_Username = item.Affiliate_Username || getFirstValue(affiliate, ['Affiliate_Username', 'Affiliate Username', 'Username']);
     item.Affiliate_Name = item.Affiliate_Name || getFirstValue(affiliate, ['Affiliate_Name', 'Name']);
     item.Brand = item.Brand || getFirstValue(affiliate, ['Brand', 'Brand_Name', 'Brand Name']);
+    item.Market_Channel = item.Market_Channel || getFirstValue(affiliate, ['Market_Channel', 'Market Channel']);
     return item;
   });
 }
@@ -157,6 +159,7 @@ function normalizeFollowupRow(row) {
   return {
     Queue_ID: safeString(getFirstValue(row, ['Queue_ID', 'ID'])),
     Affiliate_ID: safeString(getFirstValue(row, ['Affiliate_ID', 'Affiliate ID'])),
+    Affiliate_Username: safeString(getFirstValue(row, ['Affiliate_Username', 'Affiliate Username', 'Username'])),
     Affiliate_Name: safeString(getFirstValue(row, ['Affiliate_Name', 'Affiliate Name', 'Name'])),
     Brand: safeString(getFirstValue(row, ['Brand', 'Brand_Name', 'Brand Name'])),
     Assigned_Staff: safeString(getFirstValue(row, ['Assigned_Staff', 'Assigned Staff', 'Staff'])),
@@ -164,6 +167,7 @@ function normalizeFollowupRow(row) {
     Priority: safeString(getFirstValue(row, ['Priority'])),
     Status: safeString(getFirstValue(row, ['Status'])),
     Generated_From: safeString(getFirstValue(row, ['Generated_From', 'Generated From', 'Source'])),
+    Market_Channel: safeString(getFirstValue(row, ['Market_Channel', 'Market Channel'])),
     bucket: safeString(getFirstValue(row, ['bucket', 'Bucket'])),
     rawDateType: safeString(getFirstValue(row, ['rawDateType', 'Raw_Date_Type'])),
     rawDateValue: safeString(getFirstValue(row, ['rawDateValue', 'Raw_Date_Value'])),

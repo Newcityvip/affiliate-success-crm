@@ -58,6 +58,7 @@
   var followupColumns = [
     'Queue_ID',
     'Affiliate_ID',
+    'Affiliate_Username',
     'Affiliate_Name',
     'Brand',
     'Assigned_Staff',
@@ -68,7 +69,7 @@
     'Actions'
   ];
   var followupFilterFields = ['Assigned_Staff', 'Priority', 'Status'];
-  var followupSearchFields = ['Affiliate_ID', 'Affiliate_Name', 'Brand'];
+  var followupSearchFields = ['Affiliate_ID', 'Affiliate_Username', 'Affiliate_Name', 'Brand'];
   var followupBadgeFields = ['Priority', 'Status'];
   var affiliateState = {
     loaded: false,
@@ -164,9 +165,9 @@
       sections: {
         'Basic Info': ['Affiliate_ID', 'Affiliate_Name', 'Brand'],
         Assignment: ['Assigned_Staff'],
-        Notes: ['Market_Channel', 'Interaction_Type', 'Notes', 'Status']
+        Notes: ['Market_Channel', 'Interaction_Type', 'Notes', 'Status', 'Next_Followup_Date']
       },
-      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Market_Channel', 'Interaction_Type', 'Notes', 'Status']
+      fields: ['Affiliate_ID', 'Affiliate_Name', 'Brand', 'Assigned_Staff', 'Market_Channel', 'Interaction_Type', 'Notes', 'Status', 'Next_Followup_Date']
     },
     performance: {
       title: 'Update Performance',
@@ -1401,7 +1402,30 @@
     document.querySelectorAll('[data-workspace-metric]').forEach(function (metric) {
       utils.setText(metric, metricValue(workspace, metric.dataset.workspaceMetric));
     });
+    enableWorkspaceMetricNavigation();
     renderWarnings(asArray(workspace.warnings));
+  }
+
+  function enableWorkspaceMetricNavigation() {
+    document.querySelectorAll('[data-workspace-metric="recentInteractions"]').forEach(function (metric) {
+      var target = metric.parentElement;
+      if (!target || target.dataset.interactionsNavReady === 'true') {
+        return;
+      }
+      target.dataset.interactionsNavReady = 'true';
+      target.setAttribute('role', 'link');
+      target.setAttribute('tabindex', '0');
+      target.title = 'Open My Interactions';
+      target.addEventListener('click', function () {
+        window.location.hash = '#interactions';
+      });
+      target.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          window.location.hash = '#interactions';
+        }
+      });
+    });
   }
 
   function updateDashboardNavCounts(data) {
@@ -2864,8 +2888,11 @@
     return {
       Affiliate_ID: valueFor(row, 'Affiliate_ID'),
       Affiliate_Name: valueFor(row, 'Affiliate_Name'),
+      Affiliate_Username: valueFor(row, 'Affiliate_Username'),
       Brand: valueFor(row, 'Brand'),
-      Assigned_Staff: valueFor(row, 'Assigned_Staff') || getUserName()
+      Assigned_Staff: valueFor(row, 'Assigned_Staff') || getUserName(),
+      Market_Channel: valueFor(row, 'Market_Channel'),
+      Next_Followup_Date: valueFor(row, 'Next_Followup_Date')
     };
   }
 
@@ -3152,6 +3179,7 @@
     var actions = document.createElement('div');
     actions.className = 'table-actions';
     var isAffiliateReminder = valueFor(row, 'isAffiliateNextFollowup') === 'true' || valueFor(row, 'Source') === 'Affiliate Next Follow-up' || !valueFor(row, 'Queue_ID');
+    var group = getFollowupGroup(row);
 
     var complete = document.createElement('button');
     complete.className = 'button button-secondary button-small';
@@ -3171,6 +3199,17 @@
       openFollowupModal('reschedule', row);
     });
 
+    if (!isCompletedFollowup(row) && (group === 'today' || group === 'overdue')) {
+      var interaction = document.createElement('button');
+      interaction.className = 'button button-secondary button-small';
+      interaction.type = 'button';
+      interaction.textContent = 'Log Interaction';
+      interaction.addEventListener('click', function () {
+        openRecordModal('interaction', buildInteractionContextFromFollowup(row, group));
+      });
+      actions.appendChild(interaction);
+    }
+
     if (isAffiliateReminder) {
       var log = document.createElement('button');
       log.className = 'button button-secondary button-small';
@@ -3185,6 +3224,25 @@
     actions.appendChild(complete);
     actions.appendChild(reschedule);
     parent.appendChild(actions);
+  }
+
+  function buildInteractionContextFromFollowup(row, group) {
+    var context = {
+      Affiliate_ID: valueFor(row, 'Affiliate_ID'),
+      Affiliate_Name: valueFor(row, 'Affiliate_Name'),
+      Affiliate_Username: valueFor(row, 'Affiliate_Username'),
+      Brand: valueFor(row, 'Brand'),
+      Assigned_Staff: valueFor(row, 'Assigned_Staff') || getUserName(),
+      Market_Channel: valueFor(row, 'Market_Channel'),
+      Status: 'Contacted',
+      Generated_From: valueFor(row, 'Generated_From') || 'Follow-up'
+    };
+
+    if (group === 'upcoming') {
+      context.Next_Followup_Date = valueFor(row, 'Next_Followup_Date') || valueFor(row, 'Followup_Date');
+    }
+
+    return context;
   }
 
   function getFollowupGroup(row) {
@@ -3915,6 +3973,7 @@
     setFormValue(form, 'Brand', valueFor(row, 'Brand'));
     setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
     setFormValue(form, 'Assigned_To', valueFor(row, 'Assigned_Staff'));
+    setFormValue(form, 'Market_Channel', valueFor(row, 'Market_Channel'));
   }
 
   function setFormValue(form, name, value) {
@@ -4114,6 +4173,13 @@
     if (type === 'followup') {
       followupState.loaded = false;
       loadFollowups(true);
+    }
+
+    if (type === 'interaction') {
+      followupState.loaded = false;
+      loadFollowups(true);
+      affiliateState.loaded = false;
+      loadAffiliates(true);
     }
 
     if (type === 'task' || type === 'issue' || type === 'interaction' || type === 'brand' || type === 'staff' || type === 'performance') {
