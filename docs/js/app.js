@@ -55,6 +55,7 @@
   var affiliateBadgeFields = ['Health_Status', 'Status', 'Priority', 'Active'];
   var affiliateKeyFields = ['Affiliate_Name', 'Brand', 'Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email', 'Assigned_Staff', 'Status', 'Health_Status', 'Priority', 'Last_Contact_Date', 'Next_Followup_Date', 'Next_Action', 'Notes'];
   var copyableAffiliateFields = ['Affiliate_ID', 'Affiliate_Username', 'Telegram', 'WhatsApp', 'Email'];
+  var followupAffiliateLinkFields = ['Affiliate_ID', 'Affiliate_Username', 'Affiliate_Name'];
   var followupColumns = [
     'Queue_ID',
     'Affiliate_ID',
@@ -2351,9 +2352,21 @@
       var title = document.createElement('strong');
       var details = document.createElement('small');
       row.className = 'timeline-item';
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-label', 'View interaction details');
       date.textContent = formatDate(getModuleValue(item, ['Date', 'Interaction_Date', 'Timestamp']));
       title.textContent = firstDefined(getModuleValue(item, ['Interaction_Type', 'Type']), 'Interaction') + ' - ' + firstDefined(getModuleValue(item, ['Affiliate_Name', 'Affiliate', 'Affiliate_ID']), 'Affiliate');
       details.textContent = firstDefined(getModuleValue(item, ['Notes', 'Summary', 'Description']), getModuleValue(item, ['Assigned_Staff', 'Staff']), 'No summary available');
+      row.addEventListener('click', function () {
+        openInteractionDetail(item);
+      });
+      row.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openInteractionDetail(item);
+        }
+      });
       row.appendChild(date);
       row.appendChild(title);
       row.appendChild(details);
@@ -2902,11 +2915,10 @@
     var sections = [
       { title: 'Overview', rows: [row], empty: 'Profile fields are listed below.' },
       { title: 'Follow-ups', rows: relatedRows(followupState.all, affiliateId), empty: 'No follow-ups loaded for this affiliate.' },
-      { title: 'Interactions', rows: relatedRows(getModuleRows('interactions'), affiliateId), empty: 'No interactions loaded for this affiliate.' },
+      { title: 'Previous notes / interaction history', rows: sortRowsNewestFirst(relatedRows(getModuleRows('interactions'), affiliateId)), empty: 'No previous notes found.' },
       { title: 'Tasks', rows: relatedRows(getModuleRows('tasks'), affiliateId), empty: 'No tasks loaded for this affiliate.' },
       { title: 'Issues', rows: relatedRows(getModuleRows('issues'), affiliateId), empty: 'No issues loaded for this affiliate.' },
-      { title: 'Performance', rows: relatedRows(getModuleRows('performance'), affiliateId), empty: 'No performance rows loaded for this affiliate.' },
-      { title: 'Notes', rows: [], empty: 'Notes will use interaction records in a later sprint.' }
+      { title: 'Performance', rows: relatedRows(getModuleRows('performance'), affiliateId), empty: 'No performance rows loaded for this affiliate.' }
     ];
 
     wrap.className = 'drawer-related';
@@ -2942,7 +2954,27 @@
     });
   }
 
+  function sortRowsNewestFirst(rows) {
+    return asArray(rows).slice().sort(function (a, b) {
+      return dateSortValue(b) - dateSortValue(a);
+    });
+  }
+
+  function dateSortValue(row) {
+    var value = firstDefined(valueFor(row, 'Date_Time'), valueFor(row, 'Created_At'), valueFor(row, 'Updated_At'), valueFor(row, 'Timestamp'), valueFor(row, 'Date'), valueFor(row, 'Interaction_Date'), valueFor(row, 'Followup_Date'));
+    var time = value ? new Date(value).getTime() : 0;
+    return isNaN(time) ? 0 : time;
+  }
+
   function summaryForRelatedRow(row) {
+    if (valueFor(row, 'Interaction_ID')) {
+      return [
+        firstDefined(formatDate(valueFor(row, 'Date_Time')), formatDate(valueFor(row, 'Date')), valueFor(row, 'Interaction_ID')),
+        firstDefined(valueFor(row, 'Interaction_Type'), valueFor(row, 'Type'), 'Interaction'),
+        firstDefined(valueFor(row, 'Notes'), valueFor(row, 'Outcome'), valueFor(row, 'Status'))
+      ].filter(Boolean).join(' - ');
+    }
+
     return firstDefined(
       valueFor(row, 'Queue_ID'),
       valueFor(row, 'Interaction_ID'),
@@ -2959,6 +2991,119 @@
     if (drawer) {
       drawer.hidden = true;
     }
+  }
+
+  async function ensureModuleLoaded(routeKey) {
+    if (moduleState[routeKey] && !moduleState[routeKey].loaded && !moduleState[routeKey].loading) {
+      await loadModule(routeKey, true);
+    }
+  }
+
+  async function openFollowupAffiliateDetail(row) {
+    var affiliateId = valueFor(row, 'Affiliate_ID');
+    var affiliate = {};
+
+    if (!affiliateState.loaded && !affiliateState.loading) {
+      await loadAffiliates();
+    }
+    await ensureModuleLoaded('interactions');
+
+    affiliate = asArray(affiliateState.all).filter(function (item) {
+      return valueFor(item, 'Affiliate_ID') === affiliateId;
+    })[0] || {};
+
+    openAffiliateDrawer(Object.assign({}, row, affiliate, {
+      Followup_Date: valueFor(row, 'Followup_Date') || valueFor(row, 'Next_Followup_Date')
+    }));
+  }
+
+  async function openInteractionDetail(item) {
+    if (!affiliateState.loaded && !affiliateState.loading) {
+      await loadAffiliates();
+    }
+
+    var row = enrichInteractionDetailRow(item);
+    openReadonlyDetailPanel('Interaction details', 'Relationship touchpoint', row, [
+      'Interaction_ID',
+      'Affiliate_ID',
+      'Affiliate_Username',
+      'Affiliate_Name',
+      'Brand',
+      'Assigned_Staff',
+      'Date_Time',
+      'Date',
+      'Timestamp',
+      'Market_Channel',
+      'Interaction_Type',
+      'Status',
+      'Outcome',
+      'Notes',
+      'Next_Followup_Date',
+      'Created_By',
+      'Staff',
+      'Created_At'
+    ]);
+  }
+
+  function enrichInteractionDetailRow(item) {
+    var affiliateId = valueFor(item, 'Affiliate_ID');
+    var affiliate = asArray(affiliateState.all).filter(function (row) {
+      return valueFor(row, 'Affiliate_ID') === affiliateId;
+    })[0] || {};
+
+    return Object.assign({}, affiliate, item, {
+      Affiliate_Username: firstDefined(valueFor(item, 'Affiliate_Username'), valueFor(affiliate, 'Affiliate_Username')),
+      Affiliate_Name: firstDefined(valueFor(item, 'Affiliate_Name'), valueFor(item, 'Affiliate'), valueFor(affiliate, 'Affiliate_Name')),
+      Brand: firstDefined(valueFor(item, 'Brand'), valueFor(affiliate, 'Brand')),
+      Assigned_Staff: firstDefined(valueFor(item, 'Assigned_Staff'), valueFor(item, 'Staff'), valueFor(affiliate, 'Assigned_Staff')),
+      Market_Channel: firstDefined(valueFor(item, 'Market_Channel'), valueFor(item, 'Channel'), valueFor(affiliate, 'Market_Channel')),
+      Date_Time: firstDefined(valueFor(item, 'Date_Time'), valueFor(item, 'Date'), valueFor(item, 'Interaction_Date'), valueFor(item, 'Timestamp'))
+    });
+  }
+
+  function openReadonlyDetailPanel(title, eyebrow, row, fields) {
+    var panel = ensureReadonlyDetailPanel();
+    var titleNode = panel.querySelector('[data-readonly-detail-title]');
+    var eyebrowNode = panel.querySelector('[data-readonly-detail-eyebrow]');
+    var body = panel.querySelector('[data-readonly-detail-fields]');
+
+    if (!body) {
+      return;
+    }
+
+    utils.setText(titleNode, title);
+    utils.setText(eyebrowNode, eyebrow);
+    body.innerHTML = '';
+    fields.forEach(function (field) {
+      if (row[field] !== undefined && row[field] !== null && String(row[field]).trim() !== '') {
+        body.appendChild(createDrawerField(row, field, ['Interaction_ID', 'Affiliate_ID', 'Affiliate_Username', 'Affiliate_Name', 'Brand', 'Assigned_Staff'].indexOf(field) !== -1));
+      }
+    });
+
+    if (!body.children.length) {
+      body.appendChild(createEmptyPanel('No detail fields available.'));
+    }
+
+    panel.hidden = false;
+  }
+
+  function ensureReadonlyDetailPanel() {
+    var panel = utils.qs('[data-readonly-detail-panel]');
+
+    if (panel) {
+      return panel;
+    }
+
+    panel = document.createElement('aside');
+    panel.className = 'profile-drawer glass-panel';
+    panel.hidden = true;
+    panel.dataset.readonlyDetailPanel = 'true';
+    panel.innerHTML = '<div class="drawer-header"><div><p class="eyebrow" data-readonly-detail-eyebrow>Details</p><h2 data-readonly-detail-title>Details</h2></div><button class="icon-button" type="button" data-readonly-detail-close aria-label="Close details">x</button></div><div class="drawer-grid" data-readonly-detail-fields></div>';
+    panel.querySelector('[data-readonly-detail-close]').addEventListener('click', function () {
+      panel.hidden = true;
+    });
+    document.body.appendChild(panel);
+    return panel;
   }
 
   async function loadAffiliates() {
@@ -3164,6 +3309,8 @@
 
         if (column === 'Actions') {
           appendFollowupActions(td, row);
+        } else if ((group === 'today' || group === 'overdue') && followupAffiliateLinkFields.indexOf(column) !== -1) {
+          appendFollowupAffiliateLink(td, row, column);
         } else {
           appendFieldValue(td, row, column);
         }
@@ -3173,6 +3320,22 @@
 
       body.appendChild(tr);
     });
+  }
+
+  function appendFollowupAffiliateLink(parent, row, column) {
+    var button = document.createElement('button');
+    var value = displayValue(row, column);
+
+    button.className = 'button button-secondary button-small';
+    button.type = 'button';
+    button.textContent = value;
+    button.disabled = !value || value === 'N/A';
+    button.setAttribute('aria-label', 'View affiliate details for ' + value);
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      openFollowupAffiliateDetail(row);
+    });
+    parent.appendChild(button);
   }
 
   function appendFollowupActions(parent, row) {
@@ -3543,6 +3706,7 @@
 
     recordState.type = type;
     recordState.context = context || {};
+    resetRecordSubmitState();
     fields.innerHTML = '';
     form.reset();
     fields.appendChild(createEmptyPanel('Loading form options...'));
@@ -3631,6 +3795,23 @@
     var modal = utils.qs('[data-record-modal]');
     if (modal) {
       modal.hidden = true;
+    }
+    resetRecordSubmitState();
+  }
+
+  function resetRecordSubmitState(options) {
+    var button = utils.qs('[data-record-submit]');
+    var message = utils.qs('[data-record-form-message]');
+    var preserveMessage = options && options.preserveMessage;
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Save';
+      delete button.dataset.submitting;
+    }
+
+    if (message && !preserveMessage) {
+      utils.setText(message, '');
     }
   }
 
@@ -4103,7 +4284,6 @@
     var message = utils.qs('[data-record-form-message]');
     var button = utils.qs('[data-record-submit]');
     var payload = getRecordFormData();
-    var originalButtonText = button ? button.textContent : '';
     var isEdit;
     var result;
 
@@ -4121,44 +4301,52 @@
       return;
     }
 
-    if (button) {
-      button.disabled = true;
-      button.textContent = 'Saving...';
-    }
-    utils.setText(message, 'Saving...');
-
-    if (config.idKey && recordState.context[config.idKey]) {
-      payload[config.idKey] = recordState.context[config.idKey];
-    }
-    if (['interaction', 'affiliateDetails'].indexOf(recordState.type) !== -1) {
-      payload.submissionId = createSubmissionId();
-    }
-
-    isEdit = isRecordEdit(config, recordState.context);
-    if (recordState.type === 'affiliate' && !isEdit) {
-      result = await api.createAffiliate(payload);
-    } else if (recordState.type === 'affiliateDetails') {
-      result = await api.updateAffiliate(payload);
-    } else if (recordState.type === 'performance') {
-      updateDebugBeforeRequest(isEdit ? 'updatePerformance' : 'createPerformance', 'GET', payload);
-      result = await (isEdit ? api.updatePerformance(payload) : api.createPerformance(payload));
-    } else {
-      result = await api[isEdit ? config.updateApi : config.api](payload);
-    }
-
-    if (!isSuccessfulResult(result)) {
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalButtonText;
-      }
-      utils.setText(message, friendlyErrorMessage(result, 'Unable to save record.'));
-      showToast(friendlyErrorMessage(result, 'Unable to save record.'));
+    if (button && button.dataset.submitting === 'true') {
       return;
     }
 
-    closeRecordModal();
-    showToast(recordState.type === 'interaction' ? interactionSavedMessage(result) : (recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.'));
-    refreshAfterRecordSave(recordState.type);
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Saving...';
+      button.dataset.submitting = 'true';
+    }
+    utils.setText(message, 'Saving...');
+
+    try {
+      if (config.idKey && recordState.context[config.idKey]) {
+        payload[config.idKey] = recordState.context[config.idKey];
+      }
+      if (['interaction', 'affiliateDetails'].indexOf(recordState.type) !== -1) {
+        payload.submissionId = createSubmissionId();
+      }
+
+      isEdit = isRecordEdit(config, recordState.context);
+      if (recordState.type === 'affiliate' && !isEdit) {
+        result = await api.createAffiliate(payload);
+      } else if (recordState.type === 'affiliateDetails') {
+        result = await api.updateAffiliate(payload);
+      } else if (recordState.type === 'performance') {
+        updateDebugBeforeRequest(isEdit ? 'updatePerformance' : 'createPerformance', 'GET', payload);
+        result = await (isEdit ? api.updatePerformance(payload) : api.createPerformance(payload));
+      } else {
+        result = await api[isEdit ? config.updateApi : config.api](payload);
+      }
+
+      if (!isSuccessfulResult(result)) {
+        utils.setText(message, friendlyErrorMessage(result, 'Unable to save record.'));
+        showToast(friendlyErrorMessage(result, 'Unable to save record.'));
+        return;
+      }
+
+      closeRecordModal();
+      showToast(recordState.type === 'interaction' ? interactionSavedMessage(result) : (recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.'));
+      refreshAfterRecordSave(recordState.type);
+    } catch (error) {
+      utils.setText(message, 'Unable to save record. Please try again.');
+      showToast('Unable to save record. Please try again.');
+    } finally {
+      resetRecordSubmitState({ preserveMessage: true });
+    }
   }
 
   function refreshAfterRecordSave(type) {
