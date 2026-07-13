@@ -3001,20 +3001,22 @@
 
   async function openFollowupAffiliateDetail(row) {
     var affiliateId = valueFor(row, 'Affiliate_ID');
-    var affiliate = {};
+    var affiliate;
 
     if (!affiliateState.loaded && !affiliateState.loading) {
       await loadAffiliates();
     }
-    await ensureModuleLoaded('interactions');
 
     affiliate = asArray(affiliateState.all).filter(function (item) {
       return valueFor(item, 'Affiliate_ID') === affiliateId;
-    })[0] || {};
+    })[0];
 
-    openAffiliateDrawer(Object.assign({}, row, affiliate, {
-      Followup_Date: valueFor(row, 'Followup_Date') || valueFor(row, 'Next_Followup_Date')
-    }));
+    if (!affiliate) {
+      showToast('Affiliate profile is not available.');
+      return;
+    }
+
+    openAffiliateDrawer(affiliate);
   }
 
   async function openInteractionDetail(item) {
@@ -3323,19 +3325,49 @@
   }
 
   function appendFollowupAffiliateLink(parent, row, column) {
-    var button = document.createElement('button');
     var value = displayValue(row, column);
+    var canOpen = valueFor(row, 'Affiliate_ID');
+    var canCopy = value && value !== 'N/A' && value !== '-' && value !== '\u2014';
+    var wrap = document.createElement('div');
+    var text = document.createElement('strong');
 
-    button.className = 'button button-secondary button-small';
-    button.type = 'button';
-    button.textContent = value;
-    button.disabled = !value || value === 'N/A';
-    button.setAttribute('aria-label', 'View affiliate details for ' + value);
-    button.addEventListener('click', function (event) {
-      event.stopPropagation();
-      openFollowupAffiliateDetail(row);
-    });
-    parent.appendChild(button);
+    wrap.className = 'copy-value';
+    text.textContent = value;
+
+    if (canOpen) {
+      text.tabIndex = 0;
+      text.setAttribute('role', 'button');
+      text.setAttribute('aria-label', 'View affiliate details for ' + value);
+      text.addEventListener('click', function (event) {
+        event.stopPropagation();
+        openFollowupAffiliateDetail(row);
+      });
+      text.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          openFollowupAffiliateDetail(row);
+        }
+      });
+    }
+
+    wrap.appendChild(text);
+
+    if (column === 'Affiliate_ID' || column === 'Affiliate_Username') {
+      var copyButton = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.type = 'button';
+      copyButton.textContent = 'Copy';
+      copyButton.disabled = !canCopy;
+      copyButton.setAttribute('aria-label', 'Copy ' + friendlyFieldLabel(column));
+      copyButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        copyTextToClipboard(value, friendlyFieldLabel(column), copyButton);
+      });
+      wrap.appendChild(copyButton);
+    }
+
+    parent.appendChild(wrap);
   }
 
   function appendFollowupActions(parent, row) {
