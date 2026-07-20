@@ -96,9 +96,10 @@ function getDebugPerformanceWrite(payload, parsedAction, user) {
 }
 
 function savePerformanceRow(payload, user, isCreate) {
-  const headers = getSheetHeadersSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const headers = ensurePerformanceWriteHeaders(payload);
   const source = payload || {};
   const data = {};
+  const periodType = getPerformancePeriodType(source);
   var saved;
 
   if (!headers.length) {
@@ -116,8 +117,14 @@ function savePerformanceRow(payload, user, isCreate) {
   if (headers.indexOf('Performance_ID') !== -1 && isCreate) {
     setIfHeaderExists(data, headers, ['Performance_ID'], safeString(source.Performance_ID) || nextSheetId(SHEET_NAMES.MONTHLY_PERFORMANCE, 'Performance_ID', 'PERF', 4), true);
   }
-  setIfHeaderExists(data, headers, ['Period_Type'], getPerformancePeriodType(source), true);
-  setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(data.Date || source.Date || source.Month), true);
+  setIfHeaderExists(data, headers, ['Period_Type'], periodType, true);
+  if (periodType === 'Weekly') {
+    setIfHeaderExists(data, headers, ['Week_Start'], normalizeDateValue(source.Week_Start), true);
+    setIfHeaderExists(data, headers, ['Week_End'], normalizeDateValue(source.Week_End), true);
+    setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(source.Week_Start || source.Week_End || source.Month || source.Date), true);
+  } else {
+    setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(data.Date || source.Date || source.Month), true);
+  }
   setIfHeaderExists(data, headers, ['Growth_Percent', 'Conversion_Rate'], calculatePerformanceGrowth(data, source), true);
   setIfHeaderExists(data, headers, ['Updated_By'], getUserDisplayName(user), true);
   setIfHeaderExists(data, headers, ['Updated_At'], getTimestamp(), true);
@@ -133,6 +140,23 @@ function savePerformanceRow(payload, user, isCreate) {
 
   logActivity(user, isCreate ? 'create' : 'update', 'Performance', safeString(saved.Performance_ID), buildActivitySummary('Performance', saved, isCreate ? 'created' : 'updated'));
   return saved;
+}
+
+function ensurePerformanceWriteHeaders(payload) {
+  const existingHeaders = getSheetHeadersSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
+  const periodType = getPerformancePeriodType(payload || {});
+  var requiredHeaders;
+
+  if (!existingHeaders.length) {
+    return existingHeaders;
+  }
+
+  requiredHeaders = ['Period_Type'];
+  if (periodType === 'Weekly') {
+    requiredHeaders = requiredHeaders.concat(['Week_Start', 'Week_End']);
+  }
+
+  return ensureSheetHeaders(SHEET_NAMES.MONTHLY_PERFORMANCE, requiredHeaders).headers;
 }
 
 function getPerformanceSourceValue(source, header) {
@@ -421,6 +445,10 @@ function validatePerformancePayload(data, headers) {
 
   if (periodType === 'Weekly' && !hasWeekRange) {
     missing.push('Week_Start and Week_End');
+  }
+
+  if (periodType === 'Weekly' && hasWeekRange && normalizeDateValue(data.Week_End) < normalizeDateValue(data.Week_Start)) {
+    missing.push('Week_End must be on or after Week_Start');
   }
 
   if (periodType !== 'Weekly' && !hasMonthOrDate) {

@@ -128,9 +128,10 @@
       sections: {
         'Contact Details': ['Telegram', 'WhatsApp', 'Email'],
         'Basic Details': ['Country', 'Language'],
+        'Priority': ['Priority'],
         'Follow-up Notes': ['Next_Followup_Date', 'Next_Action', 'Notes']
       },
-      fields: ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Notes', 'Next_Followup_Date', 'Next_Action']
+      fields: ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Priority', 'Notes', 'Next_Followup_Date', 'Next_Action']
     },
     task: {
       title: 'Create Task',
@@ -4031,6 +4032,9 @@
       return dynamic.length ? dynamic : [''];
     }
     if (field === 'Priority') {
+      if (recordState.type === 'affiliateDetails') {
+        return ['High', 'Medium', 'Low'];
+      }
       return ['Low', 'Medium', 'High', 'Critical'];
     }
     if (field === 'Period_Type') {
@@ -4212,6 +4216,24 @@
     return data;
   }
 
+  function normalizeRecordPayload(type, data) {
+    var payload = Object.assign({}, data || {});
+    var isWeekly;
+
+    if (type === 'performance') {
+      isWeekly = safeLower(payload.Period_Type) === 'weekly';
+      payload.Period_Type = isWeekly ? 'Weekly' : 'Monthly';
+      if (isWeekly) {
+        delete payload.Month;
+      } else {
+        delete payload.Week_Start;
+        delete payload.Week_End;
+      }
+    }
+
+    return payload;
+  }
+
   function isRecordEdit(config, context) {
     if (recordState.type === 'performance') {
       return !!(context && (context.Performance_ID || (context.Affiliate_ID && context.Brand && (context.Month || (context.Week_Start && context.Week_End)))));
@@ -4260,7 +4282,57 @@
       form.elements.Email.setAttribute('aria-invalid', 'true');
     }
 
+    validateRecordSpecificFields(config, form, data, missing);
+
     return missing;
+  }
+
+  function validateRecordSpecificFields(config, form, data, missing) {
+    var priority;
+    var period;
+    var weekStart;
+    var weekEnd;
+
+    if (recordState.type === 'affiliateDetails') {
+      priority = String(data.Priority || '').trim();
+      if (priority && ['High', 'Medium', 'Low'].indexOf(priority) === -1) {
+        pushFieldError(form, missing, 'Priority', 'Priority must be High, Medium, or Low.');
+      }
+    }
+
+    if (recordState.type !== 'performance') {
+      return;
+    }
+
+    period = safeLower(data.Period_Type || 'Monthly');
+    if (period === 'weekly') {
+      if (!String(data.Week_Start || '').trim()) {
+        pushFieldError(form, missing, 'Week_Start', 'Week start is required.');
+      }
+      if (!String(data.Week_End || '').trim()) {
+        pushFieldError(form, missing, 'Week_End', 'Week end is required.');
+      }
+      weekStart = Date.parse(data.Week_Start || '');
+      weekEnd = Date.parse(data.Week_End || '');
+      if (!Number.isNaN(weekStart) && !Number.isNaN(weekEnd) && weekEnd < weekStart) {
+        pushFieldError(form, missing, 'Week_End', 'Week end cannot be earlier than week start.');
+      }
+    } else if (!String(data.Month || '').trim()) {
+      pushFieldError(form, missing, 'Month', 'Month is required.');
+    }
+  }
+
+  function pushFieldError(form, missing, field, message) {
+    var input = form && form.elements[field] ? form.elements[field] : null;
+    var error = form ? form.querySelector('[data-field-error="' + field + '"]') : null;
+
+    missing.push(friendlyFieldLabel(field));
+    if (error) {
+      error.textContent = message || friendlyFieldLabel(field) + ' is required.';
+    }
+    if (input) {
+      input.setAttribute('aria-invalid', 'true');
+    }
   }
 
   function friendlyErrorMessage(result, fallback) {
@@ -4345,6 +4417,7 @@
     utils.setText(message, 'Saving...');
 
     try {
+      payload = normalizeRecordPayload(recordState.type, payload);
       if (config.idKey && recordState.context[config.idKey]) {
         payload[config.idKey] = recordState.context[config.idKey];
       }
@@ -4371,6 +4444,9 @@
       }
 
       closeRecordModal();
+      if (recordState.type === 'affiliateDetails') {
+        openAffiliateDrawer(Object.assign({}, recordState.context || {}, payload));
+      }
       showToast(recordState.type === 'interaction' ? interactionSavedMessage(result) : (recordState.type === 'affiliateDetails' ? 'Affiliate details updated.' : (isEdit ? 'Update' : config.title) + ' saved.'));
       refreshAfterRecordSave(recordState.type);
     } catch (error) {

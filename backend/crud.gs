@@ -82,8 +82,10 @@ function updateStaffAffiliateDetails(payload, user) {
   const headers = getSheetHeadersSafe(config.sheet);
   const source = payload || {};
   const affiliateId = safeString(source[config.idKey]);
-  const allowedFields = ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Notes', 'Next_Followup_Date', 'Next_Action'];
+  const allowedFields = ['Telegram', 'WhatsApp', 'Email', 'Country', 'Language', 'Priority', 'Notes', 'Next_Followup_Date', 'Next_Action'];
   const data = {};
+  const currentAffiliate = getAffiliateForStaffDetailUpdate(affiliateId);
+  const followupDateChanged = source.Next_Followup_Date !== undefined && normalizeDateValue(source.Next_Followup_Date) !== normalizeDateValue(currentAffiliate.Next_Followup_Date);
   var updated;
 
   if (!headers.length) {
@@ -104,6 +106,7 @@ function updateStaffAffiliateDetails(payload, user) {
     }
   });
 
+  normalizeStaffAffiliateDetailPayload(data);
   setIfHeaderExists(data, headers, ['Updated_At', 'Updated At', 'Updated_Date', 'Updated Date', 'Last_Updated'], getTimestamp(), true);
 
   if (Object.keys(data).length === 0) {
@@ -111,7 +114,7 @@ function updateStaffAffiliateDetails(payload, user) {
   }
 
   updated = updateSheetObjectByKey(config.sheet, config.idKey, affiliateId, data);
-  if (source.Next_Followup_Date !== undefined) {
+  if (followupDateChanged) {
     syncAffiliateDetailFollowup(updated, source, user);
   }
   logActivity(user, 'update', config.type, affiliateId, 'Affiliate contact details updated.');
@@ -119,6 +122,33 @@ function updateStaffAffiliateDetails(payload, user) {
   return {
     item: updated
   };
+}
+
+function getAffiliateForStaffDetailUpdate(affiliateId) {
+  return safeReadSheetObjects(SHEET_NAMES.AFFILIATES).filter(function (affiliate) {
+    return safeString(affiliate.Affiliate_ID) === safeString(affiliateId);
+  })[0] || {};
+}
+
+function normalizeStaffAffiliateDetailPayload(data) {
+  const allowedPriorities = ['High', 'Medium', 'Low'];
+  var priority;
+
+  if (data.Priority === undefined) {
+    return;
+  }
+
+  priority = safeString(data.Priority);
+  if (!priority) {
+    delete data.Priority;
+    return;
+  }
+
+  if (allowedPriorities.indexOf(priority) === -1) {
+    throwCodedError('VALIDATION_ERROR', 'Priority must be High, Medium, or Low.');
+  }
+
+  data.Priority = priority;
 }
 
 function createTask(payload, user) {
