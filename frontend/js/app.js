@@ -3918,7 +3918,9 @@
     } else if (['Registrations', 'FTD', 'Active_Players', 'Deposits', 'Deposit_Amount', 'Turnover', 'Revenue_NGR', 'NGR', 'Commission'].indexOf(field) !== -1) {
       input = document.createElement('input');
       input.type = 'number';
-      input.min = '0';
+      if (['Revenue_NGR', 'NGR'].indexOf(field) === -1) {
+        input.min = '0';
+      }
       input.step = 'any';
     } else if (shouldUseSelect(field)) {
       input = document.createElement('select');
