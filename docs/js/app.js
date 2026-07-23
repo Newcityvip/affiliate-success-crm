@@ -4030,7 +4030,7 @@
       return dynamic.length ? dynamic : [getUserName()];
     }
     if (field === 'Affiliate_ID') {
-      dynamic = getKnownAffiliates();
+      dynamic = getKnownAffiliates(recordState.type === 'performance');
       return dynamic.length ? dynamic : [''];
     }
     if (field === 'Priority') {
@@ -4170,10 +4170,17 @@
     return !value || ['yes', 'true', 'active', 'open'].indexOf(value) !== -1;
   }
 
-  function getKnownAffiliates() {
+  function getKnownAffiliates(includeUsername) {
     return (affiliateState.all || []).filter(isActiveReference).map(function (row) {
       var affiliateId = valueFor(row, 'Affiliate_ID');
-      var label = [affiliateId, valueFor(row, 'Affiliate_Name'), valueFor(row, 'Brand')].filter(Boolean).join(' - ');
+      var labelParts = [affiliateId];
+
+      if (includeUsername) {
+        labelParts.push(valueFor(row, 'Affiliate_Username'));
+      }
+
+      labelParts.push(valueFor(row, 'Affiliate_Name'), valueFor(row, 'Brand'));
+      var label = labelParts.filter(Boolean).join(' - ');
       return affiliateId ? { value: affiliateId, label: label } : null;
     }).filter(Boolean);
   }
@@ -4232,6 +4239,24 @@
         delete payload.Week_End;
       }
     }
+
+    return payload;
+  }
+
+  function addOriginalPerformanceLocator(payload, context) {
+    var source = context || {};
+
+    if (!payload || !source) {
+      return payload;
+    }
+
+    payload.Original_Performance_ID = valueFor(source, 'Performance_ID');
+    payload.Original_Period_Type = getRecordFieldValue('Period_Type', source.Period_Type);
+    payload.Original_Month = valueFor(source, 'Month') || valueFor(source, 'Date');
+    payload.Original_Week_Start = getDateOnly(valueFor(source, 'Week_Start')) || valueFor(source, 'Week_Start');
+    payload.Original_Week_End = getDateOnly(valueFor(source, 'Week_End')) || valueFor(source, 'Week_End');
+    payload.Original_Affiliate_ID = valueFor(source, 'Affiliate_ID');
+    payload.Original_Brand = valueFor(source, 'Brand');
 
     return payload;
   }
@@ -4428,6 +4453,9 @@
       }
 
       isEdit = isRecordEdit(config, recordState.context);
+      if (recordState.type === 'performance' && isEdit) {
+        payload = addOriginalPerformanceLocator(payload, recordState.context);
+      }
       if (recordState.type === 'affiliate' && !isEdit) {
         result = await api.createAffiliate(payload);
       } else if (recordState.type === 'affiliateDetails') {

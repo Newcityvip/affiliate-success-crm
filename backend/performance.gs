@@ -19,16 +19,19 @@ function createPerformance(payload, user) {
 }
 
 function updatePerformance(payload, user) {
-  const id = getPerformanceUpdateKey(payload);
-  const existing = getExistingPerformanceForUpdate(payload);
+  const lookupSource = getPerformanceUpdateLookupSource(payload);
+  const id = getPerformanceUpdateKey(lookupSource);
+  var existing;
 
   if (!id) {
     throwCodedError('VALIDATION_ERROR', 'Performance row key is required.');
   }
 
+  existing = getExistingPerformanceForUpdate(lookupSource);
   requirePerformanceWrite(existing, user);
+  requirePerformanceWrite(payload, user);
   return {
-    item: savePerformanceRow(payload, user, false)
+    item: savePerformanceRow(payload, user, false, lookupSource)
   };
 }
 
@@ -95,9 +98,10 @@ function getDebugPerformanceWrite(payload, parsedAction, user) {
   };
 }
 
-function savePerformanceRow(payload, user, isCreate) {
+function savePerformanceRow(payload, user, isCreate, lookupSource) {
   const headers = ensurePerformanceWriteHeaders(payload);
   const source = payload || {};
+  const updateSource = lookupSource || source;
   const data = {};
   const periodType = getPerformancePeriodType(source);
   var saved;
@@ -125,7 +129,7 @@ function savePerformanceRow(payload, user, isCreate) {
   } else {
     setIfHeaderExists(data, headers, ['Month'], derivePerformanceMonth(data.Date || source.Date || source.Month), true);
   }
-  setIfHeaderExists(data, headers, ['Growth_Percent', 'Conversion_Rate'], calculatePerformanceGrowth(data, source), true);
+  setIfHeaderExists(data, headers, ['Growth_Percent', 'Conversion_Rate'], calculatePerformanceGrowth(data, isCreate ? source : updateSource), true);
   setIfHeaderExists(data, headers, ['Updated_By'], getUserDisplayName(user), true);
   setIfHeaderExists(data, headers, ['Updated_At'], getTimestamp(), true);
 
@@ -135,7 +139,7 @@ function savePerformanceRow(payload, user, isCreate) {
     appendSheetObject(SHEET_NAMES.MONTHLY_PERFORMANCE, data);
     saved = data;
   } else {
-    saved = updatePerformanceSheetRow(source, data, headers);
+    saved = updatePerformanceSheetRow(updateSource, data, headers);
   }
 
   logActivity(user, isCreate ? 'create' : 'update', 'Performance', safeString(saved.Performance_ID), buildActivitySummary('Performance', saved, isCreate ? 'created' : 'updated'));
@@ -215,6 +219,32 @@ function requirePerformanceWrite(payload, user) {
 
 function getPerformanceUpdateKey(payload) {
   return safeString(payload && payload.Performance_ID) || getPerformanceCompositeKey(payload);
+}
+
+function getPerformanceUpdateLookupSource(payload) {
+  const source = payload || {};
+  const hasOriginalLocator = safeString(source.Original_Performance_ID) ||
+    safeString(source.Original_Affiliate_ID) ||
+    safeString(source.Original_Brand) ||
+    safeString(source.Original_Month) ||
+    safeString(source.Original_Week_Start) ||
+    safeString(source.Original_Week_End) ||
+    safeString(source.Original_Period_Type);
+
+  if (!hasOriginalLocator) {
+    return source;
+  }
+
+  return {
+    Performance_ID: safeString(source.Original_Performance_ID) || safeString(source.Performance_ID),
+    Period_Type: safeString(source.Original_Period_Type) || safeString(source.Period_Type),
+    Month: safeString(source.Original_Month) || safeString(source.Month),
+    Date: safeString(source.Original_Month) || safeString(source.Date),
+    Week_Start: safeString(source.Original_Week_Start) || safeString(source.Week_Start),
+    Week_End: safeString(source.Original_Week_End) || safeString(source.Week_End),
+    Affiliate_ID: safeString(source.Original_Affiliate_ID) || safeString(source.Affiliate_ID),
+    Brand: safeString(source.Original_Brand) || safeString(source.Brand)
+  };
 }
 
 function getPerformancePeriodType(source) {
@@ -300,12 +330,13 @@ function buildPerformanceObjectFromSheetRow(row, headers) {
 }
 
 function getExistingPerformanceForUpdate(payload) {
-  const id = safeString(payload && payload.Performance_ID);
+  const lookupSource = getPerformanceUpdateLookupSource(payload);
+  const id = safeString(lookupSource && lookupSource.Performance_ID);
   const row = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE).filter(function (item) {
     if (id && safeString(item.Performance_ID) === id) {
       return true;
     }
-    return performanceRowsMatch(payload, item);
+    return performanceRowsMatch(lookupSource, item);
   })[0];
 
   if (!row) {
@@ -378,7 +409,8 @@ function updatePerformanceSheetRowByComposite(source, data, headers) {
 }
 
 function findPerformanceWriteTarget(source) {
-  const id = safeString(source && source.Performance_ID);
+  const lookupSource = getPerformanceUpdateLookupSource(source);
+  const id = safeString(lookupSource && lookupSource.Performance_ID);
   const sheet = getSheetByNameSafe(SHEET_NAMES.MONTHLY_PERFORMANCE);
   const rows = safeReadSheetObjects(SHEET_NAMES.MONTHLY_PERFORMANCE);
   var rowIndex;
@@ -403,12 +435,12 @@ function findPerformanceWriteTarget(source) {
     }
   }
 
-  if (getPerformanceCompositeKey(source)) {
+  if (getPerformanceCompositeKey(lookupSource)) {
     for (rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
       row = rows[rowIndex];
-      if (performanceRowsMatch(source, row)) {
+      if (performanceRowsMatch(lookupSource, row)) {
         return {
-          method: getPerformancePeriodType(source) === 'Weekly' ? 'Period_Type+Week_Start+Week_End+Affiliate_ID+Brand' : 'Period_Type+Month+Affiliate_ID+Brand',
+          method: getPerformancePeriodType(lookupSource) === 'Weekly' ? 'Period_Type+Week_Start+Week_End+Affiliate_ID+Brand' : 'Period_Type+Month+Affiliate_ID+Brand',
           rowNumber: rowIndex + 2
         };
       }
