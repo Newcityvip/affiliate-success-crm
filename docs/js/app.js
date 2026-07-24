@@ -412,7 +412,8 @@
         { label: 'Week Start', keys: ['Week_Start'], format: 'date' },
         { label: 'Week End', keys: ['Week_End'], format: 'date' },
         { label: 'Brand', keys: ['Brand'] },
-        { label: 'Affiliate', keys: ['Affiliate_Name', 'Affiliate_ID'] },
+        { label: 'Affiliate ID', keys: ['Affiliate_ID'] },
+        { label: 'Affiliate Username', keys: ['Affiliate_Username'], lookup: 'affiliateUsername', emptyText: '-' },
         { label: 'FTD', keys: ['FTD', 'FTDs'] },
         { label: 'Active Players', keys: ['Active_Players', 'Active Players'] },
         { label: 'Deposits', keys: ['Deposit_Amount', 'Deposit Amount'] },
@@ -2292,7 +2293,10 @@
   }
 
   function appendModuleCell(parent, item, column) {
-    var value = getModuleValue(item, column.keys || []);
+    var value = column.lookup === 'affiliateUsername'
+      ? getAffiliateUsernameForRecord(item)
+      : getModuleValue(item, column.keys || []);
+
     if (column.badge) {
       parent.appendChild(createBadge(column.badge, value || 'N/A'));
       return;
@@ -2302,8 +2306,29 @@
     } else if (column.format === 'month') {
       parent.textContent = formatMonthValue(value);
     } else {
-      parent.textContent = displayPlainValue(value);
+      parent.textContent = column.emptyText && !value ? column.emptyText : displayPlainValue(value);
     }
+  }
+
+  function getAffiliateUsernameForRecord(item) {
+    var directUsername = getModuleValue(item, ['Affiliate_Username']);
+    var affiliateId;
+    var affiliate;
+
+    if (directUsername) {
+      return directUsername;
+    }
+
+    affiliateId = getModuleValue(item, ['Affiliate_ID']);
+    if (!affiliateId) {
+      return '';
+    }
+
+    affiliate = asArray(affiliateState.all).filter(function (row) {
+      return safeLower(valueFor(row, 'Affiliate_ID').trim()) === safeLower(affiliateId.trim());
+    })[0];
+
+    return affiliate ? valueFor(affiliate, 'Affiliate_Username').trim() : '';
   }
 
   function formatMonthValue(value) {
