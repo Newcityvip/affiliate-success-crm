@@ -1859,6 +1859,9 @@
     state.raw = result.data || {};
     state.all = normalizeModuleItems(routeKey, state.raw);
     state.loaded = true;
+    if (routeKey === 'performance') {
+      await ensureAffiliateLookupLoaded();
+    }
     buildModuleFilters(routeKey);
     filterModule(routeKey);
   }
@@ -2311,7 +2314,7 @@
   }
 
   function getAffiliateUsernameForRecord(item) {
-    var directUsername = getModuleValue(item, ['Affiliate_Username']);
+    var directUsername = getAffiliateUsernameFromRow(item);
     var affiliateId;
     var affiliate;
 
@@ -2319,16 +2322,34 @@
       return directUsername;
     }
 
-    affiliateId = getModuleValue(item, ['Affiliate_ID']);
+    affiliateId = getAffiliateIdFromRow(item);
     if (!affiliateId) {
       return '';
     }
 
-    affiliate = asArray(affiliateState.all).filter(function (row) {
-      return safeLower(valueFor(row, 'Affiliate_ID').trim()) === safeLower(affiliateId.trim());
-    })[0];
+    affiliate = findAffiliateById(affiliateId);
 
-    return affiliate ? valueFor(affiliate, 'Affiliate_Username').trim() : '';
+    return affiliate ? getAffiliateUsernameFromRow(affiliate) : '';
+  }
+
+  function getAffiliateIdFromRow(row) {
+    return getModuleValue(row, ['Affiliate_ID', 'affiliateId', 'affiliate_id', 'Affiliate Id']);
+  }
+
+  function getAffiliateUsernameFromRow(row) {
+    return getModuleValue(row, ['Affiliate_Username', 'affiliateUsername', 'affiliate_username', 'Affiliate Username', 'Username']);
+  }
+
+  function findAffiliateById(affiliateId) {
+    var target = safeLower(String(affiliateId || '').trim());
+
+    if (!target) {
+      return null;
+    }
+
+    return asArray(affiliateState.all).filter(function (row) {
+      return safeLower(getAffiliateIdFromRow(row)) === target;
+    })[0] || null;
   }
 
   function formatMonthValue(value) {
@@ -3815,13 +3836,7 @@
     var requests = [];
 
     if (!affiliateState.loaded && ['affiliate', 'task', 'issue', 'interaction', 'performance'].indexOf(type) !== -1) {
-      requests.push(api.affiliates().then(function (result) {
-        if (isSuccessfulResult(result)) {
-          affiliateState.all = asArray(result.data && result.data.items);
-          affiliateState.filtered = affiliateState.all.slice();
-          affiliateState.loaded = true;
-        }
-      }));
+      requests.push(ensureAffiliateLookupLoaded());
     }
 
     if (isAdminUser() && moduleState.brands && !moduleState.brands.loaded && ['affiliate', 'issue', 'interaction', 'performance', 'brand'].indexOf(type) !== -1) {
@@ -3847,6 +3862,26 @@
     await Promise.all(requests.map(function (request) {
       return request.catch(function () {});
     }));
+  }
+
+  async function ensureAffiliateLookupLoaded() {
+    var result;
+
+    if (affiliateState.loaded || affiliateState.loading) {
+      return;
+    }
+
+    affiliateState.loading = true;
+    try {
+      result = await api.affiliates();
+      if (isSuccessfulResult(result)) {
+        affiliateState.all = asArray(result.data && result.data.items);
+        affiliateState.filtered = affiliateState.all.slice();
+        affiliateState.loaded = true;
+      }
+    } finally {
+      affiliateState.loading = false;
+    }
   }
 
   function closeRecordModal() {
@@ -4197,14 +4232,14 @@
 
   function getKnownAffiliates(includeUsername) {
     return (affiliateState.all || []).filter(isActiveReference).map(function (row) {
-      var affiliateId = valueFor(row, 'Affiliate_ID');
+      var affiliateId = getAffiliateIdFromRow(row);
       var labelParts = [affiliateId];
 
       if (includeUsername) {
-        labelParts.push(valueFor(row, 'Affiliate_Username'));
+        labelParts.push(getAffiliateUsernameFromRow(row));
       }
 
-      labelParts.push(valueFor(row, 'Affiliate_Name'), valueFor(row, 'Brand'));
+      labelParts.push(getModuleValue(row, ['Affiliate_Name', 'affiliateName', 'Affiliate Name']), getModuleValue(row, ['Brand', 'brand']));
       var label = labelParts.filter(Boolean).join(' - ');
       return affiliateId ? { value: affiliateId, label: label } : null;
     }).filter(Boolean);
@@ -4212,19 +4247,17 @@
 
   function applyAffiliateSelection(affiliateId) {
     var form = utils.qs('[data-record-form]');
-    var row = (affiliateState.all || []).filter(function (affiliate) {
-      return valueFor(affiliate, 'Affiliate_ID') === affiliateId;
-    })[0];
+    var row = findAffiliateById(affiliateId);
 
     if (!form || !row) {
       return;
     }
 
-    setFormValue(form, 'Affiliate_Name', valueFor(row, 'Affiliate_Name'));
-    setFormValue(form, 'Brand', valueFor(row, 'Brand'));
-    setFormValue(form, 'Assigned_Staff', valueFor(row, 'Assigned_Staff'));
-    setFormValue(form, 'Assigned_To', valueFor(row, 'Assigned_Staff'));
-    setFormValue(form, 'Market_Channel', valueFor(row, 'Market_Channel'));
+    setFormValue(form, 'Affiliate_Name', getModuleValue(row, ['Affiliate_Name', 'affiliateName', 'Affiliate Name']));
+    setFormValue(form, 'Brand', getModuleValue(row, ['Brand', 'brand']));
+    setFormValue(form, 'Assigned_Staff', getModuleValue(row, ['Assigned_Staff', 'assignedStaff', 'Assigned Staff']));
+    setFormValue(form, 'Assigned_To', getModuleValue(row, ['Assigned_Staff', 'assignedStaff', 'Assigned Staff']));
+    setFormValue(form, 'Market_Channel', getModuleValue(row, ['Market_Channel', 'marketChannel', 'Market Channel']));
   }
 
   function setFormValue(form, name, value) {
